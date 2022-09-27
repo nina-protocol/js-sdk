@@ -17,9 +17,25 @@ export default function Home() {
     <div className='font-helvetica main' >
       <Head>
         <title>Nina Dev</title>
-        <meta name="description" content="Nina Dev" />
-
+        <meta name="description" content="a collection of resources and open-source tools for building on the Nina Protocol - a digitally-native music ecosystem."/>
+        <meta name="og:image" href="/images/favicon.ico" />
         <link rel="icon" href="/images/favicon.ico" />
+        <script
+          defer
+          src="https://www.googletagmanager.com/gtag/js?id=G-VDD58V1D22"
+        />
+        {SOLANA_CLUSTER === 'mainnet-beta' &&
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-VDD58V1D22', { page_path: window.location.pathname });
+              `,
+            }}
+          />
+        }
       </Head>
 
       <main className='h-full px-4 pt-4 max-w-[1400px] m-auto sm:px-8' >
