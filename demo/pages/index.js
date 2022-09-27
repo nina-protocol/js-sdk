@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Head from 'next/head'
 import ApiExplorer from '../components/ApiExplorer';
 import EmbedExplorer from '../components/EmbedExplorer';
@@ -11,6 +11,11 @@ export default function Home() {
 
   useEffect(() => {
     Nina.client.init(process.env.NINA_API_ENDPOINT, process.env.SOLANA_CLUSTER_URL, process.env.NINA_PROGRAM_ID);
+
+    let url = window.location.href.split("/");
+    let target = url[url.length - 1].toLowerCase();
+    let element = document.getElementById(target);
+    element && element.scrollIntoView();
   }, [])
 
   return (
