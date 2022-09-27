@@ -13,7 +13,6 @@ const EmbedExplorer = () => {
   const [hubReleasePublicKey, setHubReleasePublicKey] = useState();
   const [hubHandle, setHubHandle] = useState();
   const [example, setExample] = useState('')
-  const [primaryColor, setPrimaryColor] = useState('d8d6cf')
   const [isHubUrl, setIsHubUrl] = useState(false)
   const [iframeCopiedText, setIframeCopiedText] = useState('Copy Iframe Code')
   const [embedCopiedText, setEmbedCopiedText] = useState('Copy Embed Code')
@@ -104,7 +103,7 @@ const EmbedExplorer = () => {
   ]
 
   return (
-    <div name='release_embed' id="release_embed" className='flex flex-col flex-grow h-screen font-mono mt-10' >
+    <div name='release_embed' id="embed" className='flex flex-col flex-grow h-screen font-mono mt-10' >
       <h2 className='mt-2 text-2xl underline uppercase'>Nina Embed</h2>
       <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2 mt-20">
         <div className="">
