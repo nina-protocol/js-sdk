@@ -44,11 +44,15 @@ const { artists, releases, hubs } = await Nina.Search.withQuery('techno')
 ```
 ## Demo
 
-Visit the [Api Explorer](https://dev.ninaprotocol.com) for an example of this `@nina-protocol/js-sdk` in use.
+Visit the [Api Explorer](https://dev.ninaprotocol.com) for an example of the `@nina-protocol/js-sdk` in use.
 
 ## Documentation
 
 Full documentation is available [here](http://sdk.docs.ninaprotocol.com)
+
+## Future
+
+Currently the SDK only provides interfaces for fetching data.  In the future we will add support for interacting with the Nina Program (purchase Releases, publish Releases, repost Releases to Hub, etc).
 
 ---
 ## Developing
