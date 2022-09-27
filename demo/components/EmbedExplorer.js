@@ -103,7 +103,7 @@ const EmbedExplorer = () => {
   ]
 
   return (
-    <div name='release_embed' id="embed" className='mt-10 sm:h-screen' >
+    <div name='release_embed' id="embed" className='py-4 mt-10 sm:h-screen' >
       <h2 className='mt-2 text-2xl underline uppercase'>Nina Embed</h2>
       <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2">
         <div className="">

@@ -52,7 +52,7 @@ export default function Home() {
         </h1>
 
         <div className='flex flex-col items-start flex-grow w-full min-h-screen'>
-          <p className='mb-20'>a collection of resources and open-source tools for building on the <a className='link' href="https://ninaprotocol.com" target='_blank' rel="noopener noreferrer">Nina Protocol</a> - a digitally-native music ecosystem.</p>
+          <p className='mb-20'>a collection of resources and open-source tools for building on the <a className='link' href="https://ninaprotocol.com" target='_blank' rel="noopener noreferrer">Nina Protocol</a> - a digitally native music ecosystem.</p>
           <p>Tools:</p>
           <ul>
             <li>- <Link className='link' to='api_explorer' smooth={true} >Nina API Explorer</Link> [an interface to query the public <a className="link" href="https://github.com/nina-protocol/nina-indexer" target='_blank' rel="noopener noreferrer">Nina Protocol API</a>]</li>
