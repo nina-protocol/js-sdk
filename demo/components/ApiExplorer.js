@@ -129,7 +129,7 @@ const ApiExplorer = () => {
   }
 
   return (
-    <div name='api_explorer' id="#api_explorer" className='flex flex-col flex-grow h-screen font-mono mt-10'>
+    <div name='api_explorer' id="#api_explorer" className='flex flex-col flex-grow h-screen mt-10'>
       <h2 className='mt-2 text-2xl underline uppercase'>Nina API Explorer</h2> 
       <ul>
         <p className='mt-2'>- Select a Resource and click Fetch to retrieve data from the API. Provide a publicKey or modifier to retrieve specific data.</p>
@@ -222,7 +222,7 @@ const ApiExplorer = () => {
         </form>
       </div>
 
-      <div className='min-h-[400px] h-full mt-4 overflow-y-auto overflow-x-hidden border-2 mb-4'>
+      <div className='sm:min-h-[400px] h-full mt-4 overflow-y-auto overflow-x-hidden border-2 mb-4'>
         <ReactJson src={response} theme='ashes' style={{padding: '8px', minHeight: '100%'}} />
       </div>
     </div>
