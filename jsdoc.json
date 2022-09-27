@@ -1,0 +1,25 @@
+{
+  "source": {
+    "includePattern": ".+\\.js(doc|x)?$",
+    "include": ["src/", "README.md"],
+    "exclude": ["node_modules", "demo", "docs"]
+  },
+  "plugins": ["plugins/markdown"],
+  "recurseDepth": 10,
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true,
+    "template": "node_modules/clean-jsdoc-theme",
+    "theme_opts": {
+      "default_theme": "dark",
+      "title": "@nina-protocol/js-sdk",
+      "favicon": "/demo/public/images/favicon.ico",
+      "homepageTitle": "@nina-protocol/js-sdk",
+      "exclude_inherited": true
+    }
+  },
+  "markdown": {
+    "hardwrap": false,
+    "idInHeadings": true
+  }
+}

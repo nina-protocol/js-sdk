@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind EmbedPlayer;
+
+@layer base {
+  /* extensible overrides */
+textarea:focus,
+  input:focus,
+  select:focus {
+    outline: none;
+  }
+}
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  border: none;
+  border-radius: 3px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 0;
+  background: #2D81FF;
+  margin-top: -4px;
+  margin-left: -2px;
+}
+
+[data-theme="light"] svg path {
+  fill: #000;
+  border: 2px solid red;
+}
+[data-theme="business"] svg path {
+  fill: #2D81FF;
+  border: 2px solid red;
+}
