@@ -25,7 +25,7 @@ const HubEmbed = (props) => {
       <title>{hub?.data.displayName}</title>
       <meta
         name="description"
-        content={`${hub?.data.description} \n  Powered by Nina.`}
+        content={`${hub?.data.description} \n Powered by Nina.`}
       />
       <meta name="og:type" content="website" />
       <meta
@@ -46,7 +46,8 @@ const HubEmbed = (props) => {
         content={`${hub?.data.displayName}`}
       />
       <meta name="twitter:description" content={`${hub?.data.description} \n  Powered by Nina.`} />
-
+      <meta name="twitter:player:width" content={450} />
+      <meta name="twitter:player:height" content={450} />
       <meta name="twitter:image" content={hub?.data.image} />
       <meta name="og:image" content={hub?.data.image} />
     </Head>
