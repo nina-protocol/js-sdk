@@ -42,7 +42,8 @@ const HubReleaseEmbed = (props) => {
           content={`${metadata?.properties.artist} - "${metadata?.properties.title}" on ${hub?.data.displayName}`}
         />
         <meta name="twitter:description" content={metadata?.description} />
-
+        <meta name="twitter:player:width" content={450} />
+        <meta name="twitter:player:height" content={450} />
         <meta name="twitter:image" content={metadata?.image} />
         <meta name="og:image" content={metadata?.image} />
       </Head>

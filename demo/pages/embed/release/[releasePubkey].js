@@ -44,6 +44,8 @@ const ReleaseEmbed = (props) => {
 
         <meta name="twitter:image" content={metadata?.image} />
         <meta name="og:image" content={metadata?.image} />
+        <meta name="twitter:player:width" content={450} />
+        <meta name="twitter:player:height" content={450} />
       </Head>
       <div 
         className='relative flex flex-col w-full h-full overflow-hidden'
