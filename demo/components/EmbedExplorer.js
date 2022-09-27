@@ -103,9 +103,9 @@ const EmbedExplorer = () => {
   ]
 
   return (
-    <div name='release_embed' id="embed" className='py-4 mt-10 sm:h-screen' >
+    <div name='release_embed' id="embed" className='py-4 mt-10 mb-20 m-h-screen' >
       <h2 className='mt-2 text-2xl underline uppercase'>Nina Embed</h2>
-      <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 mt-2 sm:grid-cols-2">
         <div className="">
           <div className="flex w-full p-10 mt-4 break-words whitespace-normal border-2 sm:w-3/4 card bg-base-200">
             <p className="pb-4">Enter a link to a Release or Hub to generate an embed code.</p>
