@@ -18,7 +18,15 @@ export default function Home() {
       <Head>
         <title>Nina Dev</title>
         <meta name="description" content="a collection of resources and open-source tools for building on the Nina Protocol - a digitally-native music ecosystem."/>
-        <meta name="og:image" href="/images/favicon.ico" />
+        <meta name="og:image" href="https://dev.ninaprotocol.com/images/nina-blue.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@nina_engineer" />
+        <meta name="twitter:creator" content="@nina_engineer" />
+        <meta name="twitter:image:type" content="image/png" />
+        <meta name="twitter:image" content="https://dev.ninaprotocol.com/images/nina-blue.png" />
+        <meta name="twitter:title" content="Nina Dev" />
+        <meta name="twitter:description" content="a collection of resources and open-source tools for building on the Nina Protocol - a digitally-native music ecosystem." />
+
         <link rel="icon" href="/images/favicon.ico" />
         <script
           defer
