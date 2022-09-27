@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Head from 'next/head'
 import ApiExplorer from '../components/ApiExplorer';
 import EmbedExplorer from '../components/EmbedExplorer';
@@ -56,7 +56,7 @@ export default function Home() {
           <p>Tools:</p>
           <ul>
             <li>- <Link className='link' to='api_explorer' smooth={true} >Nina API Explorer</Link> [an interface to query the public <a className="link" href="https://github.com/nina-protocol/nina-indexer" target='_blank' rel="noopener noreferrer">Nina Protocol API</a>]</li>
-            <li>- <Link className='link' to='release_embed' smooth={true} >Nina Embed</Link> [a code generator to embed Nina Hubs and Releases anywhere you can write HTML]</li>
+            <li>- <Link className='link' to='embed' smooth={true} >Nina Embed</Link> [a code generator to embed Nina Hubs and Releases anywhere you can write HTML]</li>
             <li>- <Link className='link' to='info' smooth={true}>Built on Nina</Link> [a list of projects building on Nina]</li>
           </ul>
           <p className='mt-20'>Repos:</p>

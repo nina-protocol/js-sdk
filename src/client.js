@@ -455,7 +455,6 @@ class NinaClient {
     release.paymentMint = release.paymentMint.toBase58();
     release.price = release.price.toNumber();
     release.releaseMint = release.releaseMint.toBase58();
-    release.releaseMintRef = release.releaseMintRef?.toBase58() || null;
     release.authorityTokenAccount = release.authorityTokenAccount?.toBase58() || null;
     release.releaseSigner = release.releaseSigner.toBase58();
     release.remainingSupply = release.remainingSupply.toNumber();

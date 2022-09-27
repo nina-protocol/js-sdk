@@ -129,7 +129,7 @@ const ApiExplorer = () => {
   }
 
   return (
-    <div name='api_explorer' id="#api_explorer" className='flex flex-col flex-grow h-screen mt-10'>
+    <div name='api_explorer' id="api_explorer" className='flex flex-col flex-grow h-screen mt-10'>
       <h2 className='mt-2 text-2xl underline uppercase'>Nina API Explorer</h2> 
       <ul>
         <p className='mt-2'>- Select a Resource and click Fetch to retrieve data from the API. Provide a publicKey or modifier to retrieve specific data.</p>

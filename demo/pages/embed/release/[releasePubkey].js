@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Nina from '@nina-protocol/js-sdk';
 import EmbedPlayer from '../../../components/EmbedPlayer';
+import Head from 'next/head';
 
 const ReleaseEmbed = (props) => {
-  const { metadata } = props;
+  const { metadata, releasePubkey } = props;
   const [mouseOver, setMouseOver] = useState(false);
 
   const handleMouseEnter = () => {
@@ -15,13 +16,45 @@ const ReleaseEmbed = (props) => {
   }  
 
   return (
-    <div 
-      className='relative flex flex-col w-full h-full overflow-hidden'
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <EmbedPlayer metadata={[metadata]} mouseOver={mouseOver} />
-    </div>
+    <>
+      <Head>
+        <meta
+          name="description"
+          content={`${metadata?.properties.artist} - "${metadata?.properties.title}": ${metadata?.description} \n  Powered by Nina.`}
+        />
+        <meta name="og:type" content="website" />
+        <meta
+          name="og:title"
+          content={`${metadata?.properties.artist} - "${metadata?.properties.title}"`}
+        />
+        <meta
+          name="og:description"
+          content={`${metadata?.properties.artist} - "${metadata?.properties.title}": ${metadata?.description} \nPowered by Nina.`}
+        />
+      <meta name="twitter:card" content="player" />
+        <meta name="twitter:site" content="@ninaprotocol" />
+        <meta name="twitter:creator" content="@ninaprotocol" />
+        <meta name="twitter:image:type" content="image/jpg" />
+        <meta name="twitter:player" content={`https://dev.ninaprotocol.com/embed/release/${releasePubkey}`} />
+        <meta
+          name="twitter:title"
+          content={`${metadata?.properties.artist} - "${metadata?.properties.title}"`}
+        />
+        <meta name="twitter:description" content={metadata?.description} />
+
+        <meta name="twitter:image" content={metadata?.image} />
+        <meta name="og:image" content={metadata?.image} />
+        <meta name="twitter:player:width" content={450} />
+        <meta name="twitter:player:height" content={450} />
+      </Head>
+      <div 
+        className='relative flex flex-col w-full h-full overflow-hidden'
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        >
+        <EmbedPlayer metadata={[metadata]} mouseOver={mouseOver} />
+      </div>
+    </>
   )
 }
 
@@ -50,6 +83,7 @@ export const getStaticProps = async (context) => {
     return {
       props: {
         metadata: release.metadata || null,
+        releasePubkey,
       },
       revalidate: 10
     }
