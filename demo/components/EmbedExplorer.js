@@ -103,11 +103,7 @@ const EmbedExplorer = () => {
   ]
 
   return (
-<<<<<<< HEAD
     <div name='release_embed' id="embed" className='mt-10 sm:h-screen' >
-=======
-    <div name='release_embed' id="embed" className='flex flex-col flex-grow h-screen mt-10 font-mono' >
->>>>>>> 595948d02e2fca09850044afc0454796391b7e20
       <h2 className='mt-2 text-2xl underline uppercase'>Nina Embed</h2>
       <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2">
         <div className="">
@@ -148,8 +144,6 @@ const EmbedExplorer = () => {
           <div className="flex justify-center mt-4 sm:mt-20">
             <Iframe 
               url={!isHubUrl ? `${baseUrl}/${hubHandle ? `hubRelease/${hubReleasePublicKey}` : `/release/${releasePublicKey}`}` : `${baseUrl}/hub/${hubHandle}`}
-              // width="450px"
-              // height="450px"
               className="border-2 h-[340px] w-[340px] sm:h-[450px] sm:w-[450px]"
               display="initial"
               position="relative"
