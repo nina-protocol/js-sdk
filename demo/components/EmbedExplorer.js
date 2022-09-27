@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from "react";
 import Iframe from "react-iframe";
 import {CopyToClipboard} from 'react-copy-to-clipboard';
-import Nina from '@nina-protocol/js-sdk';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import {
   a11yDark
@@ -16,8 +15,10 @@ const EmbedExplorer = () => {
   const [example, setExample] = useState('')
   const [primaryColor, setPrimaryColor] = useState('d8d6cf')
   const [isHubUrl, setIsHubUrl] = useState(false)
-  const [copiedText, setCopiedText] = useState('Copy Code')
+  const [iframeCopiedText, setIframeCopiedText] = useState('Copy Iframe Code')
+  const [embedCopiedText, setEmbedCopiedText] = useState('Copy Embed Code')
   const [embedCode, setEmbedCode] = useState('')
+  const [iframeCode, setIframeCode] = useState('')
   useEffect(() => {
     if (window !== undefined && !baseUrl) {
       setBaseUrl(window.location.origin + '/embed')
@@ -25,7 +26,8 @@ const EmbedExplorer = () => {
   }, [])
 
   useEffect(() => {
-    setEmbedCode(`<iframe src="${!isHubUrl ? `${baseUrl}/${hubHandle ? `hubRelease` : 'release'}/${releasePublicKey}` : `${baseUrl}/hub/${hubHandle}`}" width="450px" height="450px" frameborder="0" />`)
+    setIframeCode(`<iframe src="${!isHubUrl ? `${baseUrl}/${hubHandle ? `hubRelease` : 'release'}/${releasePublicKey}` : `${baseUrl}/hub/${hubHandle}`}" width="450px" height="450px" frameborder="0" />`)
+    setEmbedCode(`${!isHubUrl ? `${baseUrl}/${hubHandle ? `hubRelease` : 'release'}/${releasePublicKey}` : `${baseUrl}/hub/${hubHandle}`}`)
   }, [isHubUrl, baseUrl, releasePublicKey, hubHandle])
 
   const handleChange = async (str) => {
@@ -43,10 +45,8 @@ const EmbedExplorer = () => {
       //HUB RElEASE URL;
       const hubReleasePublicKey = str.split('/').pop();
       const hubHandle = str.split('/').slice(-3)[0];
-      const response = await Nina.Hub.fetchHubRelease(hubHandle, hubReleasePublicKey);
       setHubReleasePublicKey(hubReleasePublicKey)
       setHubHandle(hubHandle)
-      // setReleasePublicKey(response.release.publicKey)
       setIsHubUrl(false)
       return
     }
@@ -69,11 +69,18 @@ const EmbedExplorer = () => {
     }
   }
 
-  const handleCopyAlert = () => {
-    setCopiedText('Copied to Clipboard!')
-    setTimeout(() => {
-      setCopiedText('Copy Code')
-    }, 2000)
+  const handleCopyAlert = (isEmbed) => {
+    if (isEmbed) {
+      setEmbedCopiedText('Copied to Clipboard!')
+      setTimeout(() => {
+        setEmbedCopiedText('Copy Embed Code')
+      }, 2000)
+    } else {
+      setIframeCopiedText('Copied to Clipboard!')
+      setTimeout(() => {
+        setIframeCopiedText('Copy Iframe Code')
+      }, 2000)
+    }
   }
 
   const isUrl = (s) => {
@@ -118,13 +125,18 @@ const EmbedExplorer = () => {
           {baseUrl && (
             <div className="relative w-full p-10 mt-4 text-left whitespace-pre-line border-2 sm:w-3/4 card bg-base-200">
               <SyntaxHighlighter language="javascript" className="html" wrapLongLines={true} style={a11yDark} customStyle={{padding: '16px'}} >
-                  {embedCode}
+                  {iframeCode}
               </SyntaxHighlighter>
 
-              <CopyToClipboard text={embedCode}
-                onCopy={() => handleCopyAlert()}
+              <CopyToClipboard text={iframeCode}
+                onCopy={() => handleCopyAlert(false)}
               >
-                <button className="mt-4 capitalize top-2 right-2 btn">{copiedText}</button>
+                <button className="mt-4 capitalize top-2 right-2 btn">{iframeCopiedText}</button>
+              </CopyToClipboard>
+              <CopyToClipboard text={embedCode}
+                onCopy={() => handleCopyAlert(true)}
+              >
+                <button className="mt-4 capitalize top-2 right-2 btn">{embedCopiedText}</button>
               </CopyToClipboard>
             </div>
           )}
