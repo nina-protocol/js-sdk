@@ -13,6 +13,9 @@ function Info(props) {
         <li>
           <a className='link' href='https://www.spinamp.xyz/' target='_blank' rel='noopener noreferrer'>Spin Amp</a>
         </li>
+        <li>
+          <a className='link' href='https://corp-lounge.netlify.app/' target='_blank' rel='noopener noreferrer'>Corporation Plaza</a>
+        </li>
       </ul>
 
 
