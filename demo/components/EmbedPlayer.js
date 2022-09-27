@@ -266,95 +266,83 @@ const EmbedPlayer = (props) => {
         </ul>
       </div>
     )}
-    {(activeTrack.current) && (
+    {activeTrack.current && (
       <div className={`flex w-full absolute bottom-0 ease-in-out duration-300 z-[2]`} 
         style={{
           backgroundColor: primaryColor,
           transform: mouseOver ? 'translatey(0%)' : 'translateY(85%)',
-          }}>
-
-          <p className="absolute right-0 p-1 text-xs -top-6 bg-black/50" 
-            style={{opacity : playlistOpen ? '0' : '100'}}
-          >Powered by <a href='https://www.ninaprotocol.com' target='_blank' rel="noreferrer" className="link text-[#2D81FF]">Nina</a>.</p>
-          
-          {/* {hub && (
-            <p className="absolute left-0 p-1 text-xs -top-6 bg-black/50 "
-              style={{opacity: playlistOpen ? '0' : '100'}}
-            >Hub:  <a href={hub.data.externalUrl} target='_blank' rel="noreferrer" className="link text-[#2D81FF]">{hub.data.displayName}</a></p>
-          )} */}
-
+      }}>
+        <p className="absolute right-0 p-1 text-xs -top-6 bg-black/50" 
+          style={{opacity : playlistOpen ? '0' : '100'}}
+        >
+          Powered by <a href='https://www.ninaprotocol.com' target='_blank' rel="noreferrer" className="link text-[#2D81FF]">Nina</a>.
+        </p>
         <audio
           className="invisible"
           id="audio" 
           style={{width: "100%"}} 
           ref={audioPlayerRef}
-          muted
-          >
-            <source type='audio/mp3' src={activeTrack.current?.properties.files[0].uri + '?ext=mp3'} ></source>
+        >
+          <source type='audio/mp3' src={activeTrack.current?.properties.files[0].uri + '?ext=mp3'} ></source>
         </audio>
-        {true && (
-          <div className="z-10 flex flex-col content-center w-full pb-2">
-            <input
-              className="top-0 left-0 w-full progress rangeSlider"
-              type="range"
-              value={trackProgress || 0}
-              step="1"
-              min="0"
-              max={activeTrack.current.properties.files[0].duration}
-              onChange={(e) => onScrub(e.target.value)}
-              onMouseUp={onScrubEnd}  
-              onKeyUp={onScrubEnd}
-              style={{
-                background: trackStyling,
-                borderRadius: '0px',
-                cursor: 'pointer'
-              }}
-            />
-  
-            <div className="flex w-full gap-2 mt-2 ">
-              <div className="flex w-1/2 ml-2">
-                  {tracks?.length > 1 && (
-                    <button className='cursor-pointer hover:opacity-50' onClick={previous}
-                      style={{
-                        opacity: !hasPrevious.current ? '50%' : '100%'
-                      }}
-                    >
-                      <PrevArrow fill={secondaryColor} className="m-auto" />
-                    </button>
-                  )}
-                  <button className="hover:opacity-50" onClick={playing ? pause : play} >
-                  {playing ?
-                      <Pause fill={secondaryColor}/>
-                  : 
-                    <Play fill={secondaryColor} />
-                  }
+        <div className="z-10 flex flex-col content-center w-full pb-2">
+          <input
+            className="top-0 left-0 w-full progress rangeSlider"
+            type="range"
+            value={trackProgress || 0}
+            step="1"
+            min="0"
+            max={activeTrack.current.properties.files[0].duration}
+            onChange={(e) => onScrub(e.target.value)}
+            onMouseUp={onScrubEnd}  
+            onKeyUp={onScrubEnd}
+            style={{
+              background: trackStyling,
+              borderRadius: '0px',
+              cursor: 'pointer'
+            }}
+          />
+          <div className="flex w-full gap-2 mt-2 ">
+            <div className="flex w-1/2 ml-2">
+              {tracks?.length > 1 && (
+                <button className='cursor-pointer hover:opacity-50' onClick={previous}
+                  style={{
+                    opacity: !hasPrevious.current ? '50%' : '100%'
+                  }}
+                >
+                  <PrevArrow fill={secondaryColor} className="m-auto" />
                 </button>
-                  {tracks?.length > 1 && (
-                    <button className='cursor-pointer hover:opacity-50' onClick={next}
-                      style={{
-                        opacity: !hasNext.current ? '50%' : '100%'
-                      }}
-                    >
-                    <NextArrow fill={secondaryColor} />
-                    </button>
-                  )}
-                <div className="flex text-[#000] ml-2">
-                    {formatTime(trackProgress) || '0:00'} / {formatTime(activeTrack.current.properties.files[0].duration)}
-                </div>
-              </div>
-
-              
-              {tracks.length > 1 && (
-                <div className="flex justify-end w-1/2 text-right">
-                  <p className="mr-2 cursor-pointer hover:opacity-50" style={{color: secondaryColor}} onClick={e => togglePlayList(e)}>
-                    {playlistOpen ? '-' : '+'}</p>
-                </div>
               )}
-  
+              <button className="hover:opacity-50" onClick={playing ? pause : play} >
+                {playing ?
+                    <Pause fill={secondaryColor}/>
+                : 
+                  <Play fill={secondaryColor} />
+                }
+              </button>
+              {tracks?.length > 1 && (
+                <button className='cursor-pointer hover:opacity-50' onClick={next}
+                  style={{
+                    opacity: !hasNext.current ? '50%' : '100%'
+                  }}
+                >
+                <NextArrow fill={secondaryColor} />
+                </button>
+              )}
+              <div className="flex text-[#000] ml-2">
+                {formatTime(trackProgress) || '0:00'} / {formatTime(activeTrack.current.properties.files[0].duration)}
+              </div>
             </div>
+            {tracks.length > 1 && (
+              <div className="flex justify-end w-1/2 text-right">
+                <p className="mr-2 cursor-pointer hover:opacity-50" style={{color: secondaryColor}} onClick={e => togglePlayList(e)}>
+                  {playlistOpen ? '-' : '+'}
+                </p>
+              </div>
+            )}
 
           </div>
-        )}
+        </div>
       </div>
     )}
   </div>
