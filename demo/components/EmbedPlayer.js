@@ -51,7 +51,7 @@ const EmbedPlayer = (props) => {
       if (tracks.length > 1) {
         track = tracks[activeIndex].metadata;
         activeTrack.current = track;
-        hasNext.current = (activeIndex + 1) <= tracks.length
+        hasNext.current = (activeIndex + 1) < tracks.length
         hasPrevious.current = activeIndex > 0
       } else {
         track = tracks[0];
@@ -322,6 +322,7 @@ const EmbedPlayer = (props) => {
               </button>
               {tracks?.length > 1 && (
                 <button className='cursor-pointer hover:opacity-50' onClick={next}
+                  disabled={!hasNext.current}
                   style={{
                     opacity: !hasNext.current ? '50%' : '100%'
                   }}
