@@ -103,9 +103,9 @@ const EmbedExplorer = () => {
   ]
 
   return (
-    <div name='release_embed' id="embed" className='flex flex-col flex-grow h-screen font-mono mt-10' >
+    <div name='release_embed' id="embed" className='mt-10 sm:h-screen' >
       <h2 className='mt-2 text-2xl underline uppercase'>Nina Embed</h2>
-      <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2 mt-20">
+      <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2">
         <div className="">
           <div className="flex w-full p-10 mt-4 break-words whitespace-normal border-2 sm:w-3/4 card bg-base-200">
             <p className="pb-4">Enter a link to a Release or Hub to generate an embed code.</p>
@@ -141,12 +141,10 @@ const EmbedExplorer = () => {
           )}
         </div>
         {baseUrl && (
-          <div className="flex justify-center mt-20">
+          <div className="flex justify-center mt-4 sm:mt-20">
             <Iframe 
               url={!isHubUrl ? `${baseUrl}/${hubHandle ? `hubRelease/${hubReleasePublicKey}` : `/release/${releasePublicKey}`}` : `${baseUrl}/hub/${hubHandle}`}
-              width="450px"
-              height="450px"
-              className="border-2"
+              className="border-2 h-[340px] w-[340px] sm:h-[450px] sm:w-[450px]"
               display="initial"
               position="relative"
             />

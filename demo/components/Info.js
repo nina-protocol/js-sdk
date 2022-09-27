@@ -2,8 +2,8 @@ import React from 'react';
 
 function Info(props) {
   return (
-    <div className='relative h-screen py-4 font-mono' name='info' id="info">
-      <h2 className='mt-2 text-2xl underline uppercase mb-20'>Built On Nina</h2>
+    <div className='relative h-screen py-4 m-h-full' name='info' id="info">
+      <h2 className='mt-2 mb-20 text-2xl underline uppercase'>Built On Nina</h2>
       <h2 className='mt-2 text-1xl'>Projects Using Nina:</h2>
       
       <ul>
