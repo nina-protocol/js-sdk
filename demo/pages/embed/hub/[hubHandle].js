@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import Nina from '@nina-protocol/js-sdk';
 import EmbedPlayer from '../../../components/EmbedPlayer';
-
+import Head
+ from 'next/head';
 const HubEmbed = (props) => {
   const { hub, hubReleases } = props;
   const [mouseOver, setMouseOver] = useState(false);
@@ -19,6 +20,36 @@ const HubEmbed = (props) => {
   }
 
   return (
+    <>
+    <Head>
+      <title>{hub.data.displayName}</title>
+      <meta
+        name="description"
+        content={`${hub.data.description} \n  Powered by Nina.`}
+      />
+      <meta name="og:type" content="website" />
+      <meta
+        name="og:title"
+        content={`${hub.data.displayName}"`}
+      />
+      <meta
+        name="og:description"
+        content={`${hub.data.description} \nPowered by Nina.`}
+      />
+      <meta name="twitter:card" content="player" />
+      <meta name="twitter:site" content="@ninaprotocol" />
+      <meta name="twitter:creator" content="@ninaprotocol" />
+      <meta name="twitter:image:type" content="image/jpg" />
+      <meta name="twitter:player" content={`https://dev.ninaprotocol.com/embed/hub/${hub.handle}`} />
+      <meta
+        name="twitter:title"
+        content={`${hub.data.displayName}`}
+      />
+      <meta name="twitter:description" content={`${hub.data.description} \n  Powered by Nina.`} />
+
+      <meta name="twitter:image" content={hub.data.image} />
+      <meta name="og:image" content={hub.data.image} />
+    </Head>
     <div className='relative flex flex-col w-full h-full overflow-hidden'
       onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
     >
@@ -28,6 +59,7 @@ const HubEmbed = (props) => {
         hub={hub}
         />
     </div>
+    </>
   )
 }
 
