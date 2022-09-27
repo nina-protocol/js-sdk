@@ -24,7 +24,7 @@ export default function Home() {
           defer
           src="https://www.googletagmanager.com/gtag/js?id=G-VDD58V1D22"
         />
-        {SOLANA_CLUSTER === 'mainnet-beta' &&
+        {process.env.SOLANA_CLUSTER === 'mainnet-beta' &&
           <script
             dangerouslySetInnerHTML={{
               __html: `
