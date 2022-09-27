@@ -102,7 +102,7 @@ const EmbedExplorer = () => {
       <div className="grid h-full grid-cols-1 mt-2 sm:grid-cols-2 mt-20">
         <div className="">
           <div className="flex w-full p-10 mt-4 break-words whitespace-normal border-2 sm:w-3/4 card bg-base-200">
-            <p className="pb-4">Enter a link to any Nina Release to generate an embed code.</p>
+            <p className="pb-4">Enter a link to a Release or Hub to generate an embed code.</p>
             <div className="form-control">
               <label className="hidden pb-4 form-label">
                 <span className="text-base">Nina Embed</span>
