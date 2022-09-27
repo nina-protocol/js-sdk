@@ -47,7 +47,7 @@ const fetchHubs = async (publicKey, withAccountData = false) => {
  * @description Fetches the Releases collected by an Account.
  * @param {String} publicKey
  * @param {Boolean} [withAccountData = false] Include full on-chain Release accounts.
- * @example const collection = await NinaClient.Account.fetchCollection("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+ * @example const collection = await NinaClient.Account.fetchCollected("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  */
 const fetchCollected = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/accounts/${publicKey}/collected`, undefined, withAccountData);

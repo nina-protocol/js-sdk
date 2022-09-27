@@ -56,7 +56,7 @@ const ApiExplorer = () => {
     console.log(`${resource} ${modifier} ${publicKey}`);
     if (resource === 'Accounts') {
       if (modifier === 'Collected') {
-        Nina.Account.fetchCollection(publicKey, withAccountData).then(setResponse);
+        Nina.Account.fetchCollected(publicKey, withAccountData).then(setResponse);
       } else if (modifier === 'Hubs') {
         Nina.Account.fetchHubs(publicKey, withAccountData).then(setResponse);
       } else if (modifier === 'Posts') {
