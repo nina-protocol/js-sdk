@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Nina from '@nina-protocol/js-sdk';
 import EmbedPlayer from '../../../components/EmbedPlayer';
+import Head from 'next/head';
 
 const ReleaseEmbed = (props) => {
   const { metadata, releasePubkey } = props;
