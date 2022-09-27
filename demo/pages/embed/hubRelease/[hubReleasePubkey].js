@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Nina from '@nina-protocol/nina-sdk';
+import Nina from '@nina-protocol/js-sdk';
 import EmbedPlayer from '../../../components/EmbedPlayer';
 import * as anchor from '@project-serum/anchor';
 
