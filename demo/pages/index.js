@@ -14,7 +14,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div className='font-helvetica main' >
+    <div className='font-mono main' >
       <Head>
         <title>Nina Dev</title>
         <meta name="description" content="a collection of resources and open-source tools for building on the Nina Protocol - a digitally-native music ecosystem."/>
@@ -47,13 +47,13 @@ export default function Home() {
       </Head>
 
       <main className='h-full px-4 pt-4 max-w-[1400px] m-auto sm:px-8' >
-        <h1 className='text-l font-bold'>
+        <h1 className='font-bold text-l'>
           NINA DEV
         </h1>
 
-        <div className='flex flex-col items-start flex-grow w-full min-h-screen font-mono'>
-          <p className='mb-40'>a collection of resources and open-source tools for building on the <a className='link' href="https://ninaprotocol.com" target='_blank' rel="noopener noreferrer">Nina Protocol</a> - a digitally-native music ecosystem.</p>
-          <p>Resources + Tools:</p>
+        <div className='flex flex-col items-start flex-grow w-full min-h-screen'>
+          <p className='mb-20'>a collection of resources and open-source tools for building on the <a className='link' href="https://ninaprotocol.com" target='_blank' rel="noopener noreferrer">Nina Protocol</a> - a digitally native music ecosystem.</p>
+          <p>Tools:</p>
           <ul>
             <li>- <Link className='link' to='api_explorer' smooth={true} >Nina API Explorer</Link> [an interface to query the public <a className="link" href="https://github.com/nina-protocol/nina-indexer" target='_blank' rel="noopener noreferrer">Nina Protocol API</a>]</li>
             <li>- <Link className='link' to='embed' smooth={true} >Nina Embed</Link> [a code generator to embed Nina Hubs and Releases anywhere you can write HTML]</li>
