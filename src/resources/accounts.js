@@ -97,6 +97,17 @@ const fetchRevenueShares = async (publicKey, withAccountData=false) => {
   return await NinaClient.get(`/accounts/${publicKey}/revenueShares`, undefined, withAccountData);
 }
 
+/**
+ * @function fetchSubscriptions
+ * @description Fetches the Subcriptions for an Account.
+ * @param {String} publicKey
+ * @param {Boolean} [withAccountData = false] Include full on-chain Subscription accounts. 
+ * @example const subscriptions = await NinaClient.Account.fetchSubscriptions("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+ *  */
+const fetchSubscriptions = async (publicKey, withAccountData=false) => {
+  return await NinaClient.get(`/accounts/${publicKey}/subscriptions`, undefined, withAccountData);
+}
+
 export default {
   fetchAll,
   fetch,
@@ -106,4 +117,5 @@ export default {
   fetchPosts,
   fetchExchanges,
   fetchRevenueShares,
+  fetchSubscriptions
 }

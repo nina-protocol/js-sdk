@@ -4,6 +4,7 @@ import Hub from './resources/hubs';
 import Post from './resources/posts';
 import Release from './resources/releases';
 import Search from './resources/search';
+import Subscription from './resources/subscriptions';
 import client from './client';
 
 const Nina = {
@@ -13,6 +14,7 @@ const Nina = {
   Post,
   Release,
   Search,
+  Subscription,
   client,
 }
 export default Nina
