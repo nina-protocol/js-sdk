@@ -45,6 +45,8 @@ const EmbedExplorer = () => {
       const hubReleasePublicKey = str.split('/').pop();
       const hubHandle = str.split('/').slice(-3)[0];
       setHubReleasePublicKey(hubReleasePublicKey)
+      setReleasePublicKey(hubReleasePublicKey);
+
       setHubHandle(hubHandle)
       setIsHubUrl(false)
       return
