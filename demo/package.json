@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@imgix/js-core": "^3.6.0",
-    "@nina-protocol/js-sdk": "^0.0.2",
+    "@nina-protocol/js-sdk": "^0.0.3",
     "babel-plugin-inline-react-svg": "^2.0.1",
     "daisyui": "^2.24.0",
     "next": "12.2.5",
