@@ -26,7 +26,7 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
 /**
  * @function fetch
  * @description Fetches a Post.
- * @param {String} publicKey - The public key of the Post.
+ * @param {String} publicKey - The public key of the Subscription.
  * @param {String} Transaction - The transaction Id of an already existing Subscription.
  * @example const subscriptions = await NinaClient.Subscription.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
  */
