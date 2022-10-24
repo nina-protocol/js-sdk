@@ -51,8 +51,6 @@ const ApiExplorer = () => {
   const [withAccountData, setWithAccountData] = useState(false);
   const withAccountDataRef = useRef(null);
 
-  console.log('Nina :>> ', Nina);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     e.stopPropagation();
