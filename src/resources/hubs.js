@@ -92,12 +92,24 @@ const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/hubPosts/${hubPostPublicKey}`, undefined, withAccountData);
 }
 
+/**
+ * @function fetchSubscriptions
+ * @description Fetches the subscriptions for a Hub.
+ * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
+ * @example const subscriptions = await NinaClient.Hub.fetchSubscriptions("ninas-picks");
+ */
+
+const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
+}
+
 export default {
   fetchAll,
   fetch,
   fetchCollaborators,
-  fetchReleases,
+  fetchReleases,   
   fetchPosts,
   fetchHubRelease,
   fetchHubPost,
+  fetchSubscriptions,
 }
