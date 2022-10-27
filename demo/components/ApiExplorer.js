@@ -25,7 +25,8 @@ const resourceOptions = {
       '',
       'Collaborators',
       'Releases',
-      'Posts'
+      'Posts',
+      'Subscriptions'
     ]
   },
   'Posts': {
@@ -93,6 +94,8 @@ const ApiExplorer = () => {
         Nina.Hub.fetchReleases(publicKey, withAccountData).then(setResponse);
       } else if (modifier === 'Posts') {
         Nina.Hub.fetchPosts(publicKey, withAccountData).then(setResponse);
+      } else if (modifier === 'Subscriptions') {
+        Nina.Hub.fetchSubscriptions(publicKey).then(setResponse);
       } else {
         if (publicKey && publicKey.length > 0) {
           Nina.Hub.fetch(publicKey, withAccountData).then(setResponse);

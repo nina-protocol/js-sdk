@@ -137,7 +137,6 @@ class NinaClient {
       await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleReleaseAccountData(response.data.releases);
     } else if (url === '/exchanges') {
-      console.log('here: ', response.data)
       await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/^\/exchanges\/((?!(\/)).)*$/.test(url)) {
       const exchangePublicKey = response.data.exchange.publicKey;
