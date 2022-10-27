@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@project-serum/anchor": "^0.25.0",
     "@imgix/js-core": "^3.6.0",
     "@nina-protocol/js-sdk": "../src",
     "babel-plugin-inline-react-svg": "^2.0.1",
