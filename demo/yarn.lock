@@ -159,7 +159,7 @@
   resolved "https://registry.yarnpkg.com/@next/swc-win32-x64-msvc/-/swc-win32-x64-msvc-12.2.5.tgz#20fed129b04a0d3f632c6d0de135345bb623b1e4"
   integrity sha512-7h5/ahY7NeaO2xygqVrSG/Y8Vs4cdjxIjowTZ5W6CKoTKn7tmnuxlUc2h74x06FKmbhAd9agOjr/AOKyxYYm9Q==
 
-"@nina-protocol/js-sdk@../src":
+"@nina-protocol/js-sdk@../dist":
   version "0.0.0"
 
 "@noble/ed25519@^1.7.0":
