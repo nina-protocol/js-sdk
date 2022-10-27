@@ -12,7 +12,9 @@ const resourceOptions = {
       'Hubs',
       'Posts',
       'Published',
-      'Revenue Shares'
+      'Revenue Shares',
+      'Subscriptions',
+      'Verifications'
     ]
   },
   'Exchanges': {
@@ -67,7 +69,11 @@ const ApiExplorer = () => {
         Nina.Account.fetchExchanges(publicKey, withAccountData).then(setResponse);
       } else if (modifier === 'Revenue Shares') {
         Nina.Account.fetchRevenueShares(publicKey, withAccountData).then(setResponse);
-      } else{
+      } else if (modifier === 'Subscriptions') {
+        Nina.Account.fetchSubscriptions(publicKey, withAccountData).then(setResponse);
+      } else if (modifier === 'Verifications') {
+        Nina.Account.fetchVerifications(publicKey).then(setResponse);
+      } else {
         if (publicKey && publicKey.length > 0) {
           Nina.Account.fetch(publicKey, withAccountData).then(setResponse);
         } else {

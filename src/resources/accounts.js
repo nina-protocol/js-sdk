@@ -108,6 +108,16 @@ const fetchSubscriptions = async (publicKey, withAccountData=false) => {
   return await NinaClient.get(`/accounts/${publicKey}/subscriptions`, undefined, withAccountData);
 }
 
+/**
+ * @function fetchVerifications
+ * @description Fetches the Verifications for an Account.
+ * @param {String} publicKey
+ * @example const verifications = await NinaClient.Account.fetchVerifications("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+ * */
+const fetchVerifications = async (publicKey) => {
+  return await NinaClient.get(`/accounts/${publicKey}/verifications`);
+}
+
 export default {
   fetchAll,
   fetch,
@@ -117,5 +127,6 @@ export default {
   fetchPosts,
   fetchExchanges,
   fetchRevenueShares,
-  fetchSubscriptions
+  fetchSubscriptions,
+  fetchVerifications,
 }
