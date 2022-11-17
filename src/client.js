@@ -10,6 +10,7 @@ class NinaClient {
     this.endpoint = null;
     this.cluster = null;
     this.programId = null;
+    this.apiKey = null;
   }
 
   /** 
@@ -20,7 +21,9 @@ class NinaClient {
    * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)   
    * @example Nina.client.init(endpoint, cluster, programId)
   */
-  async init(endpoint, cluster, programId) {
+  async init(endpoint, cluster, programId, apiKey=undefined) {
+    console.log('api key', apiKey)
+    this.apiKey = apiKey;
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
@@ -36,6 +39,13 @@ class NinaClient {
   }
 
   async get(url, query = undefined, withAccountData = false) {
+    if (this.apiKey) {
+      if (query) {
+        query.api_key = this.apiKey;
+      } else {
+        query = { api_key: this.apiKey };
+      }
+    }
     const queryString = query ? `?${new URLSearchParams(query).toString()}` : '';
     let response = await axios.get(`${this.endpoint}${url}${queryString}`);
     if (withAccountData) {
