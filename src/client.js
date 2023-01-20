@@ -23,7 +23,6 @@ class NinaClient {
    * @example Nina.client.init(endpoint, cluster, programId)
   */
   async init(endpoint, cluster, programId, apiKey=undefined) {
-    console.log('api key', apiKey)
     this.apiKey = apiKey;
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
@@ -154,7 +153,6 @@ class NinaClient {
       const exchange = await this.fetchAccountData(exchangePublicKey, "exchange");
       response.data.exchange.accountData = this.parseExchangeAccountData(exchange);
     }
-    console.log('url: ', url)
     return response.data;        
   }
 
