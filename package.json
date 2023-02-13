@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk",
-  "version": "0.0.12",
+  "version": "0.0.14",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",

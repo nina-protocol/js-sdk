@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
 import _ from 'lodash';
 
+const MAX_U64 = '18446744073709551615'; 
 /** Class Representing the Nina Client */
 class NinaClient {
   constructor() {
@@ -22,7 +23,6 @@ class NinaClient {
    * @example Nina.client.init(endpoint, cluster, programId)
   */
   async init(endpoint, cluster, programId, apiKey=undefined) {
-    console.log('api key', apiKey)
     this.apiKey = apiKey;
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
@@ -153,7 +153,6 @@ class NinaClient {
       const exchange = await this.fetchAccountData(exchangePublicKey, "exchange");
       response.data.exchange.accountData = this.parseExchangeAccountData(exchange);
     }
-    console.log('url: ', url)
     return response.data;        
   }
 
@@ -466,7 +465,6 @@ class NinaClient {
     release.releaseMint = release.releaseMint.toBase58();
     release.authorityTokenAccount = release.authorityTokenAccount?.toBase58() || null;
     release.releaseSigner = release.releaseSigner.toBase58();
-    release.remainingSupply = release.remainingSupply.toNumber();
     release.resalePercentage = release.resalePercentage.toNumber();
     release.releaseDatetime = release.releaseDatetime.toNumber() * 1000;
     release.revenueShareRecipients = release.royaltyRecipients.map(recipient => {
@@ -481,8 +479,16 @@ class NinaClient {
     release.royaltyTokenAccount = release.royaltyTokenAccount.toBase58();
     release.saleCounter = release.saleCounter.toNumber();
     release.saleTotal = release.saleTotal.toNumber();
+    if (release.totalSupply.toString() === MAX_U64) {
+      release.editionType = 'open';
+      release.remainingSupply = -1;
+      release.totalSupply = -1;
+    } else {
+      release.editionType = 'limited';
+      release.remainingSupply = release.remainingSupply.toNumber();
+      release.totalSupply = release.totalSupply.toNumber();
+    }
     release.totalCollected = release.totalCollected.toNumber();
-    release.totalSupply = release.totalSupply.toNumber();
     release.head = release.head.toNumber();
     release.tail = release.tail.toNumber();
 
