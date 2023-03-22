@@ -7,6 +7,13 @@ import Search from './resources/search';
 import Subscription from './resources/subscriptions';
 import client from './client';
 
+
+
+console.log('local !11111');
+console.log('local 11111!');
+console.log('local 11111!');
+console.log('local 11111!');
+
 const Nina = {
   Account,
   Exchange,

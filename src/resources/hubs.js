@@ -1,4 +1,6 @@
 import NinaClient from '../client';
+import * as anchor from '@project-serum/anchor';
+import { findOrCreateAssociatedTokenAccount } from '../utils';
 
 /**
  * @module Hub
@@ -103,6 +105,105 @@ const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
 }
 
+const hubInitWithCredit = async (hubParams, wallet, connection, ids) => {
+  try {
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(ids.programs.nina, provider);  
+    const USDC_MINT = new anchor.web3.PublicKey(ids.mints.usdc)
+    const WRAPPED_SOL_MINT = new anchor.web3.PublicKey(ids.mints.wsol)
+    const HUB_CREDIT_MINT = new anchor.web3.PublicKey(ids.mints.hubCredit)
+
+
+    hubParams.publishFee = new anchor.BN(hubParams.publishFee * 10000)
+    hubParams.referralFee = new anchor.BN(hubParams.referralFee * 10000)
+
+    const [hub] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub')),
+        Buffer.from(anchor.utils.bytes.utf8.encode(hubParams.handle)),
+      ],
+      program.programId
+    )
+
+    const [hubSigner, hubSignerBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
+          hub.toBuffer(),
+        ],
+        program.programId
+      )
+
+    hubParams.hubSignerBump = hubSignerBump
+
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hub.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    let [, usdcVaultIx] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      hubSigner,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      USDC_MINT
+    )
+
+    let [, wrappedSolVaultIx] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      hubSigner,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      WRAPPED_SOL_MINT
+    )
+
+    let [authorityHubCreditTokenAccount] =
+      await findOrCreateAssociatedTokenAccount(
+        provider.connection,
+        provider.wallet.publicKey,
+        provider.wallet.publicKey,
+        anchor.web3.SystemProgram.programId,
+        anchor.web3.SYSVAR_RENT_PUBKEY,
+        HUB_CREDIT_MINT
+      )
+
+    const txid = await program.methods
+      .hubInitWithCredit(hubParams)
+      .accounts({
+        authority: wallet.publicKey,
+        hub,
+        hubSigner,
+        hubCollaborator,
+        authorityHubCreditTokenAccount,
+        hubCreditMint: HUB_CREDIT_MINT,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: new anchor.web3.PublicKey(ids.programs.token),
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .preInstructions([usdcVaultIx, wrappedSolVaultIx])
+      .rpc()
+
+    await connection.getParsedTransaction(txid, 'confirmed')
+    await this.fetch(hub.toBase58())
+
+    return hub.toBase58
+
+  } catch (error) {
+    console.log( error);
+    return false
+  }
+
+}
+
 export default {
   fetchAll,
   fetch,
@@ -112,4 +213,5 @@ export default {
   fetchHubRelease,
   fetchHubPost,
   fetchSubscriptions,
+  hubInitWithCredit,
 }
