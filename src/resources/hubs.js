@@ -1,6 +1,6 @@
 import NinaClient from '../client';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount } from '../utils';
+import { findOrCreateAssociatedTokenAccount }  from '../utils';
 
 /**
  * @module Hub
@@ -105,8 +105,16 @@ const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
 }
 
-const hubInitWithCredit = async (hubParams, wallet, connection, ids) => {
+/**
+ * @function hubInitWithCredit
+ * @description Initializes a Hub account with Hub Credit.
+ * @param {Object} hubParams The Hub parameters.
+ * @example const hub = await NinaClient.Hub.hubInitWithCredit({})
+ */
+
+const hubInitWithCredit = async (hubParams, wallet, connection) => {
   try {
+    const ids = NinaClient.ids
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
@@ -193,9 +201,9 @@ const hubInitWithCredit = async (hubParams, wallet, connection, ids) => {
       .rpc()
 
     await connection.getParsedTransaction(txid, 'confirmed')
-    await this.fetch(hub.toBase58())
+    await fetch(hub.toBase58())
 
-    return hub.toBase58
+    return hub.toBase58()
 
   } catch (error) {
     console.log( error);

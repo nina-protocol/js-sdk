@@ -126,3 +126,4 @@ export const getUsdcBalance = async (publicKey, connection) => {
     return 0
   }
 }
+
