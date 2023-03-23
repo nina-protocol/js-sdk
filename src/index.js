@@ -9,10 +9,8 @@ import client from './client';
 
 
 
-console.log('local !11111');
-console.log('local 11111!');
-console.log('local 11111!');
-console.log('local 11111!');
+console.log('local 22222');
+
 
 const Nina = {
   Account,

@@ -1,6 +1,7 @@
 import NinaClient from '../client';
+import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount }  from '../utils';
+import { findOrCreateAssociatedTokenAccount, getConfirmTransaction }  from '../utils';
 
 /**
  * @module Hub
@@ -209,7 +210,55 @@ const hubInitWithCredit = async (hubParams, wallet, connection) => {
     console.log( error);
     return false
   }
+}
 
+/**
+ * @function hubUpdateConfig
+ * @description Updates the configuration of a Hub.
+ * @param {*} hub 
+ * @param {*} uri 
+ * @param {*} publishFee 
+ * @param {*} referralFee 
+ * @param {*} wallet 
+ * @param {*} connection 
+ * @example const hub = await NinaClient.Hub.hubUpdateConfig(hub, 'https://nina.com', 0.1, 0.1, wallet, connection);  
+ * @returns 
+ */
+
+const hubUpdateConfig = async (hub, uri, publishFee, referralFee, wallet, connection) => {
+  try {
+    const ids = NinaClient.ids
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(ids.programs.nina, provider);  
+
+    const txid = await program.rpc.hubUpdateConfig(
+      uri,
+      hub.handle,
+      new anchor.BN(publishFee * 10000),
+      new anchor.BN(referralFee * 10000),
+      {
+        accounts: {
+          authority: provider.wallet.publicKey,
+          hub: new anchor.web3.PublicKey(hub.publicKey),
+        },
+      }
+    )
+
+    const tx = await getConfirmTransaction(txid, provider.connection)
+    if (tx) {
+      await axios.get(
+        `${process.env.NINA_API_ENDPOINT}/hubs/${hub.publicKey}/tx/${txid}`
+      )
+       const updatedHub = await fetch(hub.publicKey)
+       return updatedHub
+    }
+  } catch (error) {
+    console.log( error);
+    return false
+  }
 }
 
 export default {
@@ -222,4 +271,5 @@ export default {
   fetchHubPost,
   fetchSubscriptions,
   hubInitWithCredit,
+  hubUpdateConfig,
 }

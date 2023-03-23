@@ -1,4 +1,5 @@
 import * as anchor from '@project-serum/anchor'
+import promiseRetry from 'promise-retry'
 
 export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
   anchor.utils.token.TOKEN_PROGRAM_ID.toString()
@@ -127,3 +128,30 @@ export const getUsdcBalance = async (publicKey, connection) => {
   }
 }
 
+export const getConfirmTransaction = async (txid, connection) => {
+  const res = await promiseRetry(
+    async (retry) => {
+      let txResult = await connection.getTransaction(txid, {
+        commitment: 'confirmed',
+      })
+
+      if (!txResult) {
+        const error = new Error('unable_to_confirm_transaction')
+        error.txid = txid
+
+        retry(error)
+        return
+      }
+      return txResult
+    },
+    {
+      retries: 5,
+      minTimeout: 500,
+      maxTimeout: 1000,
+    }
+  )
+  if (res.meta.err) {
+    throw new Error('Transaction failed')
+  }
+  return txid
+}
