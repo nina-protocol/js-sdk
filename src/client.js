@@ -67,7 +67,7 @@ class NinaClient {
     console.log('INIT');
 
     this.apiKey = apiKey;
-    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
+    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
     const connection = new anchor.web3.Connection(this.cluster);
