@@ -308,7 +308,6 @@ const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAdd
           },
         }
       )
-        console.log('NinaClient :>> ', NinaClient.endpoint);
       
       const tx = await getConfirmTransaction(txid, provider.connection)
       if (tx) {
@@ -316,7 +315,6 @@ const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAdd
           NinaClient.endpoint +
             `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
         )
-        // await fetch(hubPubkey)
         return true
       }
   } catch (error) {
@@ -324,6 +322,65 @@ const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAdd
     return false
   }
 }
+
+const hubUpdateCollaboratorPermission = async (
+  hub, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
+  try {
+    let hubPubkey = hub.publicKey
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
+      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
+      hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          hubPubkey.toBuffer(),
+          collaboratorPubkey.toBuffer(),
+        ],
+        program.programId
+      )
+      const [authorityHubCollaborator] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(
+              anchor.utils.bytes.utf8.encode('nina-hub-collaborator')
+            ),
+            hubPubkey.toBuffer(),
+            provider.wallet.publicKey.toBuffer(),
+          ],
+          program.programId
+        )
+
+      const txid = await program.rpc.hubUpdateCollaboratorPermissions(
+        canAddContent,
+        canAddCollaborator,
+        allowance,
+        hub.handle,
+        {
+          accounts: {
+            authority: wallet.publicKey,
+            authorityHubCollaborator,
+            hub: hubPubkey,
+            hubCollaborator,
+            collaborator: collaboratorPubkey,
+          },
+        }
+      )
+
+      const tx = await getConfirmTransaction(txid, provider.connection)
+      if (tx) {
+        return true
+      }
+  } catch (error) {
+    console.log( error);
+    return false
+  }
+}
+
+
 
 export default {
   fetchAll,
@@ -337,4 +394,5 @@ export default {
   hubInitWithCredit,
   hubUpdateConfig,
   hubAddCollaborator,
+  hubUpdateCollaboratorPermission,
 }
