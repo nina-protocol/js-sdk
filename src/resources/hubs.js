@@ -375,7 +375,56 @@ const hubUpdateCollaboratorPermission = async (
         return true
       }
   } catch (error) {
-    console.log( error);
+    console.log(error);
+    return false
+  }
+}
+
+const hubRemoveCollaborator = async (hub, collaboratorPubkey, wallet, connection) => {
+  try {
+    let hubPubkey = hub.publicKey
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
+      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
+      hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+      
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          hubPubkey.toBuffer(),
+          collaboratorPubkey.toBuffer(),
+        ],
+        program.programId
+      )
+      console.log('hubCollaborator :>> ', hubCollaborator);
+
+      const txid = await program.rpc.hubRemoveCollaborator(
+        hub.handle,
+        {
+          accounts: {
+            authority: wallet.publicKey,
+            hub: hubPubkey,
+            hubCollaborator,
+            collaborator: collaboratorPubkey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          },
+        }
+      )
+
+      const tx = await getConfirmTransaction(txid, provider.connection)
+      if (tx) {
+        await axios.get(
+          NinaClient.endpoint +
+          `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
+        )
+        return hubCollaborator
+      }
+    
+  } catch (error) {
+    console.log(error);
     return false
   }
 }
@@ -395,4 +444,5 @@ export default {
   hubUpdateConfig,
   hubAddCollaborator,
   hubUpdateCollaboratorPermission,
+  hubRemoveCollaborator,
 }
