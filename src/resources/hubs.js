@@ -484,14 +484,14 @@ const hubContentToggleVisibility = async (hubPubkey, contentAccountPubkey, type,
   }
 }
 
-const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) => {
+const hubAddRelease = async (hubPubkey, releasePubkey, fromHub, wallet, connection) => {
   try {
-    let hubPubkey = hub.publicKey
       const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const {hub} = await fetch(hubPubkey)
     hubPubkey = new anchor.web3.PublicKey(hubPubkey)
     releasePubkey = new anchor.web3.PublicKey(releasePubkey)
 
@@ -560,16 +560,15 @@ const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) =>
   }
 }
 
-const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, fromHub, wallet, connection) => {
+const postInitViaHub = async (hubPubkey, slug, uri, referenceRelease = undefined, fromHub, wallet, connection) => {
   try {
-  
-    let hubPubkey = hub.publicKey
-
+    console.log('hubPubkey !!!! :>> ', hubPubkey);
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const {hub} = await fetch(hubPubkey)
     hubPubkey = new anchor.web3.PublicKey(hubPubkey)
 
     if (referenceRelease) {
@@ -611,8 +610,7 @@ const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, from
     )
 
     let txid
-    const handle = decodeNonEncryptedByteArray(hub.handle)
-    const params = [handle, slugHash, uri]
+    const params = [hub.handle, slugHash, uri]
 
     const request = {
       accounts: {
@@ -627,7 +625,7 @@ const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, from
       },
     }
 
-    if (fromHub) {
+    if (fromHub && fromHub !== hubPubkey.toBase58()) {
       request.remainingAccounts = [
         {
           pubkey: new anchor.web3.PublicKey(fromHub),
@@ -636,8 +634,10 @@ const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, from
         },
       ]
     }
+
     let referenceReleaseHubRelease
     if (referenceRelease) {
+      
       request.accounts.referenceRelease = referenceRelease
       let [_referenceReleaseHubRelease] =
         await anchor.web3.PublicKey.findProgramAddress(
@@ -671,12 +671,16 @@ const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, from
     }
     const confirmedTx = await getConfirmTransaction(txid, provider.connection)
     if (confirmedTx) {
-      return true
+      return {
+        success: true,
+        hubPost,
+        referenceReleaseHubRelease
+      }
     }
   }
   catch (error) {
     console.log(error)
-    return false
+    return  {success: false, error}
   }
 }
 
