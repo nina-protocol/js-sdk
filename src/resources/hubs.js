@@ -110,10 +110,11 @@ const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false) => {
 /**
  * @function hubInitWithCredit
  * @description Initializes a Hub account with Hub Credit.
- * @param {Object} hubParams The Hub parameters.
+ * @param {Object} hubParams The Hub parameters. // NOTE: exand
+ * @param {Object} wallet The wallet to use for the transaction.
+ * @param {Object} connection Connection to the cluster.
  * @example const hub = await NinaClient.Hub.hubInitWithCredit({})
  */
-
 const hubInitWithCredit = async (hubParams, wallet, connection) => {
   try {
     const ids = NinaClient.ids
@@ -216,16 +217,15 @@ const hubInitWithCredit = async (hubParams, wallet, connection) => {
 /**
  * @function hubUpdateConfig
  * @description Updates the configuration of a Hub.
- * @param {*} hub 
- * @param {*} uri 
- * @param {*} publishFee 
- * @param {*} referralFee 
- * @param {*} wallet 
- * @param {*} connection 
- * @example const hub = await NinaClient.Hub.hubUpdateConfig(hub, 'https://nina.com', 0.1, 0.1, wallet, connection);  
+ * @param {String} hubPubkey - The public key of the Hub account. 
+ * @param {String} uri - The URI of the Hubs updated metadata.
+ * @param {Number} publishFee 
+ * @param {Number} referralFee 
+ * @param {Object} wallet
+ * @param {Object} connection 
+ * @example const hub = await NinaClient.Hub.hubUpdateConfig(hubPubkey, 'https://nina.com', 0.1, 0.1, wallet, connection);  
  * @returns 
  */
-
 const hubUpdateConfig = async (hubPubkey, uri, publishFee, referralFee, wallet, connection) => {
   try {
     const provider = new anchor.AnchorProvider(connection, wallet, {
@@ -263,8 +263,20 @@ const hubUpdateConfig = async (hubPubkey, uri, publishFee, referralFee, wallet, 
   }
 }
 
-const hubAddCollaborator = async (hubPubkey, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
+/**
+ * @function hubAddCollaborator
+ * @description Fetches a Release for a Hub.
+ * @param {String} hubPubkey 
+ * @param {String} collaboratorPubkey 
+ * @param {Boolean} canAddContent - Boolean indicating if the collaborator can add content to the Hub.
+ * @param {Boolean} canAddCollaborator - Boolean indicating if the collaborator can add collaborators to the Hub.
+ * @param {Integer} allowance - integer indicating the amount of Hub actions the collaborator can execute (-1 for unlimited).
+ * @param {Object} wallet 
+ * @param {Object} connection 
+ * @returns 
+ */
 
+const hubAddCollaborator = async (hubPubkey, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
   try {
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
@@ -326,6 +338,18 @@ const hubAddCollaborator = async (hubPubkey, collaboratorPubkey, canAddContent, 
   }
 }
 
+/**
+ * @function hubUpdateCollaboratorPermission
+ * @description Updates the permissions of a collaborator on a Hub.
+ * @param {String} hubPubkey
+ * @param {String} collaboratorPubkey
+ * @param {Boolean} canAddContent - Boolean indicating if the collaborator can add content to the Hub.  
+ * @param {Boolean} canAddCollaborator - Boolean indicating if the collaborator can add collaborators to the Hub. 
+ * @param {Integer} allowance - integer indicating the amount of Hub actions the collaborator can execute (-1 for unlimited).
+* @param {Object} wallet
+* @param {Object} connection
+* @example const hub = await NinaClient.Hub.hubUpdateCollaboratorPermission(hubPubkey, collaboratorPubkey, true, true, 10, wallet, connection);
+*/
 const hubUpdateCollaboratorPermission = async (
   hubPubkey, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
   try {
@@ -385,6 +409,16 @@ const hubUpdateCollaboratorPermission = async (
   }
 }
 
+/**
+ * @function hubRemoveCollaborator
+ * @description Removes a collaborator from a Hub.
+ * @param {String} hubPubkey 
+ * @param {String} collaboratorPubkey 
+ * @param {Object} wallet 
+ * @param {Object} connection 
+ * @returns 
+ */
+
 const hubRemoveCollaborator = async (hubPubkey, collaboratorPubkey, wallet, connection) => {
   try {
     const provider = new anchor.AnchorProvider(connection, wallet, {
@@ -433,6 +467,17 @@ const hubRemoveCollaborator = async (hubPubkey, collaboratorPubkey, wallet, conn
     return false
   }
 }
+
+/**
+ * @function hubContentToggleVisibility
+ * @description Toggles the visibility of a piece of content on a Hub.
+ * @param {String} hubPubkey Pulic key of the content's Hub.
+ * @param {String} contentAccountPubkey Pubkey of the content account.
+ * @param {String} type Should be either 'Release' or 'Post'.
+ * @param {Object} wallet 
+ * @param {Object} connection 
+ * @returns 
+ */
 
 const hubContentToggleVisibility = async (hubPubkey, contentAccountPubkey, type, wallet, connection) => {
   try {
@@ -483,6 +528,17 @@ const hubContentToggleVisibility = async (hubPubkey, contentAccountPubkey, type,
     return false
   }
 }
+
+/**
+ * @function hubAddRelease
+ * @description Adds a Release to a Hub.
+ * @param {String} hubPubkey 
+ * @param {String} releasePubkey 
+ * @param {String=} fromHub 
+ * @param {Object} wallet 
+ * @param {Object} connection 
+ * @returns 
+ */
 
 const hubAddRelease = async (hubPubkey, releasePubkey, fromHub, wallet, connection) => {
   try {
@@ -560,9 +616,21 @@ const hubAddRelease = async (hubPubkey, releasePubkey, fromHub, wallet, connecti
   }
 }
 
+/**
+ * @function postInitViaHub
+ * @description Creates a Post on a Hub.
+ * @param {String} hubPubkey 
+ * @param {String} slug 
+ * @param {String} uri 
+ * @param {String=} referenceRelease 
+ * @param {String=} fromHub 
+ * @param {Object} wallet 
+ * @param {Object} connection 
+ * @returns 
+ */
+
 const postInitViaHub = async (hubPubkey, slug, uri, referenceRelease = undefined, fromHub, wallet, connection) => {
   try {
-    console.log('hubPubkey !!!! :>> ', hubPubkey);
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
