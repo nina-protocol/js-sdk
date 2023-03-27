@@ -1,7 +1,8 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount, getConfirmTransaction, nativeToUi }  from '../utils';
+import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncryptedByteArray}  from '../utils';
+import MD5 from 'crypto-js/md5'
 
 /**
  * @module Hub
@@ -481,13 +482,11 @@ const hubContentToggleVisibility = async (hub, contentAccountPubkey, type, walle
 
 const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) => {
   try {
-    console.log('hub in here:>> ', hub);
     let hubPubkey = hub.publicKey
       const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
-
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
     hubPubkey = new anchor.web3.PublicKey(hubPubkey)
     releasePubkey = new anchor.web3.PublicKey(releasePubkey)
@@ -540,14 +539,9 @@ const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) =>
         },
       ]
     }
-
-    console.log('request.accounts :>> ', request.accounts);
-
     const txid = await program.rpc.hubAddRelease(hub.handle, request)
-    const confirmedTx = getConfirmTransaction(txid, provider.connection)
+    const confirmedTx = await getConfirmTransaction(txid, provider.connection)
 
-    console.log('hubPubkey :>> ', hubPubkey);
-    console.log('hubRelease :>> ', hubRelease);
     await fetchHubRelease(
       hubPubkey.toBase58(),
       hubRelease.toBase58()
@@ -558,6 +552,126 @@ const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) =>
   } 
   catch (error) {
     console.log(error);
+    return false
+  }
+}
+
+const postInitViaHub = async (hub, slug, uri, referenceRelease = undefined, fromHub, wallet, connection) => {
+  try {
+  
+    let hubPubkey = hub.publicKey
+
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+
+    if (referenceRelease) {
+      referenceRelease = new anchor.web3.PublicKey(referenceRelease)
+    }
+
+    const slugHash = MD5(slug).toString().slice(0, 32)
+    const [post] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-post')),
+        hubPubkey.toBuffer(),
+        Buffer.from(anchor.utils.bytes.utf8.encode(slugHash)),
+      ],
+      program.programId
+    )
+    const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-post')),
+        hubPubkey.toBuffer(),
+        post.toBuffer(),
+      ],
+      program.programId
+    )
+    const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+        hubPubkey.toBuffer(),
+        post.toBuffer(),
+      ],
+      program.programId
+    )
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    let txid
+    const handle = decodeNonEncryptedByteArray(hub.handle)
+    const params = [handle, slugHash, uri]
+
+    const request = {
+      accounts: {
+        author: wallet.publicKey,
+        hub: hubPubkey,
+        post,
+        hubPost,
+        hubContent,
+        hubCollaborator,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+    }
+
+    if (fromHub) {
+      request.remainingAccounts = [
+        {
+          pubkey: new anchor.web3.PublicKey(fromHub),
+          isWritable: false,
+          isSigner: false,
+        },
+      ]
+    }
+    let referenceReleaseHubRelease
+    if (referenceRelease) {
+      request.accounts.referenceRelease = referenceRelease
+      let [_referenceReleaseHubRelease] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+            hubPubkey.toBuffer(),
+            referenceRelease.toBuffer(),
+          ],
+          program.programId
+        )
+      request.accounts.referenceReleaseHubRelease =
+        _referenceReleaseHubRelease
+      referenceReleaseHubRelease = _referenceReleaseHubRelease
+
+      const [referenceReleaseHubContent] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+            hubPubkey.toBuffer(),
+            referenceRelease.toBuffer(),
+          ],
+          program.programId
+        )
+      request.accounts.referenceReleaseHubContent = referenceReleaseHubContent
+      txid = await program.rpc.postInitViaHubWithReferenceRelease(
+        ...params,
+        request
+      )
+    } else {
+      txid = await program.rpc.postInitViaHub(...params, request)
+    }
+    const confirmedTx = await getConfirmTransaction(txid, provider.connection)
+    if (confirmedTx) {
+      return true
+    }
+  }
+  catch (error) {
+    console.log(error)
     return false
   }
 }
@@ -578,5 +692,6 @@ export default {
   hubUpdateCollaboratorPermission,
   hubRemoveCollaborator,
   hubContentToggleVisibility,
-  hubAddRelease
+  hubAddRelease,
+  postInitViaHub
 }

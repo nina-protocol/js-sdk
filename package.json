@@ -33,6 +33,7 @@
   "dependencies": {
     "@project-serum/anchor": "^0.25.0",
     "axios": "^0.27.2",
+    "crypto-js": "^4.1.1",
     "promise-retry": "^2.0.1"
   },
   "devDependencies": {
