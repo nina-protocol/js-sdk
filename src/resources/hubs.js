@@ -226,13 +226,15 @@ const hubInitWithCredit = async (hubParams, wallet, connection) => {
  * @returns 
  */
 
-const hubUpdateConfig = async (hub, uri, publishFee, referralFee, wallet, connection) => {
+const hubUpdateConfig = async (hubPubkey, uri, publishFee, referralFee, wallet, connection) => {
   try {
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
+    const {hub} = await fetch(hubPubkey)
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
 
     const txid = await program.rpc.hubUpdateConfig(
       uri,
@@ -242,7 +244,7 @@ const hubUpdateConfig = async (hub, uri, publishFee, referralFee, wallet, connec
       {
         accounts: {
           authority: provider.wallet.publicKey,
-          hub: new anchor.web3.PublicKey(hub.publicKey),
+          hub: hubPubkey,
         },
       }
     )
@@ -250,9 +252,9 @@ const hubUpdateConfig = async (hub, uri, publishFee, referralFee, wallet, connec
     const tx = await getConfirmTransaction(txid, provider.connection)
     if (tx) {
       await axios.get(
-        `${process.env.NINA_API_ENDPOINT}/hubs/${hub.publicKey}/tx/${txid}`
+        `${process.env.NINA_API_ENDPOINT}/hubs/${hubPubkey.toBase58()}/tx/${txid}`
       )
-       const updatedHub = await fetch(hub.publicKey)
+      const updatedHub = await fetch(hubPubkey.toBase58())
        return updatedHub
     }
   } catch (error) {
@@ -261,60 +263,60 @@ const hubUpdateConfig = async (hub, uri, publishFee, referralFee, wallet, connec
   }
 }
 
-const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
+const hubAddCollaborator = async (hubPubkey, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
 
   try {
-    let hubPubkey = hub.publicKey
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      hubPubkey = new anchor.web3.PublicKey(hubPubkey)
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
-      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+    const {hub} = await fetch(hubPubkey)
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+    collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        collaboratorPubkey.toBuffer(),
+      ],
+      program.programId
+    )
+    const [authorityHubCollaborator] =
+      await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(
+            anchor.utils.bytes.utf8.encode('nina-hub-collaborator')
+          ),
           hubPubkey.toBuffer(),
-          collaboratorPubkey.toBuffer(),
+          provider.wallet.publicKey.toBuffer(),
         ],
         program.programId
       )
-      const [authorityHubCollaborator] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from(
-              anchor.utils.bytes.utf8.encode('nina-hub-collaborator')
-            ),
-            hubPubkey.toBuffer(),
-            provider.wallet.publicKey.toBuffer(),
-          ],
-          program.programId
-        )
 
-      const txid = await program.rpc.hubAddCollaborator(
-        canAddContent,
-        canAddCollaborator,
-        allowance,
-        hub.handle,
-        {
-          accounts: {
-            authority: wallet.publicKey,
-            authorityHubCollaborator,
-            hub: hubPubkey,
-            hubCollaborator,
-            collaborator: collaboratorPubkey,
-            systemProgram: anchor.web3.SystemProgram.programId,
-            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          },
-        }
-      )
+    const txid = await program.rpc.hubAddCollaborator(
+      canAddContent,
+      canAddCollaborator,
+      allowance,
+      hub.handle,
+      {
+        accounts: {
+          authority: wallet.publicKey,
+          authorityHubCollaborator,
+          hub: hubPubkey,
+          hubCollaborator,
+          collaborator: collaboratorPubkey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+      }
+    )
       
       const tx = await getConfirmTransaction(txid, provider.connection)
       if (tx) {
         await axios.get(
           NinaClient.endpoint +
-            `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
+            `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`
         )
         return true
       }
@@ -325,104 +327,106 @@ const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAdd
 }
 
 const hubUpdateCollaboratorPermission = async (
-  hub, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
+  hubPubkey, collaboratorPubkey, canAddContent, canAddCollaborator, allowance, wallet, connection) => {
   try {
-    let hubPubkey = hub.publicKey
+
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      hubPubkey = new anchor.web3.PublicKey(hubPubkey)
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
-      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+    const {hub} = await fetch(hubPubkey)
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+    collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        collaboratorPubkey.toBuffer(),
+      ],
+      program.programId
+    )
+    const [authorityHubCollaborator] =
+      await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(
+            anchor.utils.bytes.utf8.encode('nina-hub-collaborator')
+          ),
           hubPubkey.toBuffer(),
-          collaboratorPubkey.toBuffer(),
+          provider.wallet.publicKey.toBuffer(),
         ],
         program.programId
       )
-      const [authorityHubCollaborator] =
-        await anchor.web3.PublicKey.findProgramAddress(
-          [
-            Buffer.from(
-              anchor.utils.bytes.utf8.encode('nina-hub-collaborator')
-            ),
-            hubPubkey.toBuffer(),
-            provider.wallet.publicKey.toBuffer(),
-          ],
-          program.programId
-        )
 
-      const txid = await program.rpc.hubUpdateCollaboratorPermissions(
-        canAddContent,
-        canAddCollaborator,
-        allowance,
-        hub.handle,
-        {
-          accounts: {
-            authority: wallet.publicKey,
-            authorityHubCollaborator,
-            hub: hubPubkey,
-            hubCollaborator,
-            collaborator: collaboratorPubkey,
-          },
-        }
-      )
-
-      const tx = await getConfirmTransaction(txid, provider.connection)
-      if (tx) {
-        return true
+    const txid = await program.rpc.hubUpdateCollaboratorPermissions(
+      canAddContent,
+      canAddCollaborator,
+      allowance,
+      hub.handle,
+      {
+        accounts: {
+          authority: wallet.publicKey,
+          authorityHubCollaborator,
+          hub: hubPubkey,
+          hubCollaborator,
+          collaborator: collaboratorPubkey,
+        },
       }
+    )
+
+    const tx = await getConfirmTransaction(txid, provider.connection)
+    if (tx) {
+      console.log("SUCCESS");
+      return true
+    }
   } catch (error) {
     console.log(error);
     return false
   }
 }
 
-const hubRemoveCollaborator = async (hub, collaboratorPubkey, wallet, connection) => {
+const hubRemoveCollaborator = async (hubPubkey, collaboratorPubkey, wallet, connection) => {
   try {
-    let hubPubkey = hub.publicKey
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      hubPubkey = new anchor.web3.PublicKey(hubPubkey)
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
-      
-      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          hubPubkey.toBuffer(),
-          collaboratorPubkey.toBuffer(),
-        ],
-        program.programId
-      )
-      console.log('hubCollaborator :>> ', hubCollaborator);
+    const {hub} = await fetch(hubPubkey)
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
 
-      const txid = await program.rpc.hubRemoveCollaborator(
-        hub.handle,
-        {
-          accounts: {
-            authority: wallet.publicKey,
-            hub: hubPubkey,
-            hubCollaborator,
-            collaborator: collaboratorPubkey,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          },
-        }
-      )
+    collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
+    
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        collaboratorPubkey.toBuffer(),
+      ],
+      program.programId
+    )
 
-      const tx = await getConfirmTransaction(txid, provider.connection)
-      if (tx) {
-        await axios.get(
-          NinaClient.endpoint +
-          `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
-        )
-        return hubCollaborator
+    const txid = await program.rpc.hubRemoveCollaborator(
+      hub.handle,
+      {
+        accounts: {
+          authority: wallet.publicKey,
+          hub: hubPubkey,
+          hubCollaborator,
+          collaborator: collaboratorPubkey,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        },
       }
+    )
+
+    const tx = await getConfirmTransaction(txid, provider.connection)
+    if (tx) {
+      await axios.get(
+        NinaClient.endpoint +
+        `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
+      )
+      return hubCollaborator
+    }
     
   } catch (error) {
     console.log(error);
@@ -430,17 +434,17 @@ const hubRemoveCollaborator = async (hub, collaboratorPubkey, wallet, connection
   }
 }
 
-const hubContentToggleVisibility = async (hub, contentAccountPubkey, type, wallet, connection) => {
+const hubContentToggleVisibility = async (hubPubkey, contentAccountPubkey, type, wallet, connection) => {
   try {
-    let hubPubkey = hub.publicKey
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
 
-    console.log('provider :>> ', provider);
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const {hub} = await fetch(hubPubkey)
     hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+
     contentAccountPubkey = new anchor.web3.PublicKey(contentAccountPubkey)
 
     const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
