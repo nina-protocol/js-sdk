@@ -7,10 +7,7 @@ import Search from './resources/search';
 import Subscription from './resources/subscriptions';
 import client from './client';
 
-
-
 console.log('local 22222');
-
 
 const Nina = {
   Account,

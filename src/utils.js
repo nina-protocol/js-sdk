@@ -1,6 +1,9 @@
 import * as anchor from '@project-serum/anchor'
 import promiseRetry from 'promise-retry'
 
+const USDC_DECIMAL_AMOUNT = 6
+const SOL_DECIMAL_AMOUNT = 9
+
 export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
   anchor.utils.token.TOKEN_PROGRAM_ID.toString()
 )
@@ -154,4 +157,19 @@ export const getConfirmTransaction = async (txid, connection) => {
     throw new Error('Transaction failed')
   }
   return txid
+}
+
+export const decimalsForMint = (mint) => {
+  switch (typeof mint === 'string' ? mint : mint.toBase58()) {
+    case obj.ids.mints.usdc:
+      return USDC_DECIMAL_AMOUNT
+    case obj.ids.mints.wsol:
+      return SOL_DECIMAL_AMOUNT
+    default:
+      return undefined
+  }
+}
+
+export const nativeToUi = (amount, mint) => {
+  return amount / Math.pow(10, obj.decimalsForMint(mint))
 }

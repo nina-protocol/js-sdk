@@ -1,7 +1,7 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount, getConfirmTransaction }  from '../utils';
+import { findOrCreateAssociatedTokenAccount, getConfirmTransaction, nativeToUi }  from '../utils';
 
 /**
  * @module Hub
@@ -269,8 +269,8 @@ const hubAddCollaborator = async (hub, collaboratorPubkey, canAddContent, canAdd
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -332,8 +332,8 @@ const hubUpdateCollaboratorPermission = async (
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -388,8 +388,8 @@ const hubRemoveCollaborator = async (hub, collaboratorPubkey, wallet, connection
       preflightCommitment: 'processed',
     })
     const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);  
-      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+      collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
       
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -429,6 +429,138 @@ const hubRemoveCollaborator = async (hub, collaboratorPubkey, wallet, connection
   }
 }
 
+const hubContentToggleVisibility = async (hub, contentAccountPubkey, type, wallet, connection) => {
+  try {
+    let hubPubkey = hub.publicKey
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+
+    console.log('provider :>> ', provider);
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+    contentAccountPubkey = new anchor.web3.PublicKey(contentAccountPubkey)
+
+    const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+        hubPubkey.toBuffer(),
+        contentAccountPubkey.toBuffer(),
+      ],
+      program.programId
+    )
+    const [hubChildPublicKey] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(
+            anchor.utils.bytes.utf8.encode(`nina-hub-${type.toLowerCase()}`)
+          ),
+          hubPubkey.toBuffer(),
+          contentAccountPubkey.toBuffer(),
+        ],
+        program.programId
+      )
+    const txid = await program.rpc.hubContentToggleVisibility(hub.handle, {
+      accounts: {
+        authority: wallet.publicKey,
+        hub: hubPubkey,
+        hubContent,
+        contentAccount: contentAccountPubkey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
+    })
+    await provider.connection.getParsedTransaction(txid, 'finalized')
+    return hubChildPublicKey
+
+  } catch (error) {
+    console.log(error);
+    return false
+  }
+}
+
+const hubAddRelease = async (hub, releasePubkey, fromHub, wallet, connection) => {
+  try {
+    console.log('hub in here:>> ', hub);
+    let hubPubkey = hub.publicKey
+      const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+    releasePubkey = new anchor.web3.PublicKey(releasePubkey)
+
+    const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+        hubPubkey.toBuffer(),
+        releasePubkey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+        hubPubkey.toBuffer(),
+        releasePubkey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId
+    )
+
+    const request = {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        hub: hubPubkey,
+        hubRelease,
+        hubContent,
+        hubCollaborator,
+        release: releasePubkey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
+    }
+    if (fromHub) {
+      request.remainingAccounts = [
+        {
+          pubkey: new anchor.web3.PublicKey(fromHub),
+          isWritable: false,
+          isSigner: false,
+        },
+      ]
+    }
+
+    console.log('request.accounts :>> ', request.accounts);
+
+    const txid = await program.rpc.hubAddRelease(hub.handle, request)
+    const confirmedTx = getConfirmTransaction(txid, provider.connection)
+
+    console.log('hubPubkey :>> ', hubPubkey);
+    console.log('hubRelease :>> ', hubRelease);
+    await fetchHubRelease(
+      hubPubkey.toBase58(),
+      hubRelease.toBase58()
+    )
+    if (confirmedTx){
+      return true
+    }
+  } 
+  catch (error) {
+    console.log(error);
+    return false
+  }
+}
 
 
 export default {
@@ -445,4 +577,6 @@ export default {
   hubAddCollaborator,
   hubUpdateCollaboratorPermission,
   hubRemoveCollaborator,
+  hubContentToggleVisibility,
+  hubAddRelease
 }
