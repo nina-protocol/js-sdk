@@ -171,7 +171,11 @@ export const decimalsForMint = (mint) => {
 }
 
 export const nativeToUi = (amount, mint) => {
-  return amount / Math.pow(10, obj.decimalsForMint(mint))
+  return amount / Math.pow(10, decimalsForMint(mint))
+}
+
+export const uiToNative = (amount, mint) => {
+  return Math.round(amount * Math.pow(10, decimalsForMint(mint)))
 }
 
 export const decodeNonEncryptedByteArray = (byteArray) => {

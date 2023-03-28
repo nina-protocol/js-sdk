@@ -1,7 +1,7 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncryptedByteArray}  from '../utils';
+import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncryptedByteArray , uiToNative}  from '../utils';
 import MD5 from 'crypto-js/md5'
 
 /**
@@ -752,6 +752,79 @@ const postInitViaHub = async (hubPubkey, slug, uri, referenceRelease = undefined
   }
 }
 
+const hubWithdraw = async (hubPubkey, wallet, connection) => {
+  try {
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const {hub} = await fetch(hubPubkey)
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey)
+    const USDC_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.usdc)
+
+    const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
+        hubPubkey.toBuffer(),
+      ],
+      program.programId
+    )
+    let [withdrawTarget] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      hubSigner,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      USDC_MINT
+    )
+
+    let [withdrawDestination] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      USDC_MINT
+    )
+
+    let tokenAccounts =
+      await provider.connection.getParsedTokenAccountsByOwner(hubSigner, {
+        mint: USDC_MINT,
+      })
+
+
+
+    const withdrawAmount =
+      tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount
+      console.log('withdrawAmount :>> ', withdrawAmount);
+
+    const txid = await program.rpc.hubWithdraw(
+      new anchor.BN(withdrawAmount),
+      hub.handle,
+      {
+        accounts: {
+          authority: provider.wallet.publicKey,
+          hub: hubPubkey,
+          hubSigner,
+          withdrawTarget,
+          withdrawDestination,
+          withdrawMint: USDC_MINT,
+          tokenProgram: NinaClient.ids.programs.token,
+        },
+      }
+    )
+   const confirimedTx =  await getConfirmTransaction(txid, provider.connection)
+
+   if (confirimedTx) {
+    console.log('SUCCESS');
+     return true
+   }
+  } catch (error) {
+    console.log(error)
+    return false
+  }
+}
 
 export default {
   fetchAll,
@@ -769,5 +842,6 @@ export default {
   hubRemoveCollaborator,
   hubContentToggleVisibility,
   hubAddRelease,
-  postInitViaHub
+  postInitViaHub,
+  hubWithdraw,
 }
