@@ -51,6 +51,18 @@ const fetchCollaborators = async (publicKeyOrHandle) => {
 }
 
 /**
+ * @function fetchCollaborator
+ * @description Fetches a Collaborator by Publickey.
+ * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
+ * @param {Boolean} [withAccountData = false] Include full on-chain HubCollaborator accounts.
+ * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
+ */
+const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey) => {
+  //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`);
+}
+
+/**
  * @function fetchReleases
  * @description Fetches Releases for a Hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
@@ -204,9 +216,8 @@ const hubInitWithCredit = async (hubParams, wallet, connection) => {
       .rpc()
 
     await connection.getParsedTransaction(txid, 'confirmed')
-    await fetch(hub.toBase58())
-
-    return hub.toBase58()
+    const hubData = await fetch(hub.toBase58())
+    return hubData
 
   } catch (error) {
     console.log( error);
@@ -249,14 +260,13 @@ const hubUpdateConfig = async (hubPubkey, uri, publishFee, referralFee, wallet, 
       }
     )
 
-    const tx = await getConfirmTransaction(txid, provider.connection)
-    if (tx) {
-      await axios.get(
-        `${process.env.NINA_API_ENDPOINT}/hubs/${hubPubkey.toBase58()}/tx/${txid}`
-      )
-      const updatedHub = await fetch(hubPubkey.toBase58())
-       return updatedHub
-    }
+    await getConfirmTransaction(txid, provider.connection)
+    await axios.get(
+      `${process.env.NINA_API_ENDPOINT}/hubs/${hubPubkey.toBase58()}/tx/${txid}`
+    )
+    const updatedHub = await fetch(hubPubkey.toBase58())
+    return updatedHub
+
   } catch (error) {
     console.log( error);
     return false
@@ -324,14 +334,10 @@ const hubAddCollaborator = async (hubPubkey, collaboratorPubkey, canAddContent, 
       }
     )
       
-      const tx = await getConfirmTransaction(txid, provider.connection)
-      if (tx) {
-        await axios.get(
-          NinaClient.endpoint +
-            `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`
-        )
-        return true
-      }
+      await getConfirmTransaction(txid, provider.connection)
+      const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58())
+      return collaborator
+
   } catch (error) {
     console.log( error);
     return false
@@ -398,11 +404,9 @@ const hubUpdateCollaboratorPermission = async (
       }
     )
 
-    const tx = await getConfirmTransaction(txid, provider.connection)
-    if (tx) {
-      console.log("SUCCESS");
-      return true
-    }
+    await getConfirmTransaction(txid, provider.connection)
+    const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58())
+    return collaborator
   } catch (error) {
     console.log(error);
     return false
@@ -453,14 +457,9 @@ const hubRemoveCollaborator = async (hubPubkey, collaboratorPubkey, wallet, conn
       }
     )
 
-    const tx = await getConfirmTransaction(txid, provider.connection)
-    if (tx) {
-      await axios.get(
-        NinaClient.endpoint +
-        `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`
-      )
-      return hubCollaborator
-    }
+    await getConfirmTransaction(txid, provider.connection)
+    const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58())
+    return collaborator
     
   } catch (error) {
     console.log(error);
@@ -599,16 +598,14 @@ const hubAddRelease = async (hubPubkey, releasePubkey, fromHub, wallet, connecti
         },
       ]
     }
-    const txid = await program.rpc.hubAddRelease(hub.handle, request)
-    const confirmedTx = await getConfirmTransaction(txid, provider.connection)
+    await program.rpc.hubAddRelease(hub.handle, request)
+    await getConfirmTransaction(txid, provider.connection)
 
-    await fetchHubRelease(
+    const hubReleaseData = await fetchHubRelease(
       hubPubkey.toBase58(),
       hubRelease.toBase58()
     )
-    if (confirmedTx){
-      return true
-    }
+    return hubReleaseData
   } 
   catch (error) {
     console.log(error);
@@ -737,18 +734,15 @@ const postInitViaHub = async (hubPubkey, slug, uri, referenceRelease = undefined
     } else {
       txid = await program.rpc.postInitViaHub(...params, request)
     }
-    const confirmedTx = await getConfirmTransaction(txid, provider.connection)
-    if (confirmedTx) {
-      return {
-        success: true,
-        hubPost,
-        referenceReleaseHubRelease
-      }
+    await getConfirmTransaction(txid, provider.connection)
+    return {
+      hubPost,
+      referenceReleaseHubRelease
     }
   }
   catch (error) {
     console.log(error)
-    return  {success: false, error}
+    return  false
   }
 }
 
@@ -793,11 +787,8 @@ const hubWithdraw = async (hubPubkey, wallet, connection) => {
         mint: USDC_MINT,
       })
 
-
-
     const withdrawAmount =
       tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount
-      console.log('withdrawAmount :>> ', withdrawAmount);
 
     const txid = await program.rpc.hubWithdraw(
       new anchor.BN(withdrawAmount),
@@ -814,12 +805,9 @@ const hubWithdraw = async (hubPubkey, wallet, connection) => {
         },
       }
     )
-   const confirimedTx =  await getConfirmTransaction(txid, provider.connection)
+   await getConfirmTransaction(txid, provider.connection)
 
-   if (confirimedTx) {
-    console.log('SUCCESS');
-     return true
-   }
+  return true
   } catch (error) {
     console.log(error)
     return false
