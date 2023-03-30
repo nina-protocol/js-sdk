@@ -1,6 +1,8 @@
 import * as anchor from '@project-serum/anchor'
 import promiseRetry from 'promise-retry'
 
+import NinaClient from './client'
+
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
@@ -161,9 +163,9 @@ export const getConfirmTransaction = async (txid, connection) => {
 
 export const decimalsForMint = (mint) => {
   switch (typeof mint === 'string' ? mint : mint.toBase58()) {
-    case obj.ids.mints.usdc:
+    case NinaClient.ids.mints.usdc:
       return USDC_DECIMAL_AMOUNT
-    case obj.ids.mints.wsol:
+    case NinaClient.ids.mints.wsol:
       return SOL_DECIMAL_AMOUNT
     default:
       return undefined
@@ -183,3 +185,42 @@ export const decodeNonEncryptedByteArray = (byteArray) => {
     .decode(new Uint8Array(byteArray))
     .replaceAll(/\u0000/g, '')
 }
+
+export const createMintInstructions = async (
+  provider,
+  authority,
+  mint,
+  decimals
+) => {
+  const tokenProgram = anchor.Spl.token(provider)
+  const systemProgram = anchor.Native.system(provider)
+  const mintSize = tokenProgram.coder.accounts.size(
+    tokenProgram.idl.accounts[0]
+  )
+
+  const mintRentExemption =
+    await provider.connection.getMinimumBalanceForRentExemption(mintSize)
+
+  let instructions = [
+    await systemProgram.methods
+      .createAccount(
+        new anchor.BN(mintRentExemption),
+        new anchor.BN(mintSize),
+        tokenProgram.programId
+      )
+      .accounts({
+        from: authority,
+        to: mint,
+      })
+      .instruction(),
+    await tokenProgram.methods
+      .initializeMint(decimals, authority, null)
+      .accounts({
+        mint,
+      })
+      .instruction(),
+  ]
+
+  return instructions
+}
+

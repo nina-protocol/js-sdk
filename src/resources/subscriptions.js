@@ -79,7 +79,7 @@ return subscriptionData
   }
 }
 
-const subscriptionUnsubscribe = async (unsubscribeAccount, hubHandle, wallet, connection) => {
+const subscriptionUnsubscribe = async (unsubscribeAccount, wallet, connection) => {
   try {
     const provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',

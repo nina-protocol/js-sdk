@@ -1,7 +1,7 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncryptedByteArray , uiToNative}  from '../utils';
+import {findOrCreateAssociatedTokenAccount, getConfirmTransaction}  from '../utils';
 import MD5 from 'crypto-js/md5'
 
 /**

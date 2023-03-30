@@ -64,8 +64,6 @@ class NinaClient {
    * @example Nina.client.init(endpoint, cluster, programId)
    */
   async init(endpoint, cluster, programId, apiKey = undefined) {
-    console.log('INIT');
-
     this.apiKey = apiKey;
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
