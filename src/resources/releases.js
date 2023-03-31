@@ -358,7 +358,7 @@ const releaseInitViaHub = async (
     }
     const metadataProgram = new anchor.web3.PublicKey(ids.programs.metaplex)
     const [metadata] = await anchor.web3.PublicKey.findProgramAddress(
-      [
+      [ 
         Buffer.from('metadata'),
         metadataProgram.toBuffer(),
         releaseMint.publicKey.toBuffer(),
@@ -416,9 +416,213 @@ const releaseInitViaHub = async (
       hubPubkey.toBase58(),
       hubRelease.toBase58()
     )
+    console.log('success!!!! :>> ', newRelease);
     return newRelease
   } catch (error) {
     console.log(error)
+    return false
+  }
+}
+
+export const initializeReleaseAndMint = async (hubPubkey, wallet, connection) => {
+  try {
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const releaseMint = anchor.web3.Keypair.generate()
+    const [release, releaseBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-release')),
+          releaseMint.publicKey.toBuffer(),
+        ],
+        program.programId
+      )
+    let hubRelease;
+    if (hubPubkey) {
+      const [_hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+          new anchor.web3.PublicKey(hubPubkey).toBuffer(),
+          release.toBuffer(),
+        ],
+        program.programId
+      )
+      hubRelease = _hubRelease
+    }
+    return {
+      release,
+      releaseBump,
+      releaseMint,
+      hubRelease,
+    }
+
+  } catch (error) {
+    console.warn(error)
+    return false
+  }
+}
+
+export const releaseCreate = async (
+  retailPrice,
+  amount,
+  resalePercentage,
+  artist,
+  title,
+  catalogNumber,
+  metadataUri,
+  isUsdc = true,
+  release,
+  releaseBump,
+  releaseMint,
+  isOpen,
+  wallet,
+  connection
+  ) => {
+  try {
+    const ids = NinaClient.ids
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(ids.programs.nina, provider);
+    const paymentMint = new anchor.web3.PublicKey(
+      isUsdc ? ids.mints.usdc : ids.mints.wsol
+    )
+    const publishingCreditMint = new anchor.web3.PublicKey(
+      ids.mints.publishingCredit
+    )
+
+    const [releaseSigner, releaseSignerBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [release.toBuffer()],
+        program.programId
+      )
+
+    const releaseMintIx = await createMintInstructions(
+      provider,
+      provider.wallet.publicKey,
+      releaseMint.publicKey,
+      0
+    )
+
+    const [authorityTokenAccount, authorityTokenAccountIx] =
+      await findOrCreateAssociatedTokenAccount(
+        provider.connection,
+        provider.wallet.publicKey,
+        provider.wallet.publicKey,
+        anchor.web3.SystemProgram.programId,
+        anchor.web3.SYSVAR_RENT_PUBKEY,
+        paymentMint
+      )
+
+    const [royaltyTokenAccount, royaltyTokenAccountIx] =
+      await findOrCreateAssociatedTokenAccount(
+        provider.connection,
+        provider.wallet.publicKey,
+        releaseSigner,
+        anchor.web3.SystemProgram.programId,
+        anchor.web3.SYSVAR_RENT_PUBKEY,
+        paymentMint,
+        true
+      )
+
+    const [
+      authorityPublishingCreditTokenAccount,
+      authorityPublishingCreditTokenAccountIx,
+    ] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      publishingCreditMint
+    )
+
+    let instructions = [...releaseMintIx, royaltyTokenAccountIx]
+
+    if (authorityTokenAccountIx) {
+      instructions.push(authorityTokenAccountIx)
+    }
+
+    if (authorityPublishingCreditTokenAccountIx) {
+      instructions.push(authorityPublishingCreditTokenAccountIx)
+    }
+    let now = new Date()
+    const editionAmount = isOpen ? MAX_INT : amount
+    const config = {
+      amountTotalSupply: new anchor.BN(editionAmount),
+      amountToArtistTokenAccount: new anchor.BN(0),
+      amountToVaultTokenAccount: new anchor.BN(0),
+      resalePercentage: new anchor.BN(resalePercentage * 10000),
+      price: new anchor.BN(uiToNative(retailPrice, paymentMint)),
+      releaseDatetime: new anchor.BN(now.getTime() / 1000),
+    }
+
+    const metadataProgram = new anchor.web3.PublicKey(ids.programs.metaplex)
+    const [metadata] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('metadata'),
+        metadataProgram.toBuffer(),
+        releaseMint.publicKey.toBuffer(),
+      ],
+      metadataProgram
+    )
+
+    const nameBuf = Buffer.from(`${artist} - ${title}`.substring(0, 32))
+    const nameBufString = nameBuf.slice(0, 32).toString()
+
+    const symbolBuf = Buffer.from(catalogNumber.substring(0, 10))
+    const symbolBufString = symbolBuf.slice(0, 10).toString()
+
+    const metadataData = {
+      name: nameBufString,
+      symbol: symbolBufString,
+      uri: metadataUri,
+      sellerFeeBasisPoints: resalePercentage * 100,
+    }
+
+    const bumps = {
+      release: releaseBump,
+      signer: releaseSignerBump,
+    }
+
+    const txid = await program.rpc.releaseInitWithCredit(
+      config,
+      bumps,
+      metadataData,
+      {
+        accounts: {
+          release,
+          releaseSigner,
+          releaseMint: releaseMint.publicKey,
+          payer: provider.wallet.publicKey,
+          authority: provider.wallet.publicKey,
+          authorityTokenAccount: authorityTokenAccount,
+          authorityPublishingCreditTokenAccount,
+          publishingCreditMint,
+          paymentMint,
+          royaltyTokenAccount,
+          metadata,
+          metadataProgram,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [releaseMint],
+        instructions,
+      }
+    )
+    await getConfirmTransaction(txid, provider.connection)
+
+
+    const createdRelease = await fetch(release.toBase58())
+    return createdRelease
+    
+  } catch (error) {
+    console.warn(error)
     return false
   }
 }
@@ -432,4 +636,7 @@ export default {
   fetchRevenueShareRecipients,
   purchaseViaHub,
   releaseInitViaHub,
+  initializeReleaseAndMint,
+  releaseCreate
 }
+
