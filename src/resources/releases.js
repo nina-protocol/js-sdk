@@ -627,6 +627,87 @@ export const releaseCreate = async (
   }
 }
 
+export const closeRelease = async (releasePubkey, wallet, connection) => {
+  try {
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const release = await program.account.release.fetch(
+      new anchor.web3.PublicKey(releasePubkey)
+    )
+    const txid = await program.rpc.releaseCloseEdition({
+      accounts: {
+        authority: provider.wallet.publicKey,
+        release: new anchor.web3.PublicKey(releasePubkey),
+        releaseSigner: release.releaseSigner,
+        releaseMint: release.releaseMint,
+      },
+    })
+    console.log('releasePubkey :>> ', releasePubkey);
+    await getConfirmTransaction(txid, provider.connection)
+    const closedRelease = await fetch(releasePubkey)
+    console.log('closedRelease :>> ', closedRelease);
+    return closedRelease
+
+  } catch (error) {
+    console.warn(error)
+    return false
+  }
+}
+
+const collectRoyaltyForRelease = async (recipient, releasePubkey, wallet, connection) => {
+  try { 
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      commitment: 'confirmed',
+      preflightCommitment: 'processed',
+    })
+    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const release = await program.account.release.fetch(
+      new anchor.web3.PublicKey(releasePubkey)
+    )
+    release.paymentMint = new anchor.web3.PublicKey(release.paymentMint)
+    
+    const [authorityTokenAccount, authorityTokenAccountIx] =
+      await findOrCreateAssociatedTokenAccount(
+        provider.connection,
+        provider.wallet.publicKey,
+        provider.wallet.publicKey,
+        anchor.web3.SystemProgram.programId,
+        anchor.web3.SYSVAR_RENT_PUBKEY,
+        release.paymentMint
+      )
+
+    const request = {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        authorityTokenAccount,
+        release: new anchor.web3.PublicKey(releasePubkey),
+        releaseMint: release.releaseMint,
+        releaseSigner: release.releaseSigner,
+        royaltyTokenAccount: release.royaltyTokenAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+    }
+
+    if (authorityTokenAccountIx) {
+      request.instructions = [authorityTokenAccountIx]
+    }
+
+    const txid = await program.rpc.releaseRevenueShareCollect(request)
+    await getConfirmTransaction(txid, provider.connection)
+    const collectedRelease = await fetch(releasePubkey)
+    console.log('collectedRelease  success:>> ', collectedRelease);
+    return collectedRelease
+
+  }
+  catch (error) {
+    console.warn(error)
+    return false
+  }
+}
+
 export default {
   fetchAll,
   fetch,
@@ -637,6 +718,8 @@ export default {
   purchaseViaHub,
   releaseInitViaHub,
   initializeReleaseAndMint,
-  releaseCreate
+  releaseCreate,
+  closeRelease,
+  collectRoyaltyForRelease
 }
 
