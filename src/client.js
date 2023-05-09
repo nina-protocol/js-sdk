@@ -101,10 +101,6 @@ class NinaClient {
       const publicKey = url.split('/')[2];
       await this.processMulitpleHubAccountData(response.data.hubs)
       await this.processMultipleHubCollaboratorAccountDataWithHubs(response.data.hubs, publicKey);
-      console.log('response: ', response.data)
-      // for await (let hub of response.data.hubs) {
-      //   hub.accountData.collaborator = await this.processAndParseSingleHubCollaboratorAccountDataWithHub(publicKey, hub.publicKey)
-      // }
     } else if (
       url === '/releases' ||
       /accounts\/(.*?)\/published/.test(url) ||
