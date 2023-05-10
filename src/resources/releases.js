@@ -649,11 +649,13 @@ export const closeRelease = async (releasePubkey, wallet, connection) => {
     await getConfirmTransaction(txid, provider.connection)
     const closedRelease = await fetch(releasePubkey)
     console.log('closedRelease :>> ', closedRelease);
+    console.log('closedRelease :>> ', closedRelease);
+    console.log('closedRelease :>> ', closedRelease);
     return closedRelease
 
   } catch (error) {
     console.warn(error)
-    return false
+    return false   
   }
 }
 
@@ -687,7 +689,8 @@ const collectRoyaltyForRelease = async (recipient, releasePubkey, wallet, connec
         releaseMint: release.releaseMint,
         releaseSigner: release.releaseSigner,
         royaltyTokenAccount: release.royaltyTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+
       },
     }
 
@@ -697,7 +700,7 @@ const collectRoyaltyForRelease = async (recipient, releasePubkey, wallet, connec
 
     const txid = await program.rpc.releaseRevenueShareCollect(request)
     await getConfirmTransaction(txid, provider.connection)
-    const collectedRelease = await fetch(releasePubkey)
+    const collectedRelease = await fetch(releasePubkey, true)
     console.log('collectedRelease  success:>> ', collectedRelease);
     return collectedRelease
 
