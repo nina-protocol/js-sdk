@@ -7,17 +7,15 @@ import Search from './resources/search';
 import Subscription from './resources/subscriptions';
 import client from './client';
 
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
-console.log('local 33333');
+console.log('TITO')
+console.log('TITO');
+console.log('TITO');
+console.log('TITO');
+console.log('TITO');
+
+
+
+// client.init()
 
 const Nina = {
   Account,
@@ -29,4 +27,7 @@ const Nina = {
   Subscription,
   client,
 }
+
+
+
 export default Nina
