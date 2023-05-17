@@ -124,24 +124,23 @@ const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false) =>
 };
 
 /**
- * @function hubInitWithCredit
+ * @function hubInit
  * @description Initializes a Hub account with Hub Credit.
  * @param {Object} hubParams The Hub parameters. // NOTE: exand
  * @param {Object} wallet The wallet to use for the transaction.
  * @param {Object} connection Connection to the cluster.
- * @example const hub = await NinaClient.Hub.hubInitWithCredit({})
+ * @example const hub = await NinaClient.Hub.hubInit({})
  */
-const hubInitWithCredit = async (hubParams) => {
+const hubInit = async (client, hubParams) => {
   try {
-    const ids = NinaClient.ids;
-    const program = await anchor.Program.at(ids.programs.nina, provider);
-    const USDC_MINT = new anchor.web3.PublicKey(ids.mints.usdc);
-    const WRAPPED_SOL_MINT = new anchor.web3.PublicKey(ids.mints.wsol);
-    const HUB_CREDIT_MINT = new anchor.web3.PublicKey(ids.mints.hubCredit);
+    const { provider } = client;
+    const program = await client.useProgram();
+    const USDC_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.usdc);
+    const WRAPPED_SOL_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.wsol);
+    const HUB_CREDIT_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.hubCredit);
 
     hubParams.publishFee = new anchor.BN(hubParams.publishFee * 10000);
     hubParams.referralFee = new anchor.BN(hubParams.referralFee * 10000);
-
     const [hub] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub')),
@@ -154,7 +153,6 @@ const hubInitWithCredit = async (hubParams) => {
       [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hub.toBuffer()],
       program.programId
     );
-
     hubParams.hubSignerBump = hubSignerBump;
 
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
@@ -183,38 +181,31 @@ const hubInitWithCredit = async (hubParams) => {
       anchor.web3.SYSVAR_RENT_PUBKEY,
       WRAPPED_SOL_MINT
     );
-
-    let [authorityHubCreditTokenAccount] = await findOrCreateAssociatedTokenAccount(
-      provider.connection,
-      provider.wallet.publicKey,
-      provider.wallet.publicKey,
-      anchor.web3.SystemProgram.programId,
-      anchor.web3.SYSVAR_RENT_PUBKEY,
-      HUB_CREDIT_MINT
-    );
-
-    const txid = await program.methods
-      .hubInitWithCredit(hubParams)
+    //add IX for create
+    const tx = await program.methods
+      .hubInit(hubParams)
       .accounts({
-        authority: wallet.publicKey,
+        authority: provider.wallet.publicKey,
         hub,
         hubSigner,
         hubCollaborator,
-        authorityHubCreditTokenAccount,
         hubCreditMint: HUB_CREDIT_MINT,
         systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: new anchor.web3.PublicKey(ids.programs.token),
+        tokenProgram: NinaClient.ids.programs.token,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
       .preInstructions([usdcVaultIx, wrappedSolVaultIx])
-      .rpc();
+      .transaction();
 
-    await connection.getParsedTransaction(txid, 'confirmed');
-    const hubData = await fetch(hub.toBase58());
-    return hubData;
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
+    const createdHub = await fetch(hub.toBase58());
+    return createdHub;
   } catch (error) {
-    console.log(error);
-    return false;
+    console.warn(error);
   }
 };
 
@@ -741,7 +732,7 @@ export default {
   fetchHubRelease,
   fetchHubPost,
   fetchSubscriptions,
-  hubInitWithCredit,
+  hubInit,
   hubUpdateConfig,
   hubAddCollaborator,
   hubUpdateCollaboratorPermission,
