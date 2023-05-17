@@ -40,40 +40,44 @@ const fetch = async (publicKey, withAccountData = false) => {
  * @function fetchCollectors
  * @param {String} publicKey The public key of the release.    
  * @param {Boolean} [withCollection = false] Fetch collectors collections.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collectors = await NinaClient.Release.fetchCollectors("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchCollectors = async (publicKey, withCollection=false) => {
-  return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`);
+const fetchCollectors = async (publicKey, withCollection=false, pagination) => {
+  return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`, pagination);
 }
 
 /** 
  * @function fetchHubs
  * @param {String} publicKey The public key of the release.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Hub and HubRelease accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const hubs = await NinaClient.Release.fetchHubs("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
-*/
-const fetchHubs = async (publicKey, withAccountData = false) => {
-  return await NinaClient.get(`/releases/${publicKey}/hubs`, undefined, withAccountData);
+ */
+const fetchHubs = async (publicKey, withAccountData = false, pagination) => {
+  return await NinaClient.get(`/releases/${publicKey}/hubs`, pagination, withAccountData);
 };
 
 /** 
  * @function fetchExchanges
  * @param {String} publicKey The public key of the release.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Exchange accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const exchanges = await NinaClient.Release.fetchExchanges("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchExchanges = async (publicKey, withAccountData = false) => {
-  return await NinaClient.get(`/releases/${publicKey}/exchanges`, undefined, withAccountData);
+const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
+  return await NinaClient.get(`/releases/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
 /**
  * @function fetchRevenueShareRecipients
  * @param {String} publicKey The public key of the release.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Release accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const revenueShareRecipients = await NinaClient.Release.fetchRevenueShareRecipients("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchRevenueShareRecipients = async (publicKey, withAccountData=false) => {
-  return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, undefined, withAccountData);
+const fetchRevenueShareRecipients = async (publicKey, withAccountData=false, pagination) => {
+  return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, pagination, withAccountData);
 }
 
 /**

@@ -40,10 +40,11 @@ const fetch = async (publicKeyOrHandle, withAccountData=false) => {
  * @description Fetches the Collaborators of a Hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
  * @param {Boolean} [withAccountData = false] Include full on-chain HubCollaborator accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
  */
-const fetchCollaborators = async (publicKeyOrHandle) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`);
+const fetchCollaborators = async (publicKeyOrHandle, pagination) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`, pagination);
 }
 
 /**
@@ -51,10 +52,11 @@ const fetchCollaborators = async (publicKeyOrHandle) => {
  * @description Fetches Releases for a Hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
  * @param {Boolean} [withAccountData = false] Include full on-chain HubRelease, HubContent, and Release accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const releases = await NinaClient.Hub.fetchReleases('ninas-picks');
  */
-const fetchReleases = async (publicKeyOrHandle, withAccountData=false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, undefined, withAccountData);
+const fetchReleases = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, pagination, withAccountData);
 }
 
 /**
@@ -62,10 +64,11 @@ const fetchReleases = async (publicKeyOrHandle, withAccountData=false) => {
  * @description Fetches Posts for a hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
  * @param {Boolean} [withAccountData = false] Include full on-chain HubPost, HubContent, and Post accounts.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const posts = await NinaClient.Hub.fetchPosts('ninas-picks');
  */
-const fetchPosts = async (publicKeyOrHandle, withAccountData=false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, undefined, withAccountData);
+const fetchPosts = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, pagination, withAccountData);
 }
 
 /**
@@ -96,11 +99,12 @@ const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData
  * @function fetchSubscriptions
  * @description Fetches the subscriptions for a Hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
+ * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const subscriptions = await NinaClient.Hub.fetchSubscriptions("ninas-picks");
  */
 
-const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
+const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, pagination, withAccountData);
 }
 
 export default {
