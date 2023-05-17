@@ -224,11 +224,11 @@ const hubInit = async (client, hubParams) => {
 const hubUpdateConfig = async (client, hubPubkey, uri, publishFee, referralFee) => {
   try {
     const { provider } = client;
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const program = await client.useProgram();
     const { hub } = await fetch(hubPubkey);
     hubPubkey = new anchor.web3.PublicKey(hubPubkey);
 
-    const txid = await program.rpc.hubUpdateConfig(
+    const tx = await program.transaction.hubUpdateConfig(
       uri,
       hub.handle,
       new anchor.BN(publishFee * 10000),
@@ -240,7 +240,9 @@ const hubUpdateConfig = async (client, hubPubkey, uri, publishFee, referralFee) 
         },
       }
     );
-
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(`${process.env.NINA_API_ENDPOINT}/hubs/${hubPubkey.toBase58()}/tx/${txid}`);
     const updatedHub = await fetch(hubPubkey.toBase58());
@@ -273,8 +275,8 @@ const hubAddCollaborator = async (
   allowance
 ) => {
   try {
-    const { provider } = client;
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const { provider, endpoints } = client;
+    const program = await client.useProgram();
     const { hub } = await fetch(hubPubkey);
     hubPubkey = new anchor.web3.PublicKey(hubPubkey);
     collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey);
@@ -295,7 +297,7 @@ const hubAddCollaborator = async (
       program.programId
     );
 
-    const txid = await program.rpc.hubAddCollaborator(canAddContent, canAddCollaborator, allowance, hub.handle, {
+    const tx = await program.transaction.hubAddCollaborator(canAddContent, canAddCollaborator, allowance, hub.handle, {
       accounts: {
         authority: provider.wallet.publicKey,
         authorityHubCollaborator,
@@ -306,8 +308,12 @@ const hubAddCollaborator = async (
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       },
     });
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
+    await axios.get(endpoints.api + `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`);
     const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
     return collaborator;
   } catch (error) {
@@ -338,7 +344,7 @@ const hubUpdateCollaboratorPermission = async (
 ) => {
   try {
     const { provider } = client;
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const program = await client.useProgram();
     const { hub } = await fetch(hubPubkey);
     hubPubkey = new anchor.web3.PublicKey(hubPubkey);
     collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey);
