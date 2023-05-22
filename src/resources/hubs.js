@@ -43,7 +43,7 @@ const fetch = async (publicKeyOrHandle, withAccountData=false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
  */
-const fetchCollaborators = async (publicKeyOrHandle, pagination) => {
+const fetchCollaborators = async (publicKeyOrHandle, pagination=undefined) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`, pagination);
 }
 
@@ -55,7 +55,7 @@ const fetchCollaborators = async (publicKeyOrHandle, pagination) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const releases = await NinaClient.Hub.fetchReleases('ninas-picks');
  */
-const fetchReleases = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+const fetchReleases = async (publicKeyOrHandle, withAccountData=false, pagination=undefined) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, pagination, withAccountData);
 }
 
@@ -67,7 +67,7 @@ const fetchReleases = async (publicKeyOrHandle, withAccountData=false, paginatio
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const posts = await NinaClient.Hub.fetchPosts('ninas-picks');
  */
-const fetchPosts = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+const fetchPosts = async (publicKeyOrHandle, withAccountData=false, pagination=undefined) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, pagination, withAccountData);
 }
 
@@ -103,7 +103,7 @@ const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData
  * @example const subscriptions = await NinaClient.Hub.fetchSubscriptions("ninas-picks");
  */
 
-const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false, pagination) => {
+const fetchSubscriptions = async (publicKeyOrHandle, withAccountData=false, pagination=undefined) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, pagination, withAccountData);
 }
 

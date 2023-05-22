@@ -39,7 +39,7 @@ const fetch = async (publicKey, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const hubs = await NinaClient.Account.fetchHubs("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ";
  */
-const fetchHubs = async (publicKey, withAccountData = false, pagination) => {
+const fetchHubs = async (publicKey, withAccountData = false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/hubs`, pagination, withAccountData);
 };
 
@@ -51,7 +51,7 @@ const fetchHubs = async (publicKey, withAccountData = false, pagination) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collection = await NinaClient.Account.fetchCollected("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  */
-const fetchCollected = async (publicKey, withAccountData = false, pagination) => {
+const fetchCollected = async (publicKey, withAccountData = false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/collected`, pagination, withAccountData);
 };
 
@@ -63,7 +63,7 @@ const fetchCollected = async (publicKey, withAccountData = false, pagination) =>
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const published = await NinaClient.Account.fetchPublished("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * */
-const fetchPublished = async (publicKey, withAccountData = false, pagination) => {
+const fetchPublished = async (publicKey, withAccountData = false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/published`, pagination, withAccountData);
 };
 
@@ -75,7 +75,7 @@ const fetchPublished = async (publicKey, withAccountData = false, pagination) =>
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const posts = await NinaClient.Account.fetchPosts("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * */
-const fetchPosts = async (publicKey, withAccountData = false, pagination) => {
+const fetchPosts = async (publicKey, withAccountData = false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/posts`, pagination, withAccountData);
 };
 
@@ -87,7 +87,7 @@ const fetchPosts = async (publicKey, withAccountData = false, pagination) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const exchanges = await NinaClient.Account.fetchExchanges("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * */
-const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
+const fetchExchanges = async (publicKey, withAccountData = false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
@@ -99,7 +99,7 @@ const fetchExchanges = async (publicKey, withAccountData = false, pagination) =>
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const revenueShares = await NinaClient.Account.fetchRevenueShares("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * */
-const fetchRevenueShares = async (publicKey, withAccountData=false, pagination) => {
+const fetchRevenueShares = async (publicKey, withAccountData=false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/revenueShares`, pagination, withAccountData);
 }
 
@@ -111,7 +111,7 @@ const fetchRevenueShares = async (publicKey, withAccountData=false, pagination) 
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const subscriptions = await NinaClient.Account.fetchSubscriptions("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  *  */
-const fetchSubscriptions = async (publicKey, withAccountData=false, pagination) => {
+const fetchSubscriptions = async (publicKey, withAccountData=false, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/subscriptions`, pagination, withAccountData);
 }
 
@@ -122,7 +122,7 @@ const fetchSubscriptions = async (publicKey, withAccountData=false, pagination) 
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const verifications = await NinaClient.Account.fetchVerifications("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * */
-const fetchVerifications = async (publicKey, pagination) => {
+const fetchVerifications = async (publicKey, pagination=undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/verifications`, pagination);
 }
 

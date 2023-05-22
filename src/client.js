@@ -6,6 +6,8 @@ const MAX_U64 = '18446744073709551615';
 /** Class Representing the Nina Client */
 class NinaClient {
   constructor() {
+    console.log('go go gadget nina')
+
     this.provider = null  
     this.program = null;
     this.endpoint = null;

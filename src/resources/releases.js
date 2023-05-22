@@ -43,7 +43,7 @@ const fetch = async (publicKey, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collectors = await NinaClient.Release.fetchCollectors("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchCollectors = async (publicKey, withCollection=false, pagination) => {
+const fetchCollectors = async (publicKey, withCollection=false, pagination=undefined) => {
   return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`, pagination);
 }
 
