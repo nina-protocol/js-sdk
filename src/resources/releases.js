@@ -45,6 +45,7 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @example const release = await NinaClient.Release.fetch("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
 const fetch = async (publicKey, withAccountData = false) => {
+  console.log('withAccountData', withAccountData)
   return await NinaClient.get(`/releases/${publicKey}`, undefined, withAccountData);
 };
 
@@ -609,16 +610,20 @@ export const releaseInit = async (
 export const closeRelease = async (client, releasePubkey) => {
   try {
     const { provider } = client;
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const program = await client.useProgram();
     const release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePubkey));
-    const txid = await program.rpc.releaseCloseEdition({
+    const tx = await program.transaction.releaseCloseEdition({
       accounts: {
         authority: provider.wallet.publicKey,
         release: new anchor.web3.PublicKey(releasePubkey),
         releaseSigner: release.releaseSigner,
         releaseMint: release.releaseMint,
       },
-    });
+    })
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+
     console.log('releasePubkey :>> ', releasePubkey);
     await getConfirmTransaction(txid, provider.connection);
     const closedRelease = await fetch(releasePubkey);
@@ -632,13 +637,23 @@ export const closeRelease = async (client, releasePubkey) => {
   }
 };
 
-const collectRoyaltyForRelease = async (client, recipient, releasePubkey) => {
+const collectRoyaltyForRelease = async (client, recipient, releasePubkey, state) => {
+    if (!releasePubkey || !recipient) {
+      return;
+    }
   try {
     const { provider } = client;
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
-    const release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePubkey));
-    release.paymentMint = new anchor.web3.PublicKey(release.paymentMint);
+    const program = await client.useProgram();
 
+    let release
+    if (!state) {
+      release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePubkey));
+    } else {
+      release = state.tokenData[releasePubkey]
+    }
+
+
+    release.paymentMint = new anchor.web3.PublicKey(release.paymentMint);
     const [authorityTokenAccount, authorityTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,
       provider.wallet.publicKey,
@@ -659,15 +674,17 @@ const collectRoyaltyForRelease = async (client, recipient, releasePubkey) => {
         tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
       },
     };
-
     if (authorityTokenAccountIx) {
       request.instructions = [authorityTokenAccountIx];
     }
 
-    const txid = await program.rpc.releaseRevenueShareCollect(request);
+    const tx = await program.transaction.releaseRevenueShareCollect(request);
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    const collectedRelease = await fetch(releasePubkey, true);
-    console.log('collectedRelease  success:>> ', collectedRelease);
+    const collectedRelease = await fetch(releasePubkey);
     return collectedRelease;
   } catch (error) {
     console.warn(error);

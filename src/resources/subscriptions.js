@@ -15,7 +15,7 @@ import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncr
 const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
-    '/subscriptions', 
+    '/subscriptions',
     {
       limit: limit || 20,
       offset: offset || 0,
@@ -36,15 +36,22 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
   return NinaClient.get(`/subscriptions/${publicKey}`, transactionId ? { transactionId } : undefined);
 };
 
-const subscriptionSubscribe = async (subscribeToAccount, hubHandle, wallet, connection) => {
+/**
+ * @function subscriptionSubscribe
+ * @param {Object} client the NinaClient instance
+ * @param {*} subscribeToAccount the account to subscribe to
+ * @param {*} hubHandle the hub handle to subscribe to
+ * @returns
+ */
+
+const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle,) => {
   try {
-    const provider = new anchor.AnchorProvider(connection, wallet, {
-    commitment: 'confirmed',
-    preflightCommitment: 'processed',
-  })
-  const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    console.log('first')
+  const {provider} = client
+  const program = await client.useProgram()
   subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount)
 
+  console.log('subscribeToAccount', typeof subscribeToAccount)
 const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
   [
     Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
@@ -56,6 +63,7 @@ const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
 
 const request = {
   accounts: {
+    payer: provider.wallet.publicKey,
     from: provider.wallet.publicKey,
     subscription,
     to: subscribeToAccount,
@@ -63,13 +71,15 @@ const request = {
   },
 }
 
-let txid
+let tx;
 if (hubHandle) {
-  txid = await program.rpc.subscriptionSubscribeHub(hubHandle, request)
+  tx = await program.transaction.subscriptionSubscribeHub(hubHandle, request)
 } else {
-  txid = await program.rpc.subscriptionSubscribeAccount(request)
+  tx = await program.transaction.subscriptionSubscribe(request)
 }
-
+tx.recentBlockhash = await provider.connection.getRecentBlockhash().blockhash
+tx.feePayer = provider.wallet.publicKey
+const txid = await provider.wallet.sendTransaction(tx, provider.connection)
 await getConfirmTransaction(txid, provider.connection)
 const subscriptionData = await fetch(subscription.toBase58(), txid)
 return subscriptionData
@@ -108,7 +118,7 @@ const subscriptionUnsubscribe = async (unsubscribeAccount, wallet, connection) =
 
     const subscriptionData = await fetch(subscription.toBase58(), txid)
     return subscriptionData
-  } 
+  }
   catch (error) {
     console.warn(error)
     return false
