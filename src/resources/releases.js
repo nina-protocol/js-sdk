@@ -92,38 +92,32 @@ const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) =
 /**
  *
  * @function purchaseViaHub
+ * @param {Object} client NinaClient instance.
  * @param {String} releasePublicKey Public Key of the release.
  * @param {String} hubPublicKey Public Key of the hub.
- * @param {Wallet} wallet Wallet to sign the transaction.
- * @param {Connection} connection Connection to Solana.
- * @param {Program} program Instance of the Nina program
  * @returns
  */
-const purchaseViaHub = async (releasePublicKey, hubPublicKey, wallet, connection, program) => {
+const purchaseViaHub = async (client,releasePublicKey, hubPublicKey) => {
   try {
-    const provider = new anchor.AnchorProvider(connection, wallet, {
-      commitment: 'confirmed',
-      preflightCommitment: 'processed',
-    });
-    const nina = await anchor.Program.at(program.programId.toBase58(), provider);
+  const { provider } = client
+    const program = await client.useProgram()
 
     releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
     hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
     const release = await program.account.release.fetch(releasePublicKey);
-
     let [payerTokenAccount] = await findOrCreateAssociatedTokenAccount(
-      connection,
-      wallet.publicKey,
-      wallet.publicKey,
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
       anchor.web3.SystemProgram.programId,
       anchor.web3.SYSVAR_RENT_PUBKEY,
       release.paymentMint
     );
 
     let [receiverReleaseTokenAccount, receiverReleaseTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
-      connection,
-      wallet.publicKey,
-      wallet.publicKey,
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
       anchor.web3.SystemProgram.programId,
       anchor.web3.SYSVAR_RENT_PUBKEY,
       release.releaseMint
@@ -153,17 +147,19 @@ const purchaseViaHub = async (releasePublicKey, hubPublicKey, wallet, connection
     );
 
     let [hubWallet] = await findOrCreateAssociatedTokenAccount(
-      connection,
-      wallet.publicKey,
+      provider.connection,
+      provider.wallet.publicKey,
       hubSigner,
       anchor.web3.SystemProgram.programId,
       anchor.web3.SYSVAR_RENT_PUBKEY,
       release.paymentMint
     );
+
+
     const request = {
       accounts: {
-        payer: wallet.publicKey,
-        receiver: wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        receiver: provider.wallet.publicKey,
         release: releasePublicKey,
         releaseSigner: release.releaseSigner,
         payerTokenAccount,
@@ -179,11 +175,12 @@ const purchaseViaHub = async (releasePublicKey, hubPublicKey, wallet, connection
       },
     };
 
+
     const instructions = [];
     const solPrice = await axios.get(`https://price.jup.ag/v1/price?id=SOL`);
     let releasePriceUi = release.price.toNumber() / Math.pow(10, 6);
     let convertAmount = releasePriceUi + (releasePriceUi * hub.referralFee.toNumber()) / 1000000;
-    let usdcBalance = await getUsdcBalance(wallet.publicKey, connection);
+    let usdcBalance = await getUsdcBalance(provider.wallet.publicKey, provider.connection);
     if (usdcBalance < convertAmount) {
       const additionalComputeBudgetInstruction = anchor.web3.ComputeBudgetProgram.requestUnits({
         units: 400000,
@@ -199,7 +196,7 @@ const purchaseViaHub = async (releasePublicKey, hubPublicKey, wallet, connection
       for await (let d of data.data) {
         const transactions = await axios.post('https://quote-api.jup.ag/v1/swap', {
           route: d,
-          userPublicKey: wallet.publicKey.toBase58(),
+          userPublicKey: provider.wallet.publicKey.toBase58(),
         });
         if (!transactionInstructions) {
           transactionInstructions = anchor.web3.Transaction.from(
@@ -222,9 +219,22 @@ const purchaseViaHub = async (releasePublicKey, hubPublicKey, wallet, connection
     if (instructions.length > 0) {
       request.instructions = instructions;
     }
-    const txid = await nina.rpc.releasePurchaseViaHub(release.price, NinaClient.decode(hub.handle), request);
-    await connection.getParsedTransaction(txid, 'confirmed');
-    return true;
+
+    console.log(release.price, decodeNonEncryptedByteArray(hub.handle), request);
+
+
+    const tx = await program.methods.releasePurchaseViaHub(release.price, decodeNonEncryptedByteArray(hub.handle))
+              .accounts(request.accounts)
+              .preInstructions(instructions || [])
+              .transaction()
+
+
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+     tx.feePayer = provider.wallet.publicKey;
+     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
+
+    return txid;
   } catch (error) {
     console.log(error);
     return false;
@@ -408,7 +418,6 @@ const releaseInitViaHub = async (
 
     await getConfirmTransaction(txid, provider.connection);
     const newRelease = await Hub.fetchHubRelease(hubPubkey.toBase58(), hubRelease.toBase58());
-    console.log('success!!!! :>> ', newRelease);
     return newRelease;
   } catch (error) {
     console.log(error);
@@ -624,12 +633,8 @@ export const closeRelease = async (client, releasePubkey) => {
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
-    console.log('releasePubkey :>> ', releasePubkey);
     await getConfirmTransaction(txid, provider.connection);
     const closedRelease = await fetch(releasePubkey);
-    console.log('closedRelease :>> ', closedRelease);
-    console.log('closedRelease :>> ', closedRelease);
-    console.log('closedRelease :>> ', closedRelease);
     return closedRelease;
   } catch (error) {
     console.warn(error);

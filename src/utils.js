@@ -105,21 +105,23 @@ export const findAssociatedTokenAddress = async (
 export const getUsdcBalance = async (publicKey, connection) => {
   if (publicKey) {
     try {
-
+      console.log('publicKey in get usdc', publicKey)
       let [usdcTokenAccountPubkey] = await findOrCreateAssociatedTokenAccount(
         connection,
         publicKey,
         publicKey,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        new anchor.web3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
-      )
+        // new anchor.web3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
+        new anchor.web3.PublicKey(NinaClient.ids.mints.usdc)
+      );
 
       if (usdcTokenAccountPubkey) {
         let usdcTokenAccount =
           await connection.getTokenAccountBalance(
             usdcTokenAccountPubkey
           )
+          console.log('usdcTokenAccount.value.uiAmount.toFixed(2)', usdcTokenAccount.value.uiAmount.toFixed(2))
         return usdcTokenAccount.value.uiAmount.toFixed(2)
       } else {
         return 0
