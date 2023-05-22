@@ -39,19 +39,17 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
 /**
  * @function subscriptionSubscribe
  * @param {Object} client the NinaClient instance
- * @param {*} subscribeToAccount the account to subscribe to
- * @param {*} hubHandle the hub handle to subscribe to
+ * @param {String} subscribeToAccount the account to subscribe to
+ * @param {String} hubHandle the hub handle to subscribe to
  * @returns
  */
 
-const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle,) => {
+const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
   try {
-    console.log('first')
   const {provider} = client
   const program = await client.useProgram()
   subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount)
 
-  console.log('subscribeToAccount', typeof subscribeToAccount)
 const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
   [
     Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
@@ -70,15 +68,17 @@ const request = {
     systemProgram: anchor.web3.SystemProgram.programId,
   },
 }
-
 let tx;
 if (hubHandle) {
   tx = await program.transaction.subscriptionSubscribeHub(hubHandle, request)
 } else {
   tx = await program.transaction.subscriptionSubscribe(request)
 }
-tx.recentBlockhash = await provider.connection.getRecentBlockhash().blockhash
+
+tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
+
 tx.feePayer = provider.wallet.publicKey
+
 const txid = await provider.wallet.sendTransaction(tx, provider.connection)
 await getConfirmTransaction(txid, provider.connection)
 const subscriptionData = await fetch(subscription.toBase58(), txid)
@@ -88,14 +88,17 @@ return subscriptionData
     return false
   }
 }
+/**
+ * @function subscriptionSubscribe
+ * @param {Object} client the NinaClient instance
+ * @param {String} unsubscribeAccount the account to unsubscribe from
+ * @returns
+ */
 
-const subscriptionUnsubscribe = async (unsubscribeAccount, wallet, connection) => {
+const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
   try {
-    const provider = new anchor.AnchorProvider(connection, wallet, {
-      commitment: 'confirmed',
-      preflightCommitment: 'processed',
-    })
-    const program = await anchor.Program.at(NinaClient.ids.programs.nina, provider);
+    const {provider} = client
+    const program = await client.useProgram()
     unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount)
 
     const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
@@ -106,14 +109,18 @@ const subscriptionUnsubscribe = async (unsubscribeAccount, wallet, connection) =
       ],
       program.programId
     )
-    const txid = await program.rpc.subscriptionUnsubscribe({
+    const tx = await program.transaction.subscriptionUnsubscribe({
       accounts: {
+        payer: provider.wallet.publicKey,
         from: provider.wallet.publicKey,
         subscription,
         to: unsubscribeAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
       },
     })
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
+    tx.feePayer = provider.wallet.publicKey
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection)
     await getConfirmTransaction(txid, provider.connection)
 
     const subscriptionData = await fetch(subscription.toBase58(), txid)
