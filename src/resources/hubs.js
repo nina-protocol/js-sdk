@@ -226,18 +226,14 @@ const hubUpdateConfig = async (client, hubPubkey, uri, publishFee, referralFee) 
     const { hub } = await fetch(hubPubkey);
     hubPubkey = new anchor.web3.PublicKey(hubPubkey);
 
-    const tx = await program.transaction.hubUpdateConfig(
-      uri,
-      hub.handle,
-      new anchor.BN(publishFee * 10000),
-      new anchor.BN(referralFee * 10000),
-      {
-        accounts: {
-          authority: provider.wallet.publicKey,
-          hub: hubPubkey,
-        },
-      }
-    );
+    const tx = await program.methods
+      .hubUpdateConfig(uri, hub.handle, new anchor.BN(publishFee * 10000), new anchor.BN(referralFee * 10000))
+      .accounts({
+        authority: provider.wallet.publicKey,
+        hub: hubPubkey,
+      })
+      .transaction();
+
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
@@ -293,9 +289,9 @@ const hubAddCollaborator = async (
       ],
       program.programId
     );
-
-    const tx = await program.transaction.hubAddCollaborator(canAddContent, canAddCollaborator, allowance, hub.handle, {
-      accounts: {
+    const tx = await program.methods
+      .hubAddCollaborator(canAddContent, canAddCollaborator, allowance, hub.handle)
+      .accounts({
         authority: provider.wallet.publicKey,
         authorityHubCollaborator,
         hub: hubPubkey,
@@ -303,8 +299,8 @@ const hubAddCollaborator = async (
         collaborator: collaboratorPubkey,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-    });
+      })
+      .transaction();
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
@@ -312,6 +308,7 @@ const hubAddCollaborator = async (
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`);
     const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    console.log('collaborator', collaborator);
     return collaborator;
   } catch (error) {
     console.log(error);
@@ -361,21 +358,16 @@ const hubUpdateCollaboratorPermission = async (
       program.programId
     );
 
-    const tx = await program.transaction.hubUpdateCollaboratorPermissions(
-      canAddContent,
-      canAddCollaborator,
-      allowance,
-      hub.handle,
-      {
-        accounts: {
-          authority: provider.wallet.publicKey,
-          authorityHubCollaborator,
-          hub: hubPubkey,
-          hubCollaborator,
-          collaborator: collaboratorPubkey,
-        },
-      }
-    );
+    const tx = await program.methods
+      .hubUpdateCollaboratorPermissions(canAddContent, canAddCollaborator, allowance, hub.handle)
+      .accounts({
+        authority: provider.wallet.publicKey,
+        authorityHubCollaborator,
+        hub: hubPubkey,
+        hubCollaborator,
+        collaborator: collaboratorPubkey,
+      })
+      .transaction();
 
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
@@ -383,6 +375,7 @@ const hubUpdateCollaboratorPermission = async (
 
     await getConfirmTransaction(txid, provider.connection);
     const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    console.log('collaborator', collaborator);
     return collaborator;
   } catch (error) {
     console.log(error);
@@ -415,15 +408,17 @@ const hubRemoveCollaborator = async (client, hubPubkey, collaboratorPubkey) => {
       ],
       program.programId
     );
-    const tx = await program.transaction.hubRemoveCollaborator(hub.handle, {
-      accounts: {
+    const tx = await program.methods
+      .hubRemoveCollaborator(hub.handle)
+      .accounts({
         authority: provider.wallet.publicKey,
         hub: hubPubkey,
         hubCollaborator,
         collaborator: collaboratorPubkey,
         systemProgram: anchor.web3.SystemProgram.programId,
-      },
-    });
+      })
+      .transaction();
+
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
@@ -431,6 +426,7 @@ const hubRemoveCollaborator = async (client, hubPubkey, collaboratorPubkey) => {
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hubPubkey}/collaborators/${hubCollaborator.toBase58()}`);
     const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    console.log('collaborator', collaborator);
     return collaborator;
   } catch (error) {
     console.log(error);
@@ -474,15 +470,17 @@ const hubContentToggleVisibility = async (client, hubPubkey, contentAccountPubke
       program.programId
     );
 
-    const tx = await program.transaction.hubContentToggleVisibility(hub.handle, {
-      accounts: {
+    const tx = await program.methods
+      .hubContentToggleVisibility(hub.handle)
+      .accounts({
         authority: provider.wallet.publicKey,
         hub: hubPubkey,
         hubContent,
         contentAccount: contentAccountPubkey,
         systemProgram: anchor.web3.SystemProgram.programId,
-      },
-    });
+      })
+      .transaction();
+
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
@@ -533,18 +531,6 @@ const hubAddRelease = async (client, hubPubkey, releasePubkey, fromHub) => {
       program.programId
     );
 
-    const request = {
-      accounts: {
-        authority: provider.wallet.publicKey,
-        hub: hubPubkey,
-        hubRelease,
-        hubContent,
-        hubCollaborator,
-        release: releasePubkey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      },
-    };
     if (fromHub) {
       request.remainingAccounts = [
         {
@@ -554,7 +540,20 @@ const hubAddRelease = async (client, hubPubkey, releasePubkey, fromHub) => {
         },
       ];
     }
-    const tx = await program.transaction.hubAddRelease(hub.handle, request);
+    const tx = await program.methods
+      .hubAddRelease(hub.handle)
+      .accounts({
+        authority: provider.wallet.publicKey,
+        hub: hubPubkey,
+        hubRelease,
+        hubContent,
+        hubCollaborator,
+        release: releasePubkey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .transaction();
+
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
@@ -666,14 +665,19 @@ const postInitViaHub = async (client, hubPubkey, slug, uri, referenceRelease = u
         program.programId
       );
       request.accounts.referenceReleaseHubContent = referenceReleaseHubContent;
-      tx = await program.transaction.postInitViaHubWithReferenceRelease(...params, request);
+      tx = await program.methods
+        .postInitViaHubWithReferenceRelease(...params)
+        .accounts(request.accounts)
+        .transaction();
     } else {
-      tx = await program.transaction.postInitViaHub(...params, request);
+      tx = await program.methods
+        .postInitViaHub(...params)
+        .accounts(request.accounts)
+        .transaction();
     }
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
-
     await getConfirmTransaction(txid, provider.connection);
     return {
       hubPost,
@@ -684,6 +688,156 @@ const postInitViaHub = async (client, hubPubkey, slug, uri, referenceRelease = u
     return false;
   }
 };
+
+/**
+ * @function postUpdateViaHub
+ * @description Creates a Post on a Hub.
+ * @param {String} hubPubkey
+ * @param {String} slug
+ * @param {String} uri
+ * @param {String=} referenceRelease
+ * @param {String=} fromHub
+ * @param {Object} wallet
+ * @param {Object} connection
+ * @returns
+ */
+
+const postUpdateViaHub = async (client, hubPubkey, slug, uri) => {
+  try {
+    console.log('postUpdateViaHub');
+    const { provider } = client;
+    const program = await client.useProgram();
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey);
+
+    const [post] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-post')),
+        hubPubkey.toBuffer(),
+        Buffer.from(anchor.utils.bytes.utf8.encode(slug)),
+      ],
+      program.programId
+    );
+
+    const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-post')), hubPubkey.toBuffer(), post.toBuffer()],
+      program.programId
+    );
+
+    const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+        hubPubkey.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    const tx = await program.methods
+      .postUpdateViaHubPost(hub.handle, slug, uri)
+      .accounts({
+        author: provider.wallet.publicKey,
+        hub: hubPubkey,
+        post,
+        hubPost,
+        hubCollaborator,
+      })
+      .transaction();
+
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    console.log('txid', txid);
+    await getConfirmTransaction(txid, provider.connection);
+    console.log('hubPost', hubPost);
+    return hubPost;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
+/**
+ * @function collectRoyaltyForReleaseViaHub
+ * @description Creates a Post on a Hub.
+ * @param {String} hubPubkey
+ * @param {String} slug
+ * @param {String} uri
+ * @param {String=} referenceRelease
+ * @param {String=} fromHub
+ * @param {Object} wallet
+ * @param {Object} connection
+ * @returns
+ */
+
+const collectRoyaltyForReleaseViaHub = async (client, releasePubkey, hubPubkey, slug, uri) => {
+  try {
+    const { provider } = client;
+    const program = await client.useProgram();
+    releasePubkey = new anchor.web3.PublicKey(releasePubkey);
+    hubPubkey = new anchor.web3.PublicKey(hubPubkey);
+
+    let hub = await program.account.hub.fetch(hubPubkey);
+    let release = await program.account.release.fetch(releasePubkey);
+    console.log('release', release)
+    let hubMetadata = await fetch(hubPubkey)
+    const recipient = release.royaltyRecipients.find(
+      (recipient) => recipient.recipientAuthority.toBase58() === hub.hubSigner.toBase58()
+    );
+    console.log('recipient', recipient);
+    const [hubWallet] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      new anchor.web3.PublicKey(hub.hubSigner),
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      release.paymentMint
+    );
+    const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')), hubPubkey.toBuffer(), releasePubkey.toBuffer()],
+      program.programId
+    );
+      console.log('hub', hubMetadata.hub.handle)
+    const tx = await program.methods
+      .releaseRevenueShareCollectViaHub(hubMetadata.hub.handle)
+      .accounts({
+        authority: provider.wallet.publicKey,
+        royaltyTokenAccount: release.royaltyTokenAccount,
+        release: releasePubkey,
+        releaseSigner: release.releaseSigner,
+        releaseMint: release.releaseMint,
+        hub: hubPubkey,
+        hubRelease,
+        hubSigner: hub.hubSigner,
+        hubWallet,
+        tokenProgram: NinaClient.ids.programs.token,
+      })
+      .transaction();
+
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
+    const paymentMint = release.paymentMint
+    console.log('hubRelease, recipient, paymentMint', hubRelease, recipient, paymentMint)
+    return { hubRelease, recipient, paymentMint };
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
+/**
+ * @function hubWithdraw
+ * @description Creates a Post on a Hub.
+ * @param {String} hubPubkey
+ * @param {String} slug
+ * @param {String} uri
+ * @param {String=} referenceRelease
+ * @param {String=} fromHub
+ * @param {Object} wallet
+ * @param {Object} connection
+ * @returns
+ */
 
 const hubWithdraw = async (client, hubPubkey) => {
   try {
@@ -721,8 +875,9 @@ const hubWithdraw = async (client, hubPubkey) => {
 
     const withdrawAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
 
-    const tx = await program.transaction.hubWithdraw(new anchor.BN(withdrawAmount), hub.handle, {
-      accounts: {
+    const tx = await program.methods
+      .hubWithdraw(new anchor.BN(withdrawAmount), hub.handle)
+      .accounts({
         authority: provider.wallet.publicKey,
         hub: hubPubkey,
         hubSigner,
@@ -730,15 +885,14 @@ const hubWithdraw = async (client, hubPubkey) => {
         withdrawDestination,
         withdrawMint: USDC_MINT,
         tokenProgram: NinaClient.ids.programs.token,
-      },
-    });
+      })
+      .transaction();
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
 
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-
     return true;
   } catch (error) {
     console.log(error);
@@ -763,5 +917,7 @@ export default {
   hubContentToggleVisibility,
   hubAddRelease,
   postInitViaHub,
+  postUpdateViaHub,
+  collectRoyaltyForReleaseViaHub,
   hubWithdraw,
 };
