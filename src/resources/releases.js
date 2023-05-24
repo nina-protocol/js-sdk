@@ -95,7 +95,8 @@ const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) =
  * @param {Object} client NinaClient instance.
  * @param {String} releasePublicKey Public Key of the release.
  * @param {String} hubPublicKey Public Key of the hub.
- * @returns
+ * @example const transactionId = await NinaClient.Release.purchaseViaHub(client, "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ", "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {String} the transaction ID.
  */
 const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
@@ -339,7 +340,7 @@ const releasePurchase = async (client, releasePublicKey) => {
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
  * @param {Boolean} isOpen Is the release open or not.
- * @returns
+ * @returns {Object} The release.
  */
 
 const releaseInitViaHub = async (
@@ -500,9 +501,16 @@ const releaseInitViaHub = async (
   }
 };
 
-export const initializeReleaseAndMint = async (client, hubPubkey) => {
+/**
+ * @function initializeReleaseAndMint - Initializes a release and mints the first edition
+ * @param {Object} client - the Nina Client
+ * @param {*} hubPubkey - the hub pubkey
+ * @example await initializeReleaseAndMint(client, hubPubkey);
+ * @returns {Object} - the release, release bump, and release mint
+ */
+
+const initializeReleaseAndMint = async (client, hubPubkey) => {
   try {
-    console.log('working...');
     const program = await client.useProgram();
     const releaseMint = anchor.web3.Keypair.generate();
     const [release, releaseBump] = await anchor.web3.PublicKey.findProgramAddress(
@@ -550,7 +558,7 @@ export const initializeReleaseAndMint = async (client, hubPubkey) => {
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
  * @param {Boolean} isOpen Is the release open or not.
- * @returns
+ * @returns {Object} The release.
  */
 
 export const releaseInit = async (
@@ -692,10 +700,11 @@ export const releaseInit = async (
  * @function closeRelease
  * @param {Object} client the NinaClient
  * @param {String} releasePublicKey Public Key of the release.
- * @returns
+ * @example await closeRelease(ninaClient, 'releasePublicKey');
+ * @returns {Object} The closed release.
  */
 
-const closeRelease = async (client, releasePublicKey) => {
+export const closeRelease = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -728,10 +737,11 @@ const closeRelease = async (client, releasePublicKey) => {
  * @param {String} recipient Public Key of the recipient.
  * @param {String} releasePublicKey Public Key of the release.
  * @param {Object} state the NinaClient state.
- * @returns
+ * @example collectRoyaltyForRelease(client, recipient, releasePublicKey, state)
+ * @returns {Object} the release.
  */
 
-const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
+export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
   if (!releasePublicKey || !recipient) {
     return;
   }
@@ -789,11 +799,15 @@ const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, sta
 
 /**
  * @function addRoyaltyRecipient
- * @param {Object} client
- * @param {String} recipient
- * @param {String} releasePublicKey
+ * @param {Object} client - the NinaClient
+ * @param {String} release - the release
+ * @param {Object} updateData - the data to update the release with
+ * @param {String} releasePublicKey - the Public Key of the release
+ * @example addRoyaltyRecipient(client, recipient, updateData, releasePublicKey)
+ * @returns {String} The Public Key of the recipient
  */
-const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {
+
+export const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
