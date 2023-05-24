@@ -704,7 +704,6 @@ const postInitViaHub = async (client, hubPubkey, slug, uri, referenceRelease = u
 
 const postUpdateViaHub = async (client, hubPubkey, slug, uri) => {
   try {
-    console.log('postUpdateViaHub');
     const { provider } = client;
     const program = await client.useProgram();
     hubPubkey = new anchor.web3.PublicKey(hubPubkey);
@@ -746,9 +745,7 @@ const postUpdateViaHub = async (client, hubPubkey, slug, uri) => {
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
-    console.log('txid', txid);
     await getConfirmTransaction(txid, provider.connection);
-    console.log('hubPost', hubPost);
     return hubPost;
   } catch (error) {
     console.log(error);

@@ -59,20 +59,28 @@ const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
   program.programId
 )
 
-const request = {
-  accounts: {
+let tx;
+if (hubHandle) {
+  tx = await program.methods
+    .subscriptionSubscribeHub(hubHandle)
+    .accounts({
+      payer: provider.wallet.publicKey,
+      from: provider.wallet.publicKey,
+      subscription,
+      to: subscribeToAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
+    })
+    .transaction()
+} else {
+  tx = await program.methods.subscriptionSubscribe()
+  .accounts({
     payer: provider.wallet.publicKey,
     from: provider.wallet.publicKey,
     subscription,
     to: subscribeToAccount,
     systemProgram: anchor.web3.SystemProgram.programId,
-  },
-}
-let tx;
-if (hubHandle) {
-  tx = await program.transaction.subscriptionSubscribeHub(hubHandle, request)
-} else {
-  tx = await program.transaction.subscriptionSubscribe(request)
+  })
+  .transaction()
 }
 
 tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
@@ -89,7 +97,7 @@ return subscriptionData
   }
 }
 /**
- * @function subscriptionSubscribe
+ * @function subscriptionUnsubscribe
  * @param {Object} client the NinaClient instance
  * @param {String} unsubscribeAccount the account to unsubscribe from
  * @returns
@@ -109,15 +117,15 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
       ],
       program.programId
     )
-    const tx = await program.transaction.subscriptionUnsubscribe({
-      accounts: {
-        payer: provider.wallet.publicKey,
-        from: provider.wallet.publicKey,
-        subscription,
-        to: unsubscribeAccount,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      },
+    const tx = await program.methods.subscriptionUnsubscribe().accounts({
+      payer: provider.wallet.publicKey,
+      from: provider.wallet.publicKey,
+      subscription,
+      to: unsubscribeAccount,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
+    .transaction()
+
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
     tx.feePayer = provider.wallet.publicKey
     const txid = await provider.wallet.sendTransaction(tx, provider.connection)
