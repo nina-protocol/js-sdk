@@ -688,16 +688,23 @@ export const releaseInit = async (
   }
 };
 
-export const closeRelease = async (client, releasePubkey) => {
+/**
+ * @function closeRelease
+ * @param {Object} client the NinaClient
+ * @param {String} releasePublicKey Public Key of the release.
+ * @returns
+ */
+
+const closeRelease = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
-    const release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePubkey));
+    const release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));
     const tx = await program.methods
       .releaseCloseEdition()
       .accounts({
         authority: provider.wallet.publicKey,
-        release: new anchor.web3.PublicKey(releasePubkey),
+        release: new anchor.web3.PublicKey(releasePublicKey),
         releaseSigner: release.releaseSigner,
         releaseMint: release.releaseMint,
       })
@@ -707,7 +714,7 @@ export const closeRelease = async (client, releasePubkey) => {
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    const closedRelease = await fetch(releasePubkey);
+    const closedRelease = await fetch(releasePublicKey);
     return closedRelease;
   } catch (error) {
     console.warn(error);
@@ -715,8 +722,17 @@ export const closeRelease = async (client, releasePubkey) => {
   }
 };
 
-const collectRoyaltyForRelease = async (client, recipient, releasePubkey, state) => {
-  if (!releasePubkey || !recipient) {
+/**
+ * @function collectRoyaltyForRelease
+ * @param {Object} client the NinaClient
+ * @param {String} recipient Public Key of the recipient.
+ * @param {String} releasePublicKey Public Key of the release.
+ * @param {Object} state the NinaClient state.
+ * @returns
+ */
+
+const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
+  if (!releasePublicKey || !recipient) {
     return;
   }
   try {
@@ -725,9 +741,9 @@ const collectRoyaltyForRelease = async (client, recipient, releasePubkey, state)
 
     let release;
     if (!state) {
-      release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePubkey));
+      release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));
     } else {
-      release = state.tokenData[releasePubkey];
+      release = state.tokenData[releasePublicKey];
     }
 
     release.paymentMint = new anchor.web3.PublicKey(release.paymentMint);
@@ -750,7 +766,7 @@ const collectRoyaltyForRelease = async (client, recipient, releasePubkey, state)
       .accounts({
         authority: provider.wallet.publicKey,
         authorityTokenAccount,
-        release: new anchor.web3.PublicKey(releasePubkey),
+        release: new anchor.web3.PublicKey(releasePublicKey),
         releaseMint: release.releaseMint,
         releaseSigner: release.releaseSigner,
         royaltyTokenAccount: release.royaltyTokenAccount,
@@ -763,8 +779,74 @@ const collectRoyaltyForRelease = async (client, recipient, releasePubkey, state)
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    const collectedRelease = await fetch(releasePubkey);
+    const collectedRelease = await fetch(releasePublicKey);
     return collectedRelease;
+  } catch (error) {
+    console.warn(error);
+    return false;
+  }
+};
+
+/**
+ * @function addRoyaltyRecipient
+ * @param {Object} client
+ * @param {String} recipient
+ * @param {String} releasePublicKey
+ */
+const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {
+  try {
+    const { provider } = client;
+    const program = await client.useProgram();
+    const releasePubkey = new anchor.web3.PublicKey(releasePublicKey);
+    if (!release) {
+      release = await program.account.release.fetch(releasePubkey);
+    }
+    const recipientPublicKey = new anchor.web3.PublicKey(updateData.recipientAddress);
+    const updateAmount = updateData.percentShare * 10000;
+
+    let [newRoyaltyRecipientTokenAccount, newRoyaltyRecipientTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      recipientPublicKey,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      new anchor.web3.PublicKey(release.paymentMint)
+    );
+
+    let [authorityTokenAccount, authorityTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      new anchor.web3.PublicKey(release.paymentMint)
+    );
+
+    if (newRoyaltyRecipientTokenAccountIx) {
+      request.instructions = [newRoyaltyRecipientTokenAccountIx];
+    }
+
+    if (authorityTokenAccountIx) {
+      request.instructions = [authorityTokenAccountIx];
+    }
+
+    const tx = await program.methods.releaseRevenueShareTransfer(new anchor.BN(updateAmount)).accounts({
+      authority: provider.wallet.publicKey,
+      authorityTokenAccount,
+      release: releasePublicKey,
+      releaseMint: new anchor.web3.PublicKey(release.releaseMint),
+      releaseSigner: new anchor.web3.PublicKey(release.releaseSigner),
+      royaltyTokenAccount: release.royaltyTokenAccount,
+      newRoyaltyRecipient: recipientPublicKey,
+      newRoyaltyRecipientTokenAccount,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+    }).transaction()
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
+    return recipientPublicKey;
   } catch (error) {
     console.warn(error);
     return false;
@@ -785,4 +867,5 @@ export default {
   releaseInit,
   closeRelease,
   collectRoyaltyForRelease,
+  addRoyaltyRecipient,
 };
