@@ -561,7 +561,7 @@ const initializeReleaseAndMint = async (client, hubPubkey) => {
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
  * @param {Boolean} isOpen Is the release open or not.
- * @returns {Object} The release.
+ * @returns {Object} The created Release.
  */
 
 export const releaseInit = async (
@@ -704,7 +704,7 @@ export const releaseInit = async (
  * @param {Object} client the NinaClient
  * @param {String} releasePublicKey Public Key of the release.
  * @example await closeRelease(ninaClient, 'releasePublicKey');
- * @returns {Object} The closed release.
+ * @returns {Object} The closed Release.
  */
 
 export const closeRelease = async (client, releasePublicKey) => {
@@ -741,7 +741,7 @@ export const closeRelease = async (client, releasePublicKey) => {
  * @param {String} releasePublicKey Public Key of the release.
  * @param {Object} state the NinaClient state.
  * @example collectRoyaltyForRelease(client, recipient, releasePublicKey, state)
- * @returns {Object} the release.
+ * @returns {Object} the Release.
  */
 
 export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {

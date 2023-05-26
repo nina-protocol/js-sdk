@@ -133,6 +133,7 @@ const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false) =>
  * @param {Object} client The NinaClient.
  * @param {Object} hubParams The Hub parameters. // NOTE: exand
  * @example const hub = await NinaClient.Hub.hubInit({})
+ * @returns {Object} The created Hub account.
  */
 const hubInit = async (client, hubParams) => {
   try {
