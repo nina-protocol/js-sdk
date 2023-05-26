@@ -105,7 +105,6 @@ export const findAssociatedTokenAddress = async (
 export const getUsdcBalance = async (publicKey, connection) => {
   if (publicKey) {
     try {
-      console.log('publicKey in get usdc', publicKey)
       let [usdcTokenAccountPubkey] = await findOrCreateAssociatedTokenAccount(
         connection,
         publicKey,
@@ -121,7 +120,6 @@ export const getUsdcBalance = async (publicKey, connection) => {
           await connection.getTokenAccountBalance(
             usdcTokenAccountPubkey
           )
-          console.log('usdcTokenAccount.value.uiAmount.toFixed(2)', usdcTokenAccount.value.uiAmount.toFixed(2))
         return usdcTokenAccount.value.uiAmount.toFixed(2)
       } else {
         return 0

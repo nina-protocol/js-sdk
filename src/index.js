@@ -7,16 +7,6 @@ import Search from './resources/search';
 import Subscription from './resources/subscriptions';
 import client from './client';
 
-console.log('hello HOLA')
-console.log('HOLA HOLA');
-console.log('HOLA HOLA');
-console.log('HOLA HOLA');
-console.log('HOLA HOLA');
-console.log('HOLA HOLA');
-console.log('HOLA hello');
-
-// client.init()
-
 const Nina = {
   Account,
   Exchange,

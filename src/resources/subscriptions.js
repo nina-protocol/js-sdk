@@ -130,7 +130,6 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
     tx.feePayer = provider.wallet.publicKey
     const txid = await provider.wallet.sendTransaction(tx, provider.connection)
-    console.log('txid', txid)
     await getConfirmTransaction(txid, provider.connection)
 
     const subscriptionData = await fetch(subscription.toBase58(), txid)
