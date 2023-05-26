@@ -1,7 +1,7 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount, getConfirmTransaction,uiToNative } from '../utils';
+import { findOrCreateAssociatedTokenAccount, getConfirmTransaction, uiToNative } from '../utils';
 import MD5 from 'crypto-js/md5';
 
 /**
@@ -311,8 +311,10 @@ const hubAddCollaborator = async (
 
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hubPublicKey}/collaborators/${hubCollaborator.toBase58()}`);
-    const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
-    return collaborator;
+    // endpoint needs to be updated to return collaborator pubkey
+    // const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    // return collaborator;
+    return hubPublicKey;
   } catch (error) {
     console.log(error);
     return false;
@@ -378,8 +380,9 @@ const hubUpdateCollaboratorPermission = async (
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
-    return collaborator;
+    // const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    // return collaborator;
+    return hubPublicKey;
   } catch (error) {
     console.log(error);
     return false;
@@ -428,8 +431,9 @@ const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) =
 
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hubPublicKey}/collaborators/${hubCollaborator.toBase58()}`);
-    const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
-    return collaborator;
+    // const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    // return collaborator;
+    return collaboratorPubkey;
   } catch (error) {
     console.log(error);
     return false;
@@ -541,7 +545,7 @@ const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) =>
       ],
       program.programId
     );
-    let remainingAccounts
+    let remainingAccounts;
     if (fromHub) {
       remainingAccounts = [
         {
@@ -892,7 +896,7 @@ const hubWithdraw = async (client, hubPublicKey) => {
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    return hubPublicKey
+    return hubPublicKey;
   } catch (error) {
     console.log(error);
     return false;

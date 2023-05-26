@@ -45,7 +45,6 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @example const release = await NinaClient.Release.fetch("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
 const fetch = async (publicKey, withAccountData = false) => {
-  console.log('withAccountData', withAccountData);
   return await NinaClient.get(`/releases/${publicKey}`, undefined, withAccountData);
 };
 
@@ -848,18 +847,21 @@ export const addRoyaltyRecipient = async (client, release, updateData, releasePu
       request.instructions = [authorityTokenAccountIx];
     }
 
-    const tx = await program.methods.releaseRevenueShareTransfer(new anchor.BN(updateAmount)).accounts({
-      authority: provider.wallet.publicKey,
-      authorityTokenAccount,
-      release: releasePublicKey,
-      releaseMint: new anchor.web3.PublicKey(release.releaseMint),
-      releaseSigner: new anchor.web3.PublicKey(release.releaseSigner),
-      royaltyTokenAccount: release.royaltyTokenAccount,
-      newRoyaltyRecipient: recipientPublicKey,
-      newRoyaltyRecipientTokenAccount,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-    }).transaction()
+    const tx = await program.methods
+      .releaseRevenueShareTransfer(new anchor.BN(updateAmount))
+      .accounts({
+        authority: provider.wallet.publicKey,
+        authorityTokenAccount,
+        release: releasePublicKey,
+        releaseMint: new anchor.web3.PublicKey(release.releaseMint),
+        releaseSigner: new anchor.web3.PublicKey(release.releaseSigner),
+        royaltyTokenAccount: release.royaltyTokenAccount,
+        newRoyaltyRecipient: recipientPublicKey,
+        newRoyaltyRecipientTokenAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      })
+      .transaction();
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
