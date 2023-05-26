@@ -247,7 +247,7 @@ const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, referralFe
     const updatedHub = await fetch(hubPublicKey.toBase58());
     return updatedHub;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -317,7 +317,7 @@ const hubAddCollaborator = async (
     // return collaborator;
     return hubPublicKey;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -385,7 +385,7 @@ const hubUpdateCollaboratorPermission = async (
     // return collaborator;
     return hubPublicKey;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -436,7 +436,7 @@ const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) =
     // return collaborator;
     return collaboratorPubkey;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -497,7 +497,7 @@ const hubContentToggleVisibility = async (client, hubPublicKey, contentAccountPu
 
     return hubChildPublicKey;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -578,7 +578,7 @@ const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) =>
     const hubReleaseData = await fetchHubRelease(hubPublicKey.toBase58(), hubRelease.toBase58());
     return hubReleaseData;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -699,7 +699,7 @@ const postInitViaHub = async (client, hubPublicKey, slug, uri, referenceRelease 
       referenceReleaseHubRelease,
     };
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -762,7 +762,7 @@ const postUpdateViaHub = async (client, hubPublicKey, slug, uri) => {
     await getConfirmTransaction(txid, provider.connection);
     return hubPost;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -829,7 +829,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
     const paymentMint = release.paymentMint;
     return { hubRelease, recipient, paymentMint };
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -899,7 +899,7 @@ const hubWithdraw = async (client, hubPublicKey) => {
     await getConfirmTransaction(txid, provider.connection);
     return hubPublicKey;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };

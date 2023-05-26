@@ -231,7 +231,7 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
 
     return txid;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -321,7 +321,7 @@ const releasePurchase = async (client, releasePublicKey) => {
     await getConfirmTransaction(txid, provider.connection);
     return txid;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
@@ -499,7 +499,7 @@ const releaseInitViaHub = async (
     const newRelease = await Hub.fetchHubRelease(hubPubkey.toBase58(), hubRelease.toBase58());
     return newRelease;
   } catch (error) {
-    console.log(error);
+    console.warn(error);
     return false;
   }
 };
