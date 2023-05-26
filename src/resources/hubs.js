@@ -1,7 +1,7 @@
 import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount, getConfirmTransaction } from '../utils';
+import { findOrCreateAssociatedTokenAccount, getConfirmTransaction,uiToNative } from '../utils';
 import MD5 from 'crypto-js/md5';
 
 /**
@@ -217,7 +217,7 @@ const hubInit = async (client, hubParams) => {
  * @param {Number} publishFee
  * @param {Number} referralFee
  * @example const hub = await NinaClient.Hub.hubUpdateConfig(hubPublicKey, 'https://nina.com', 0.1, 0.1, wallet, connection);
- * @returns
+ * @returns {Object} The updated Hub account.
  */
 const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, referralFee) => {
   try {
@@ -256,7 +256,7 @@ const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, referralFe
  * @param {Boolean} canAddContent - Boolean indicating if the collaborator can add content to the Hub.
  * @param {Boolean} canAddCollaborator - Boolean indicating if the collaborator can add collaborators to the Hub.
  * @param {Integer} allowance - integer indicating the amount of Hub actions the collaborator can execute (-1 for unlimited).
- * @returns
+ * @returns {Object} Collaborator
  */
 
 const hubAddCollaborator = async (
@@ -325,7 +325,7 @@ const hubAddCollaborator = async (
  * @param {Boolean} canAddCollaborator - Boolean indicating if the collaborator can add collaborators to the Hub.
  * @param {Integer} allowance - integer indicating the amount of Hub actions the collaborator can execute (-1 for unlimited).
  * @example const hub = await NinaClient.Hub.hubUpdateCollaboratorPermission(hubPublicKey, collaboratorPubkey, true, true, 10, wallet, connection);
- * @returns
+ * @returns {Object} Collaborator
  */
 const hubUpdateCollaboratorPermission = async (
   client,
@@ -388,7 +388,7 @@ const hubUpdateCollaboratorPermission = async (
  * @param {Object} client The NinaClient.
  * @param {String} hubPublicKey
  * @param {String} collaboratorPubkey
- * @returns
+ * @returns {Object} Collaborator
  */
 
 const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) => {
@@ -500,7 +500,7 @@ const hubContentToggleVisibility = async (client, hubPublicKey, contentAccountPu
  * @param {String} hubPublicKey
  * @param {String} releasePublicKey
  * @param {String=} fromHub
- * @returns
+ * @returns {Object} The Hub Release Data
  */
 
 const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) => {
@@ -512,12 +512,20 @@ const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) =>
     releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
 
     const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')), hubPublicKey.toBuffer(), releasePublicKey.toBuffer()],
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+        hubPublicKey.toBuffer(),
+        releasePublicKey.toBuffer(),
+      ],
       program.programId
     );
 
     const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')), hubPublicKey.toBuffer(), releasePublicKey.toBuffer()],
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+        hubPublicKey.toBuffer(),
+        releasePublicKey.toBuffer(),
+      ],
       program.programId
     );
 
@@ -529,9 +537,9 @@ const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) =>
       ],
       program.programId
     );
-
+    let remainingAccounts
     if (fromHub) {
-      request.remainingAccounts = [
+      remainingAccounts = [
         {
           pubkey: new anchor.web3.PublicKey(fromHub),
           isWritable: false,
@@ -769,7 +777,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
 
     let hub = await program.account.hub.fetch(hubPublicKey);
     let release = await program.account.release.fetch(releasePublicKey);
-    let hubMetadata = await fetch(hubPublicKey)
+    let hubMetadata = await fetch(hubPublicKey);
     const recipient = release.royaltyRecipients.find(
       (recipient) => recipient.recipientAuthority.toBase58() === hub.hubSigner.toBase58()
     );
@@ -782,10 +790,13 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
       release.paymentMint
     );
     const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')), hubPublicKey.toBuffer(), releasePublicKey.toBuffer()],
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+        hubPublicKey.toBuffer(),
+        releasePublicKey.toBuffer(),
+      ],
       program.programId
     );
-      console.log('hub', hubMetadata.hub.handle)
     const tx = await program.methods
       .releaseRevenueShareCollectViaHub(hubMetadata.hub.handle)
       .accounts({
@@ -806,7 +817,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    const paymentMint = release.paymentMint
+    const paymentMint = release.paymentMint;
     return { hubRelease, recipient, paymentMint };
   } catch (error) {
     console.log(error);
@@ -857,10 +868,10 @@ const hubWithdraw = async (client, hubPublicKey) => {
       mint: USDC_MINT,
     });
 
-    const withdrawAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.amount;
+    const withdrawAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
 
     const tx = await program.methods
-      .hubWithdraw(new anchor.BN(withdrawAmount), hub.handle)
+      .hubWithdraw(new anchor.BN(uiToNative(withdrawAmount, USDC_MINT)), hub.handle)
       .accounts({
         authority: provider.wallet.publicKey,
         hub: hubPublicKey,
@@ -877,7 +888,7 @@ const hubWithdraw = async (client, hubPublicKey) => {
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    return true;
+    return hubPublicKey
   } catch (error) {
     console.log(error);
     return false;

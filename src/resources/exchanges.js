@@ -46,6 +46,7 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
  * @param {String} exchangeAccount The public key of the Exchange account.
  * @param {Boolean} isSelling Whether the Exchange is selling or buying.
  * @param {String} releasePublicKey The public key of the Release account.
+ * @returns {Object} The transaction id, the Exchange account, the Release Public Key, and the Exchange Signer.
  */
 
 const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
@@ -280,7 +281,10 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
     for await (let signer of [exchangeHistory]) {
       tx.partialSign(signer);
     }
-    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    const signedTx = await provider.wallet.signTransaction(tx);
+    const txid = await provider.connection.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: true,
+    });
     await provider.connection.getParsedTransaction(txid, 'finalized');
     return txid;
   } catch (err) {
@@ -353,7 +357,6 @@ const exchangeCancel = async (client, exchange) => {
   tx.feePayer = provider.wallet.publicKey;
   const txid = await provider.wallet.sendTransaction(tx, provider.connection);
   await provider.connection.getParsedTransaction(txid, 'confirmed');
-  console.log('txid', txid);
   return {
     exchangePubkey,
     txid,

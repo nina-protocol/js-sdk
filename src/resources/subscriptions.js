@@ -72,7 +72,7 @@ if (hubHandle) {
     })
     .transaction()
 } else {
-  tx = await program.methods.subscriptionSubscribe()
+  tx = await program.methods.subscriptionSubscribeAccount()
   .accounts({
     payer: provider.wallet.publicKey,
     from: provider.wallet.publicKey,
@@ -117,7 +117,8 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
       ],
       program.programId
     )
-    const tx = await program.methods.subscriptionUnsubscribe().accounts({
+    const tx = await program.methods.subscriptionUnsubscribe()
+    .accounts({
       payer: provider.wallet.publicKey,
       from: provider.wallet.publicKey,
       subscription,
@@ -129,6 +130,7 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
     tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
     tx.feePayer = provider.wallet.publicKey
     const txid = await provider.wallet.sendTransaction(tx, provider.connection)
+    console.log('txid', txid)
     await getConfirmTransaction(txid, provider.connection)
 
     const subscriptionData = await fetch(subscription.toBase58(), txid)

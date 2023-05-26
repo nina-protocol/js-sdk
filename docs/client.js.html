@@ -1,43 +1,96 @@
 <!DOCTYPE html><html lang="en" style="font-size:16px"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/demo/public/images/favicon.ico"><title>client.js</title><!--[if lt IE 9]>
       <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.js"></script><script>var baseURL="/",locationPathname="",baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body class="dark" data-theme="dark"><div class="sidebar-container"><div class="sidebar" id="sidebar"><a href="/" class="sidebar-title sidebar-title-anchor">@nina-protocol/js-sdk</a><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="i712ajrB0US3KZ424M1Ag"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Account.html">Account</a></div><div class="sidebar-section-children"><a href="module-Exchange.html">Exchange</a></div><div class="sidebar-section-children"><a href="module-Hub.html">Hub</a></div><div class="sidebar-section-children"><a href="module-Post.html">Post</a></div><div class="sidebar-section-children"><a href="module-Release.html">Release</a></div><div class="sidebar-section-children"><a href="module-Search.html">Search</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="vff97yyDDbDeUiYjA48ve"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="NinaClient.html">NinaClient</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="xMafKsZG51rTp5G3qssbz"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#init">init</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">client.js</h1></header><article><pre class="prettyprint source lang-js"><code>import axios from 'axios';
+    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.min.js"></script><script>var baseURL="/",locationPathname="",baseURL=(locationPathname=document.location.pathname).substr(0,locationPathname.lastIndexOf("/")+1)</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body class="dark" data-theme="dark"><div class="sidebar-container"><div class="sidebar" id="sidebar"><a href="/" class="sidebar-title sidebar-title-anchor">@nina-protocol/js-sdk</a><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="8P0VXCrxqX53FEgRAAEvq"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Account.html">Account</a></div><div class="sidebar-section-children"><a href="module-Exchange.html">Exchange</a></div><div class="sidebar-section-children"><a href="module-Hub.html">Hub</a></div><div class="sidebar-section-children"><a href="module-Post.html">Post</a></div><div class="sidebar-section-children"><a href="module-Release.html">Release</a></div><div class="sidebar-section-children"><a href="module-Search.html">Search</a></div><div class="sidebar-section-children"><a href="module-Subscription.html">Subscription</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="--8ntb_EFtQ-I-5wrjqEV"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="NinaClient.html">NinaClient</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="IBgXPTeU2NG0PxEmOdfgW"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#init">init</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">client.js</h1></header><article><pre class="prettyprint source lang-js"><code>import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
 import _ from 'lodash';
+import Nina from '.';
 
+const MAX_U64 = '18446744073709551615';
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      nina: 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: '53ueyguZx5bHjgHQdU1EcoLkcupAt97wVbcYeAi6iAYy',
+      vaultUsdc: 'HDhJyie5Gpck7opvAbYi5H22WWofAR3ygKFghdzDkmLf',
+      vaultWrappedSol: '5NnBrUiqHsx1QnGVSo73AprxgVtRjcfmGrgwJ6q1ADzs',
+    },
+    mints: {
+      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+  devnet: {
+    programs: {
+      nina: '77BKtqWTbTRxj5eZPuFbeXjx3qz4TTHoXRnpCejYWiQH',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: 'AzhSWZCtvfRkzGzzAhPxzrvBcMBcYGKp2rwCh17hARhi',
+      vaultUsdc: '2hyWtzYhwW4CSWs7TrrdhQ9DWRaKUVhSxsyVTzcyHRq6',
+      vaultWrappedSol: 'H35oumnDdCu5VGXvp24puqYvUQ3Go1JXCGum7L2J3CSP',
+    },
+    mints: {
+      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+};
 /** Class Representing the Nina Client */
 class NinaClient {
   constructor() {
-    this.provider = null  
+    this.provider = null;
     this.program = null;
     this.endpoint = null;
     this.cluster = null;
     this.programId = null;
+    this.apiKey = null;
+    this.ids = null;
   }
 
-  /** 
+  /**
    * Initialize the Nina Client Class Object
    * @function init
    * @param {String} endpoint - API endpoint URL (https://api.ninaprotocol.com/v1/)
    * @param {String} cluster - Solana RPC URL (https://api.mainnet-beta.solana.com)
-   * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)   
+   * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)
    * @example Nina.client.init(endpoint, cluster, programId)
-  */
-  async init(endpoint, cluster, programId) {
-    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
+   */
+  async init(endpoint, cluster, programId, apiKey = undefined) {
+    this.apiKey = apiKey;
+    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
     const connection = new anchor.web3.Connection(this.cluster);
-    this.provider = new anchor.AnchorProvider(connection, {}, {
-      commitment: 'confirmed',
-      preflightCommitment: 'processed',
-    })  
-    this.program = await anchor.Program.at(
-      this.programId,
-      this.provider,
-    )
+    this.provider = new anchor.AnchorProvider(
+      connection,
+      {},
+      {
+        commitment: 'confirmed',
+        preflightCommitment: 'processed',
+      }
+    );
+    this.program = await anchor.Program.at(this.programId, this.provider);
+    this.ids = NINA_CLIENT_IDS[process.env.REACT_APP_CLUSTER];
   }
 
   async get(url, query = undefined, withAccountData = false) {
+    if (this.apiKey) {
+      if (query) {
+        query.api_key = this.apiKey;
+      } else {
+        query = { api_key: this.apiKey };
+      }
+    }
     const queryString = query ? `?${new URLSearchParams(query).toString()}` : '';
     let response = await axios.get(`${this.endpoint}${url}${queryString}`);
     if (withAccountData) {
@@ -58,14 +111,17 @@ class NinaClient {
     return response;
   }
 
-  async fetchAccountData (publicKey, accountType) {
+  async fetchAccountData(publicKey, accountType) {
     const account = await this.program.account[accountType].fetch(new anchor.web3.PublicKey(publicKey), 'confirmed');
-    return account
+    return account;
   }
 
-  async fetchAccountDataMultiple (publicKeys, accountType) {
-    const accounts = await this.program.account[accountType].fetchMultiple(publicKeys.map(publicKey => new anchor.web3.PublicKey(publicKey)), 'confirmed');
-    return accounts
+  async fetchAccountDataMultiple(publicKeys, accountType) {
+    const accounts = await this.program.account[accountType].fetchMultiple(
+      publicKeys.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
+      'confirmed'
+    );
+    return accounts;
   }
 
   async getAccountData(url, response) {
@@ -73,62 +129,60 @@ class NinaClient {
       const hubPublicKey = response.data.hub.publicKey;
       const hub = await this.fetchAccountData(hubPublicKey, 'hub');
       response.data.hub.accountData = this.parseHubAccountData(hub);
-      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, "release");
-      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, "post");
+      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, 'release');
+      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, 'post');
       await this.processMultipleHubCollaboratorAccountDataWithHub(response.data.collaborators, hubPublicKey);
     } else if (/releases\/(.*?)\/hubs/.test(url)) {
       const releasePublicKey = url.split("/")[2];
       await this.processMulitpleHubAccountData(response.data.hubs)
-      for await (let hub of response.data.hubs) {
-        const accountData = await this.processHubReleaseAccountDataWithHub(releasePublicKey, hub.publicKey);
-        hub.accountData = {
-          ...hub.accountData,
-          ...accountData
-        };
-      }
+      await this.processMultipleHubReleasesAccountDataWithHub(response.data.hubs, releasePublicKey);
     } else if (url === '/hubs') {
-      await this.processMulitpleHubAccountData(response.data.hubs)
-    } else if (/releases\/(.*?)\/revenueShareRecipients/.test(url)) { 
-      const releasePublicKey = url.split("/")[2];
-      const release = await this.fetchAccountData(releasePublicKey, "release");
+      await this.processMulitpleHubAccountData(response.data.hubs);
+    } else if (/releases\/(.*?)\/revenueShareRecipients/.test(url)) {
+      const releasePublicKey = url.split('/')[2];
+      const release = await this.fetchAccountData(releasePublicKey, 'release');
       release = this.parseReleaseAccountData(release);
-      response.data.revenueShareRecipients.forEach(recipient => {
-        recipient.accountData = { revenueShareRecipient: release.revenueShareRecipients.filter(r => r.recipientAuthority === recipient.publicKey)[0]};
-      })
+      response.data.revenueShareRecipients.forEach((recipient) => {
+        recipient.accountData = {
+          revenueShareRecipient: release.revenueShareRecipients.filter(
+            (r) => r.recipientAuthority === recipient.publicKey
+          )[0],
+        };
+      });
     } else if (/accounts\/(.*?)\/hubs/.test(url)) {
       const publicKey = url.split('/')[2];
       await this.processMulitpleHubAccountData(response.data.hubs)
-      for await (let hub of response.data.hubs) {
-        hub.accountData.collaborator = await this.processAndParseSingleHubCollaboratorAccountDataWithHub(publicKey, hub.publicKey)
-      }
+      await this.processMultipleHubCollaboratorAccountDataWithHubs(response.data.hubs, publicKey);
     } else if (
       url === '/releases' ||
       /accounts\/(.*?)\/published/.test(url) ||
       /accounts\/(.*?)\/collected/.test(url) ||
       /accounts\/(.*?)\/revenueShares/.test(url)
-    ){
-      await this.processMultipleReleaseAccountData(response.data.releases || response.data.collected || response.data.published || response.data.revenueShares)
-    } else if (/accounts\/(.*?)\/exchanges/.test(url)) { 
-      await this.processMultipleExchangeAccountData(response.data.exchanges)
+    ) {
+      await this.processMultipleReleaseAccountData(
+        response.data.releases || response.data.collected || response.data.published || response.data.revenueShares
+      );
+    } else if (/accounts\/(.*?)\/exchanges/.test(url)) {
+      await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/^\/releases\/((?!(\/)).)*$/.test(url)) {
-      let release = await this.fetchAccountData(response.data.release.publicKey, "release");
-      response.data.release.accountData = { release: this.parseReleaseAccountData(release) }
+      let release = await this.fetchAccountData(response.data.release.publicKey, 'release');
+      response.data.release.accountData = { release: this.parseReleaseAccountData(release) };
     } else if (/\/releases\/(.*?)\/exchanges/.test(url)) {
-      await this.processMultipleExchangeAccountData(response.data.exchanges)
+      await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/hubs\/(.*?)\/releases/.test(url)) {
-      const hubPublicKey = response.data.publicKey
-      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, "release");
+      const hubPublicKey = response.data.publicKey;
+      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, 'release');
     } else if (url === '/posts' || /accounts\/(.*?)\/posts/.test(url)) {
     } else if (/hubs\/(.*?)\/posts/.test(url)) {
-      const hubPublicKey = response.data.publicKey
-      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, "post");
+      const hubPublicKey = response.data.publicKey;
+      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, 'post');
     } else if (/^\/posts\/((?!(\/)).)*$/.test(url)) {
       let post = await this.fetchAccountData(response.data.post.publicKey, 'post');
       post = this.parsePostAccountData(post);
       let publishedThroughHub = await this.fetchAccountData(response.data.publishedThroughHub.publicKey, 'hub');
       publishedThroughHub = this.parseHubAccountData(publishedThroughHub);
-      response.data.post.accountData = post
-      response.data.publishedThroughHub.accountData = publishedThroughHub
+      response.data.post.accountData = post;
+      response.data.publishedThroughHub.accountData = publishedThroughHub;
     } else if (/^\/accounts\/((?!(\/)).)*$/.test(url)) {
       await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleReleaseAccountData(response.data.published);
@@ -139,15 +193,13 @@ class NinaClient {
       await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleReleaseAccountData(response.data.releases);
     } else if (url === '/exchanges') {
-      console.log('here: ', response.data)
       await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/^\/exchanges\/((?!(\/)).)*$/.test(url)) {
       const exchangePublicKey = response.data.exchange.publicKey;
-      const exchange = await this.fetchAccountData(exchangePublicKey, "exchange");
+      const exchange = await this.fetchAccountData(exchangePublicKey, 'exchange');
       response.data.exchange.accountData = this.parseExchangeAccountData(exchange);
     }
-    console.log('url: ', url)
-    return response.data;        
+    return response.data;
   }
 
   async processMultiplePostAccountData(data) {
@@ -159,7 +211,7 @@ class NinaClient {
     });
   }
 
-  async processMultipleExchangeAccountData (data) {
+  async processMultipleExchangeAccountData(data) {
     const publicKeys = [];
     data.forEach((exchange) => {
       if (!exchange.cancelled &amp;&amp; !exchange.completedBy) {
@@ -171,7 +223,7 @@ class NinaClient {
       if (exchange) {
         const publicKey = publicKeys[i];
         const parsedExchange = this.parseExchangeAccountData(exchange);
-        data.filter(exchange => exchange.publicKey === publicKey)[0].accountData = {exchange: parsedExchange};
+        data.filter((exchange) => exchange.publicKey === publicKey)[0].accountData = { exchange: parsedExchange };
       }
     });
   }
@@ -207,15 +259,43 @@ class NinaClient {
     }
   }
 
-  async processMultipleHubCollaboratorAccountDataWithHub (data, hubPublicKey) {
-    const publicKeys  = data.map(collaborator => collaborator.publicKey);
+  async processMultipleHubCollaboratorAccountDataWithHub(data, hubPublicKey) {
+    const publicKeys = data.map((collaborator) => collaborator.publicKey);
+    const hubCollaboratorPublicKeys = [];
+    for await (let publicKey of publicKeys) {
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+          new anchor.web3.PublicKey(publicKey).toBuffer(),
+        ],
+        new anchor.web3.PublicKey(this.programId)
+      );
+      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58());
+    }
+
+    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, 'hubCollaborator');
+    let i = 0;
+    for await (let collaborator of collaborators) {
+      const publicKey = publicKeys[i];
+      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i];
+      const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
+      data.filter((collaborator) => collaborator.publicKey === publicKey)[0].accountData = {
+        collaborator: parsedCollaborator,
+      };
+      i++;
+    }
+  }
+
+  async processMultipleHubCollaboratorAccountDataWithHubs (data, collaboratorPublicKey) {
+    const publicKeys  = data.map(hub => hub.publicKey);
     const hubCollaboratorPublicKeys = []
     for await (let publicKey of publicKeys) {
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          (new anchor.web3.PublicKey(hubPublicKey)).toBuffer(),
           (new anchor.web3.PublicKey(publicKey)).toBuffer(),
+          (new anchor.web3.PublicKey(collaboratorPublicKey)).toBuffer(),
         ],
         new anchor.web3.PublicKey(this.programId)
       )
@@ -225,12 +305,9 @@ class NinaClient {
     const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, "hubCollaborator");
     let i = 0
     for await (let collaborator of collaborators) {
-      const publicKey = publicKeys[i]
       const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i]
       const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
-      data.filter(collaborator => collaborator.publicKey === publicKey)[0].accountData = {
-        collaborator: parsedCollaborator,
-      };
+      data[i].accountData.collaborator = parsedCollaborator;
       i++;
     }
   }
@@ -239,15 +316,55 @@ class NinaClient {
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-        (new anchor.web3.PublicKey(hubPublicKey)).toBuffer(),
-        (new anchor.web3.PublicKey(publicKey)).toBuffer(),
+        new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+        new anchor.web3.PublicKey(publicKey).toBuffer(),
       ],
       new anchor.web3.PublicKey(this.programId)
-    )
-    const hubCollaboratorPublicKey = hubCollaborator.toBase58()
-    const collaborator = await this.fetchAccountData(hubCollaboratorPublicKey, "hubCollaborator");
+    );
+    const hubCollaboratorPublicKey = hubCollaborator.toBase58();
+    const collaborator = await this.fetchAccountData(hubCollaboratorPublicKey, 'hubCollaborator');
     const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
-    return parsedCollaborator
+    return parsedCollaborator;
+  }
+
+  async processMultipleHubReleasesAccountDataWithHub (data, releasePublicKey) {
+    const hubReleasePublicKeys = []
+    const hubContentPublicKeys = []
+    for await (let hub of data) {
+      const [hubReleasePublicKey] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-release`)),
+          new anchor.web3.PublicKey(hub.publicKey).toBuffer(),
+          new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
+        ],
+        this.program.programId
+      )
+      hubReleasePublicKeys.push(hubReleasePublicKey)
+      const [hubContentPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-content`)),
+          new anchor.web3.PublicKey(hub.publicKey).toBuffer(),
+          new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
+        ],
+        this.program.programId
+      )
+        
+      hubContentPublicKeys.push(hubContentPublicKey)
+    }
+    const hubReleases = await this.fetchAccountDataMultiple(hubReleasePublicKeys, 'hubRelease');
+    const hubContent = await this.fetchAccountDataMultiple(hubContentPublicKeys, 'hubContent');
+
+    let i = 0;
+    for await (let hub of data) {
+      const parsedHubRelease = this.parseHubReleaseAccountData(hubReleases[i], hubReleasePublicKeys[i]);
+      const parsedHubContent = this.parseHubContentAccountData(hubContent[i], hubContentPublicKeys[i]);
+      hub.accountData = {
+        hub,
+        hubRelease: parsedHubRelease,
+        hubContent: parsedHubContent,
+      };
+      i++;
+    }
   }
 
   async processHubReleaseAccountDataWithHub (releasePublicKey, hubPublicKey) {
@@ -259,7 +376,7 @@ class NinaClient {
         new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
       ],
       this.program.programId
-    )
+    );
     const [hubContentPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-content`)),
@@ -267,23 +384,23 @@ class NinaClient {
         new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
       ],
       this.program.programId
-    )
+    );
     const hubRelease = await this.fetchAccountData(hubReleasePublicKey, 'hubRelease');
     const hubContent = await this.fetchAccountData(hubContentPublicKey, 'hubContent');
 
-    const parsedHubRelease = this.parseHubReleaseAccountData(hubRelease, hubReleasePublicKey)
-    const parsedHubContent = this.parseHubContentAccountData(hubContent, hubContentPublicKey)
+    const parsedHubRelease = this.parseHubReleaseAccountData(hubRelease, hubReleasePublicKey);
+    const parsedHubContent = this.parseHubContentAccountData(hubContent, hubContentPublicKey);
     const parsedRelease = this.parseReleaseAccountData(release);
-    
+
     return {
       release: parsedRelease,
       hubRelease: parsedHubRelease,
       hubContent: parsedHubContent,
-    }
+    };
   }
 
-  async processMultipleHubContentAccountDataWithHub (data, hubPublicKey, accountType) {
-    const publicKeys  = data.map(account => account.publicKey);
+  async processMultipleHubContentAccountDataWithHub(data, hubPublicKey, accountType) {
+    const publicKeys = data.map((account) => account.publicKey);
     const accounts = await this.fetchAccountDataMultiple(publicKeys, accountType);
     const hubChildrenPublicKeys = [];
     const hubContentPublicKeys = [];
@@ -361,10 +478,10 @@ class NinaClient {
     const parsedHubContentAccount = this.parseHubContentAccountData(hubContent, hubContentPublicKey);
     return [parsedChild, parsedHubContentAccount];
   }
-  
-  async processMulitpleHubAccountData (data) {
-    const publicKeys = data.map(account => account.publicKey);
-    const hubs = await this.fetchAccountDataMultiple(publicKeys, "hub");
+
+  async processMulitpleHubAccountData(data) {
+    const publicKeys = data.map((account) => account.publicKey);
+    const hubs = await this.fetchAccountDataMultiple(publicKeys, 'hub');
     hubs.forEach((hub, i) => {
       const publicKey = publicKeys[i];
       const parsedHub = this.parseHubAccountData(hub);
@@ -377,8 +494,8 @@ class NinaClient {
     hubPost.publicKey = publicKey.toBase58();
     hubPost.hub = hubPost.hub.toBase58();
     hubPost.post = hubPost.post.toBase58();
-    hubPost.referenceContent  = hubPost.referenceContent?.toBase58() || undefined;
-    hubPost.referenceContentType = Object.keys(hubPost.referenceContentType)[0]
+    hubPost.referenceContent = hubPost.referenceContent?.toBase58() || undefined;
+    hubPost.referenceContentType = Object.keys(hubPost.referenceContentType)[0];
     hubPost.versionUri = this.decode(hubPost.versionUri);
     return hubPost;
   }
@@ -391,27 +508,27 @@ class NinaClient {
     return hubRelease;
   }
 
-  parseHubContentAccountData (hubContent, publicKey) {
-    hubContent.publicKey = typeof publicKey === 'string' ? publicKey : publicKey.toBase58()
-    hubContent.hub = hubContent.hub.toBase58()
-    hubContent.addedBy = hubContent.addedBy.toBase58()
-    hubContent.child = hubContent.child.toBase58()
-    hubContent.contentType = Object.keys(hubContent.contentType)[0]
-    hubContent.datetime = hubContent.datetime.toNumber() * 1000
-    hubContent.repostedFromHub = hubContent.repostedFromHub.toBase58()
-    return hubContent
+  parseHubContentAccountData(hubContent, publicKey) {
+    hubContent.publicKey = typeof publicKey === 'string' ? publicKey : publicKey.toBase58();
+    hubContent.hub = hubContent.hub.toBase58();
+    hubContent.addedBy = hubContent.addedBy.toBase58();
+    hubContent.child = hubContent.child.toBase58();
+    hubContent.contentType = Object.keys(hubContent.contentType)[0];
+    hubContent.datetime = hubContent.datetime.toNumber() * 1000;
+    hubContent.repostedFromHub = hubContent.repostedFromHub.toBase58();
+    return hubContent;
   }
 
-  parseHubCollaboratorAccountData (hubCollaborator, publicKey) {
-    hubCollaborator.publicKey = publicKey
-    hubCollaborator.hub = hubCollaborator.hub.toBase58()
-    hubCollaborator.collaborator = hubCollaborator.collaborator.toBase58()
-    hubCollaborator.addedBy = hubCollaborator.addedBy.toBase58()
-    hubCollaborator.datetime = hubCollaborator.datetime.toNumber() * 1000
-    return hubCollaborator
+  parseHubCollaboratorAccountData(hubCollaborator, publicKey) {
+    hubCollaborator.publicKey = publicKey;
+    hubCollaborator.hub = hubCollaborator.hub.toBase58();
+    hubCollaborator.collaborator = hubCollaborator.collaborator.toBase58();
+    hubCollaborator.addedBy = hubCollaborator.addedBy.toBase58();
+    hubCollaborator.datetime = hubCollaborator.datetime.toNumber() * 1000;
+    return hubCollaborator;
   }
 
-  parsePostAccountData (post) {
+  parsePostAccountData(post) {
     post.author = post.author.toBase58();
     post.createdAt = post.createdAt * 1000;
     post.slug = this.decode(post.slug);
@@ -459,10 +576,9 @@ class NinaClient {
     release.releaseMint = release.releaseMint.toBase58();
     release.authorityTokenAccount = release.authorityTokenAccount?.toBase58() || null;
     release.releaseSigner = release.releaseSigner.toBase58();
-    release.remainingSupply = release.remainingSupply.toNumber();
     release.resalePercentage = release.resalePercentage.toNumber();
     release.releaseDatetime = release.releaseDatetime.toNumber() * 1000;
-    release.revenueShareRecipients = release.royaltyRecipients.map(recipient => {
+    release.revenueShareRecipients = release.royaltyRecipients.map((recipient) => {
       recipient.collected = recipient.collected.toNumber();
       recipient.owed = recipient.owed.toNumber();
       recipient.percentShare = recipient.percentShare.toNumber();
@@ -470,12 +586,20 @@ class NinaClient {
       recipient.recipientTokenAccount = recipient.recipientTokenAccount.toBase58();
       return recipient;
     });
-    delete release.royaltyRecipients
+    delete release.royaltyRecipients;
     release.royaltyTokenAccount = release.royaltyTokenAccount.toBase58();
     release.saleCounter = release.saleCounter.toNumber();
     release.saleTotal = release.saleTotal.toNumber();
+    if (release.totalSupply.toString() === MAX_U64) {
+      release.editionType = 'open';
+      release.remainingSupply = -1;
+      release.totalSupply = -1;
+    } else {
+      release.editionType = 'limited';
+      release.remainingSupply = release.remainingSupply.toNumber();
+      release.totalSupply = release.totalSupply.toNumber();
+    }
     release.totalCollected = release.totalCollected.toNumber();
-    release.totalSupply = release.totalSupply.toNumber();
     release.head = release.head.toNumber();
     release.tail = release.tail.toNumber();
 
@@ -486,6 +610,5 @@ class NinaClient {
     return new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\u0000/g, '');
   }
 }
-
 export default new NinaClient();
-</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><a href="/" class="sidebar-title sidebar-title-anchor">@nina-protocol/js-sdk</a><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="i712ajrB0US3KZ424M1Ag"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Account.html">Account</a></div><div class="sidebar-section-children"><a href="module-Exchange.html">Exchange</a></div><div class="sidebar-section-children"><a href="module-Hub.html">Hub</a></div><div class="sidebar-section-children"><a href="module-Post.html">Post</a></div><div class="sidebar-section-children"><a href="module-Release.html">Release</a></div><div class="sidebar-section-children"><a href="module-Search.html">Search</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="vff97yyDDbDeUiYjA48ve"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="NinaClient.html">NinaClient</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="xMafKsZG51rTp5G3qssbz"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#init">init</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>
+</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><a href="/" class="sidebar-title sidebar-title-anchor">@nina-protocol/js-sdk</a><div class="mobile-nav-links"></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="8P0VXCrxqX53FEgRAAEvq"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-Account.html">Account</a></div><div class="sidebar-section-children"><a href="module-Exchange.html">Exchange</a></div><div class="sidebar-section-children"><a href="module-Hub.html">Hub</a></div><div class="sidebar-section-children"><a href="module-Post.html">Post</a></div><div class="sidebar-section-children"><a href="module-Release.html">Release</a></div><div class="sidebar-section-children"><a href="module-Search.html">Search</a></div><div class="sidebar-section-children"><a href="module-Subscription.html">Subscription</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="--8ntb_EFtQ-I-5wrjqEV"><div>Classes</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="NinaClient.html">NinaClient</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="IBgXPTeU2NG0PxEmOdfgW"><div>Global</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="global.html#init">init</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">var tocbotInstance=tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>

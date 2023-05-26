@@ -239,7 +239,7 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
  * @param {Object} client NinaClient instance.
  * @param {String} releasePublicKey Public Key of the release.
  * @param {String} hubPublicKey Public Key of the hub.
- * @returns
+ * @returns {String} Transaction Id.
  */
 
 const releasePurchase = async (client, releasePublicKey) => {
