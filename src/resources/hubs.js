@@ -831,7 +831,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
  * @param {Object} client - The Nina Client.
  * @param {String} hubPublicKey
  * @example const txid = await NinaClient.Hub.hubWithdraw(ninaClient, hubPublicKey);
- * @returns { Boolean } True if successful.
+ * @returns { Object } the Hub Public Key.
  */
 
 const hubWithdraw = async (client, hubPublicKey) => {
