@@ -945,8 +945,9 @@ const hubWithdraw = async (client, hubPublicKey) => {
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
+    const hubData = await fetch(hubPublicKey.toBase58());
     return {
-      hub: hub,
+      hub: hubData,
     };
   } catch (error) {
     console.warn(error);
