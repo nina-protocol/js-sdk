@@ -46,7 +46,7 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
  * @param {String} exchangeAccount The public key of the Exchange account.
  * @param {Boolean} isSelling Whether the Exchange is selling or buying.
  * @param {String} releasePublicKey The public key of the Release account.
- * @returns {Object} The transaction id, the Exchange account, the Release Public Key, and the Exchange Signer.
+ * @returns {Object} {exchange, error}
  */
 
 const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
@@ -166,16 +166,15 @@ const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
     }
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await provider.connection.getParsedTransaction(txid, 'confirmed');
-    const publicKey = exchange.publicKey;
+    const exchangeResult = await fetch(exchange.publicKey, true, txid);
     return {
-      txid,
-      releaseAccount,
-      publicKey,
-      releaseMint,
+      exchange: exchangeResult,
+    }
+  } catch (error) {
+    console.error(error);
+    return {
+      error,
     };
-  } catch (err) {
-    console.error(err);
-    return false;
   }
 };
 
@@ -185,6 +184,8 @@ const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
  * @param {Object} client The NinaClient instance.
  * @param {String} exchangeAccount The public key of the Exchange account.
  * @param {String} releasePublicKey The public key of the Release account.
+ * @returns {Object} { exchangePublicKey: String?, error: Error?}
+ * @example const {exchangePublicKey, error} = await exchangeAccept(client, exchangeAccount, releasePublicKey);
  */
 
 const exchangeAccept = async (client, exchange, releasePublicKey) => {
@@ -195,7 +196,6 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
     const release = await program.account.release.fetch(releaseKey);
     const exchangePubkey = new anchor.web3.PublicKey(exchange.publicKey);
     const exchangeAccount = await program.account.exchange.fetch(exchangePubkey);
-
     const [takerSendingTokenAccount, takerSendingTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,
       provider.wallet.publicKey,
@@ -281,15 +281,17 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
     for await (let signer of [exchangeHistory]) {
       tx.partialSign(signer);
     }
-    const signedTx = await provider.wallet.signTransaction(tx);
-    const txid = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-      skipPreflight: true,
-    });
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await provider.connection.getParsedTransaction(txid, 'finalized');
-    return txid;
-  } catch (err) {
-    console.error(err);
-    return false;
+    await fetch(exchangePubkey.toBase58());
+    return {
+      exchangePublicKey: exchangePubkey.toBase58(),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error,
+    };
   }
 };
 
@@ -298,69 +300,76 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
  * @description Cancels an initialized Exchange.
  * @param {Object} client The NinaClient instance.
  * @param {String} exchangeAccount The public key of the Exchange account.
- * @example const canceledExchange = await exchangeCancel(client, exchangeAccount);
- * @returns {Object} The transaction id and the public key of the Exchange.
+ * @returns {Object} { exchangePublicKey: String?, error: Error?}
+ * @example const {exchange, error} = await exchangeCancel(client, exchangeAccount);
  */
 
 const exchangeCancel = async (client, exchange) => {
-  const exchangePubkey = new anchor.web3.PublicKey(exchange.publicKey);
-  const { provider } = client;
-  const program = await client.useProgram();
-  exchange = await program.account.exchange.fetch(exchangePubkey);
-  const [initializerReturnTokenAccount, initializerReturnTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
-    provider.connection,
-    provider.wallet.publicKey,
-    provider.wallet.publicKey,
-    anchor.web3.SystemProgram.programId,
-    anchor.web3.SYSVAR_RENT_PUBKEY,
-    exchange.initializerSendingMint
-  );
+  try {
+    const exchangePublicKey = new anchor.web3.PublicKey(exchange.publicKey);
+    const { provider } = client;
+    const program = await client.useProgram();
+    exchange = await program.account.exchange.fetch(exchangePublicKey);
+    const [initializerReturnTokenAccount, initializerReturnTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      provider.wallet.publicKey,
+      provider.wallet.publicKey,
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      exchange.initializerSendingMint
+    );
 
-  let instructions;
-  if (initializerReturnTokenAccountIx) {
-    instructions.push(initializerReturnTokenAccountIx);
+    let instructions;
+    if (initializerReturnTokenAccountIx) {
+      instructions.push(initializerReturnTokenAccountIx);
+    }
+
+    let tx;
+    const params = new anchor.BN(exchange.isSelling ? 1 : exchange.initializerAmount.toNumber());
+    if (client.isSol(exchange.initializerSendingMint)) {
+      tx = await program.methods
+        .exchangeCancelSol(params)
+        .accounts({
+          initializer: provider.wallet.publicKey,
+          initializerSendingTokenAccount: initializerReturnTokenAccount,
+          exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
+          exchangeSigner: exchange.exchangeSigner,
+          exchange: exchangePublicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .preInstructions(instructions || [])
+        .signers([])
+        .transaction();
+    } else {
+      tx = await program.methods
+        .exchangeCancel(params)
+        .accounts({
+          initializer: provider.wallet.publicKey,
+          initializerSendingTokenAccount: initializerReturnTokenAccount,
+          exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
+          exchangeSigner: exchange.exchangeSigner,
+          exchange: exchangePublicKey,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .preInstructions(instructions || [])
+        .signers([])
+        .transaction();
+    }
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await provider.connection.getParsedTransaction(txid, 'confirmed');
+    await fetch(exchangePublicKey.toBase58());
+    return {
+      exchangePublicKey: exchangePublicKey.toBase58(),
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      error,
+    };
   }
-
-  let tx;
-  const params = new anchor.BN(exchange.isSelling ? 1 : exchange.initializerAmount.toNumber());
-  if (client.isSol(exchange.initializerSendingMint)) {
-    tx = await program.methods
-      .exchangeCancelSol(params)
-      .accounts({
-        initializer: provider.wallet.publicKey,
-        initializerSendingTokenAccount: initializerReturnTokenAccount,
-        exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
-        exchangeSigner: exchange.exchangeSigner,
-        exchange: exchangePubkey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .preInstructions(instructions || [])
-      .signers([])
-      .transaction();
-  } else {
-    tx = await program.methods
-      .exchangeCancel(params)
-      .accounts({
-        initializer: provider.wallet.publicKey,
-        initializerSendingTokenAccount: initializerReturnTokenAccount,
-        exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
-        exchangeSigner: exchange.exchangeSigner,
-        exchange: exchangePubkey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .preInstructions(instructions || [])
-      .signers([])
-      .transaction();
-  }
-
-  tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
-  tx.feePayer = provider.wallet.publicKey;
-  const txid = await provider.wallet.sendTransaction(tx, provider.connection);
-  await provider.connection.getParsedTransaction(txid, 'confirmed');
-  return {
-    exchangePubkey,
-    txid,
-  };
 };
 
 export default {

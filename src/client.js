@@ -346,7 +346,7 @@ class NinaClient {
         ],
         this.program.programId
       )
-        
+
       hubContentPublicKeys.push(hubContentPublicKey)
     }
     const hubReleases = await this.fetchAccountDataMultiple(hubReleasePublicKeys, 'hubRelease');
