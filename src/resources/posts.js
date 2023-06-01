@@ -30,7 +30,7 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @param {String} publicKey - The public key of the Post.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Post account.
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
- * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
+ * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV")
  */
 const fetch = async (publicKey, withAccountData = false, pagination) => {
   return await NinaClient.get(`/posts/${publicKey}`, pagination, withAccountData);
