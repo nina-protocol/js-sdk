@@ -321,8 +321,7 @@ const hubAddCollaborator = async (
 
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
-    // endpoint needs to be updated to return collaborator pubkey
-    // const collaborator = await fetchHubCollaborator(hub.handle, collaboratorPubkey.toBase58());
+    // endpoint needs to be updated to return collaborator
     return {
       collaboratorPublicKey: collaboratorPubkey.toBase58(),
       hubPublicKey : hubPublicKey.toBase58(),
@@ -395,7 +394,7 @@ const hubUpdateCollaboratorPermission = async (
     await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
 
     await getConfirmTransaction(txid, provider.connection);
-    // endpoint needs to be updated to return collaborator pubkey
+    // endpoint needs to be updated to return collaborator
     return {
       collaboratorPublicKey: collaboratorPubkey.toBase58(),
       hubPublicKey: hubPublicKey.toBase58(),
@@ -450,7 +449,7 @@ const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) =
 
     await getConfirmTransaction(txid, provider.connection);
     await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
-    // endpoint needs to be updated to return collaborator pubkey
+    // endpoint needs to be updated to return collaborator
     return {
       collaboratorPublicKey: collaboratorPubkey.toBase58(),
       hubPublicKey: hubPublicKey.toBase58(),
