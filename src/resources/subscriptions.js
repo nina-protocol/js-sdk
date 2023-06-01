@@ -41,7 +41,7 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
  * @param {Object} client the NinaClient instance
  * @param {String} subscribeToAccount the account to subscribe to
  * @param {String} hubHandle the hub handle to subscribe to
- * @returns {Object} the subscription data
+ * @returns {Object} the Subscription data
  */
 
 const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
@@ -104,7 +104,7 @@ return {
  * @function subscriptionUnsubscribe
  * @param {Object} client the NinaClient instance
  * @param {String} unsubscribeAccount the account to unsubscribe from
- * @returns {Object} the subscription data
+ * @returns {Object} the Subscription data
  */
 
 const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {

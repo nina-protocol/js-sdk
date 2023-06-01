@@ -99,7 +99,7 @@ const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) =
  * @param {String} releasePublicKey Public Key of the release.
  * @param {String} hubPublicKey Public Key of the hub.
  * @example const transactionId = await NinaClient.Release.purchaseViaHub(client, "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ", "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
- * @returns {String} the transaction ID.
+ * @returns {String} the Release.
  */
 const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
@@ -247,7 +247,7 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
  * @param {Object} client NinaClient instance.
  * @param {String} releasePublicKey Public Key of the release.
  * @param {String} hubPublicKey Public Key of the hub.
- * @returns {String} Transaction Id.
+ * @returns {String} the Release.
  */
 
 const releasePurchase = async (client, releasePublicKey) => {
@@ -354,7 +354,7 @@ const releasePurchase = async (client, releasePublicKey) => {
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
  * @param {Boolean} isOpen Is the release open or not.
- * @returns {Object} The release.
+ * @returns {Object} the Release.
  */
 
 const releaseInitViaHub = async (
@@ -576,7 +576,7 @@ const initializeReleaseAndMint = async (client, hubPubkey) => {
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
  * @param {Boolean} isOpen Is the release open or not.
- * @returns {Object} The created Release.
+ * @returns {Object} the Release.
  */
 
 export const releaseInit = async (
@@ -764,7 +764,7 @@ export const closeRelease = async (client, releasePublicKey) => {
  * @param {String} releasePublicKey Public Key of the release.
  * @param {Object} state the NinaClient state.
  * @example collectRoyaltyForRelease(client, recipient, releasePublicKey, state)
- * @returns {Object} the Release.
+ * @returns {Object} the Release with Account Data.
  */
 
 export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
@@ -834,7 +834,7 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
  * @param {Object} updateData - the data to update the release with
  * @param {String} releasePublicKey - the Public Key of the release
  * @example addRoyaltyRecipient(client, recipient, updateData, releasePublicKey)
- * @returns {String} The Public Key of the recipient
+ * @returns {Object} the Release with Account Data.
  */
 
 export const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {

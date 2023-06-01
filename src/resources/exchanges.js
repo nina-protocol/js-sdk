@@ -46,7 +46,7 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
  * @param {String} exchangeAccount The public key of the Exchange account.
  * @param {Boolean} isSelling Whether the Exchange is selling or buying.
  * @param {String} releasePublicKey The public key of the Release account.
- * @returns {Object} {exchange, error}
+ * @returns {Object} the Exchange data
  */
 
 const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
@@ -186,6 +186,7 @@ const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
  * @param {String} releasePublicKey The public key of the Release account.
  * @returns {Object} { exchangePublicKey: String?, error: Error?}
  * @example const {exchangePublicKey, error} = await exchangeAccept(client, exchangeAccount, releasePublicKey);
+ * @returns {String} the Exchange public key
  */
 
 const exchangeAccept = async (client, exchange, releasePublicKey) => {
@@ -302,6 +303,7 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
  * @param {String} exchangeAccount The public key of the Exchange account.
  * @returns {Object} { exchangePublicKey: String?, error: Error?}
  * @example const {exchange, error} = await exchangeCancel(client, exchangeAccount);
+ * @returns {String} the Exchange public key
  */
 
 const exchangeCancel = async (client, exchange) => {

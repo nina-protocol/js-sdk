@@ -628,7 +628,7 @@ const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) =>
  * @param {String=} referenceRelease - The public key of the reference Release.
  * @param {String=} fromHub - The public key of the reference Hub.
  * @example const post = await NinaClient.Hub.postInitViaHub(ninaClient, hubPublicKey, slug, uri);
- * @returns {Object} The Post and Referenced Release Public Key.
+ * @returns {Object} The Post.
  */
 
 const postInitViaHub = async (client, hubPublicKey, slug, uri, referenceRelease = undefined, fromHub) => {
@@ -816,7 +816,7 @@ const postUpdateViaHub = async (client, hubPublicKey, slug, uri) => {
  * @param {String} releasePublicKey - The public key of the Release.
  * @param {String} hubPublicKey - The public key of the Hub.
  * @example const royalty = await NinaClient.Hub.collectRoyaltyForReleaseViaHub(ninaClient, releasePublicKey, hubPublicKey);
- * @returns { Object } Hub Release, recipient, paymentMint.
+ * @returns { Object } the Hub Release.
  */
 
 const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
@@ -887,7 +887,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
  * @param {Object} client - The Nina Client.
  * @param {String} hubPublicKey
  * @example const txid = await NinaClient.Hub.hubWithdraw(ninaClient, hubPublicKey);
- * @returns { Object } the Hub Public Key.
+ * @returns { Object } the Hub.
  */
 
 const hubWithdraw = async (client, hubPublicKey) => {
