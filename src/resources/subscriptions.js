@@ -34,7 +34,6 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
   return NinaClient.get(`/subscriptions/${publicKey}`, transactionId ? { transactionId } : undefined);
 };
 
-
 export default {
   fetchAll,
   fetch,
