@@ -103,7 +103,7 @@ const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) =
  */
 const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
-    const { provider } = client;
+    const { provider, endpoints } = client;
     const program = await client.useProgram();
 
     releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
@@ -228,11 +228,16 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-
-    return txid;
+    await axios.get(`${endpoints.api}/accounts/${provider.wallet.publicKey.toBase58()}/collected?txId=${txid}`);
+    const newRelease = await fetch(releasePublicKey.toBase58(), true);
+    return {
+      release: newRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -319,10 +324,16 @@ const releasePurchase = async (client, releasePublicKey) => {
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    return txid;
+    await axios.get(`${endpoints.api}/accounts/${provider.wallet.publicKey.toBase58()}/collected?txId=${txid}`);
+    const newRelease = await fetch(releasePublicKey.toBase58(), true);
+    return {
+      release: newRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -496,11 +507,15 @@ const releaseInitViaHub = async (
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    const newRelease = await Hub.fetchHubRelease(hubPubkey.toBase58(), hubRelease.toBase58());
-    return newRelease;
+    const createdRelease = await Hub.fetchHubRelease(hubPubkey.toBase58(), hubRelease.toBase58());
+    return {
+      release: createdRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -692,10 +707,14 @@ export const releaseInit = async (
     await getConfirmTransaction(txid, provider.connection);
 
     const createdRelease = await fetch(release.toBase58());
-    return createdRelease;
+    return {
+      release: createdRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -727,10 +746,14 @@ export const closeRelease = async (client, releasePublicKey) => {
 
     await getConfirmTransaction(txid, provider.connection);
     const closedRelease = await fetch(releasePublicKey);
-    return closedRelease;
+    return {
+      release: closedRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -792,11 +815,15 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    const collectedRelease = await fetch(releasePublicKey);
-    return collectedRelease;
+    const collectedRelease = await fetch(releasePublicKey, true);
+    return {
+      release: collectedRelease
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 
@@ -866,10 +893,15 @@ export const addRoyaltyRecipient = async (client, release, updateData, releasePu
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    return recipientPublicKey;
+    const updatedRelease = await fetch(releasePublicKey, true);
+    return {
+      release: updatedRelease,
+    };
   } catch (error) {
     console.warn(error);
-    return false;
+    return {
+      error
+    };
   }
 };
 

@@ -90,10 +90,14 @@ tx.feePayer = provider.wallet.publicKey
 const txid = await provider.wallet.sendTransaction(tx, provider.connection)
 await getConfirmTransaction(txid, provider.connection)
 const subscriptionData = await fetch(subscription.toBase58(), txid)
-return subscriptionData
+return {
+  subscriptionData: subscriptionData,
+}
   } catch (error) {
     console.warn(error)
-    return false
+    return {
+      error
+    }
   }
 }
 /**
@@ -133,11 +137,15 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
     await getConfirmTransaction(txid, provider.connection)
 
     const subscriptionData = await fetch(subscription.toBase58(), txid)
-    return subscriptionData
+    return {
+      subscriptionData: subscriptionData,
+    }
   }
   catch (error) {
     console.warn(error)
-    return false
+    return {
+      error
+    }
   }
 }
 

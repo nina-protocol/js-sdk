@@ -868,8 +868,7 @@ const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPubli
     tx.feePayer = provider.wallet.publicKey;
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
     await getConfirmTransaction(txid, provider.connection);
-    // fetchHubRelease not returning account data so using fetch for now
-    // const hubReleaseData = await fetchHubRelease(hubPublicKey.toBase58(), hubRelease.toBase58(), true);
+    // fetchHubRelease not returning account data so using Release.fetch for now
     const hubReleaseData = await Release.fetch(releasePublicKey.toBase58(), true);
     return {
       release: hubReleaseData,
