@@ -11,7 +11,6 @@ import {
 } from '../utils';
 import Hub from './hubs';
 import axios from 'axios';
-
 /**
  * @module Release
  */

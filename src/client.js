@@ -131,8 +131,8 @@ class NinaClient {
       await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, 'post');
       await this.processMultipleHubCollaboratorAccountDataWithHub(response.data.collaborators, hubPublicKey);
     } else if (/releases\/(.*?)\/hubs/.test(url)) {
-      const releasePublicKey = url.split("/")[2];
-      await this.processMulitpleHubAccountData(response.data.hubs)
+      const releasePublicKey = url.split('/')[2];
+      await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleHubReleasesAccountDataWithHub(response.data.hubs, releasePublicKey);
     } else if (url === '/hubs') {
       await this.processMulitpleHubAccountData(response.data.hubs);
@@ -149,7 +149,7 @@ class NinaClient {
       });
     } else if (/accounts\/(.*?)\/hubs/.test(url)) {
       const publicKey = url.split('/')[2];
-      await this.processMulitpleHubAccountData(response.data.hubs)
+      await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleHubCollaboratorAccountDataWithHubs(response.data.hubs, publicKey);
     } else if (
       url === '/releases' ||
@@ -285,32 +285,32 @@ class NinaClient {
     }
   }
 
-  async processMultipleHubCollaboratorAccountDataWithHubs (data, collaboratorPublicKey) {
-    const publicKeys  = data.map(hub => hub.publicKey);
-    const hubCollaboratorPublicKeys = []
+  async processMultipleHubCollaboratorAccountDataWithHubs(data, collaboratorPublicKey) {
+    const publicKeys = data.map((hub) => hub.publicKey);
+    const hubCollaboratorPublicKeys = [];
     for await (let publicKey of publicKeys) {
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          (new anchor.web3.PublicKey(publicKey)).toBuffer(),
-          (new anchor.web3.PublicKey(collaboratorPublicKey)).toBuffer(),
+          new anchor.web3.PublicKey(publicKey).toBuffer(),
+          new anchor.web3.PublicKey(collaboratorPublicKey).toBuffer(),
         ],
         new anchor.web3.PublicKey(this.programId)
-      )
-      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58())
+      );
+      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58());
     }
 
-    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, "hubCollaborator");
-    let i = 0
+    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, 'hubCollaborator');
+    let i = 0;
     for await (let collaborator of collaborators) {
-      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i]
+      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i];
       const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
       data[i].accountData.collaborator = parsedCollaborator;
       i++;
     }
   }
 
-  async processAndParseSingleHubCollaboratorAccountDataWithHub (publicKey, hubPublicKey) {
+  async processAndParseSingleHubCollaboratorAccountDataWithHub(publicKey, hubPublicKey) {
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -325,9 +325,9 @@ class NinaClient {
     return parsedCollaborator;
   }
 
-  async processMultipleHubReleasesAccountDataWithHub (data, releasePublicKey) {
-    const hubReleasePublicKeys = []
-    const hubContentPublicKeys = []
+  async processMultipleHubReleasesAccountDataWithHub(data, releasePublicKey) {
+    const hubReleasePublicKeys = [];
+    const hubContentPublicKeys = [];
     for await (let hub of data) {
       const [hubReleasePublicKey] = await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -336,8 +336,8 @@ class NinaClient {
           new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
         ],
         this.program.programId
-      )
-      hubReleasePublicKeys.push(hubReleasePublicKey)
+      );
+      hubReleasePublicKeys.push(hubReleasePublicKey);
       const [hubContentPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-content`)),
@@ -365,8 +365,8 @@ class NinaClient {
     }
   }
 
-  async processHubReleaseAccountDataWithHub (releasePublicKey, hubPublicKey) {
-    const release = await this.fetchAccountData(releasePublicKey, "release");
+  async processHubReleaseAccountDataWithHub(releasePublicKey, hubPublicKey) {
+    const release = await this.fetchAccountData(releasePublicKey, 'release');
     const [hubReleasePublicKey] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-release`)),

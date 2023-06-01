@@ -6,13 +6,9 @@ import NinaClient from './client'
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
-export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
-  anchor.utils.token.TOKEN_PROGRAM_ID.toString()
-)
+export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.TOKEN_PROGRAM_ID.toString());
 
-const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
-  anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString()
-)
+const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString());
 
 export const findOrCreateAssociatedTokenAccount = async (
   connection,
@@ -23,16 +19,11 @@ export const findOrCreateAssociatedTokenAccount = async (
   splTokenMintAddress,
   skipLookup = false
 ) => {
-  const associatedTokenAddress = await findAssociatedTokenAddress(
-    owner,
-    splTokenMintAddress
-  )
+  const associatedTokenAddress = await findAssociatedTokenAddress(owner, splTokenMintAddress);
 
-  let userAssociatedTokenAddress = null
+  let userAssociatedTokenAddress = null;
   if (!skipLookup) {
-    userAssociatedTokenAddress = await connection.getAccountInfo(
-      associatedTokenAddress
-    )
+    userAssociatedTokenAddress = await connection.getAccountInfo(associatedTokenAddress);
   }
 
   if (!userAssociatedTokenAddress) {
@@ -72,35 +63,28 @@ export const findOrCreateAssociatedTokenAccount = async (
         isSigner: false,
         isWritable: false,
       },
-    ]
+    ];
 
     const ix = new anchor.web3.TransactionInstruction({
       keys,
       programId: ASSOCIATED_TOKEN_PROGRAM_ID,
       data: Buffer.from([]),
-    })
+    });
 
-    return [associatedTokenAddress, ix]
+    return [associatedTokenAddress, ix];
   } else {
-    return [associatedTokenAddress, undefined]
+    return [associatedTokenAddress, undefined];
   }
-}
+};
 
-export const findAssociatedTokenAddress = async (
-  ownerAddress,
-  tokenMintAddress
-) => {
+export const findAssociatedTokenAddress = async (ownerAddress, tokenMintAddress) => {
   return (
     await anchor.web3.PublicKey.findProgramAddress(
-      [
-        ownerAddress.toBuffer(),
-        TOKEN_PROGRAM_ID.toBuffer(),
-        tokenMintAddress.toBuffer(),
-      ],
+      [ownerAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMintAddress.toBuffer()],
       ASSOCIATED_TOKEN_PROGRAM_ID
     )
-  )[0]
-}
+  )[0];
+};
 
 export const getUsdcBalance = async (publicKey, connection) => {
   if (publicKey) {
@@ -115,20 +99,17 @@ export const getUsdcBalance = async (publicKey, connection) => {
       );
 
       if (usdcTokenAccountPubkey) {
-        let usdcTokenAccount =
-          await connection.getTokenAccountBalance(
-            usdcTokenAccountPubkey
-          )
-        return usdcTokenAccount.value.uiAmount.toFixed(2)
+        let usdcTokenAccount = await connection.getTokenAccountBalance(usdcTokenAccountPubkey);
+        return usdcTokenAccount.value.uiAmount.toFixed(2);
       } else {
-        return 0
+        return 0;
       }
     } catch (error) {
-      console.warn('error getting usdc balance: ', error)
-      return 0
+      console.warn('error getting usdc balance: ', error);
+      return 0;
     }
   } else {
-    return 0
+    return 0;
   }
 }
 
