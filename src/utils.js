@@ -111,7 +111,6 @@ export const getUsdcBalance = async (publicKey, connection) => {
         publicKey,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        // new anchor.web3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
         new anchor.web3.PublicKey(NinaClient.ids.mints.usdc)
       );
 
