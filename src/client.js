@@ -1,7 +1,6 @@
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
 import _ from 'lodash';
-import Nina from '.';
 
 const MAX_U64 = '18446744073709551615';
 

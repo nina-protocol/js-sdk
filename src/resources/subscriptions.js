@@ -1,6 +1,6 @@
 import NinaClient from '../client';
 import * as anchor from '@project-serum/anchor';
-import {findOrCreateAssociatedTokenAccount, getConfirmTransaction, decodeNonEncryptedByteArray, uiToNative} from '../utils';
+import { getConfirmTransaction } from '../utils';
 
 /**
  * @module Subscription
@@ -46,60 +46,61 @@ const fetch = async (publicKey, withAccountData = false, transactionId = undefin
 
 const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
   try {
-  const {provider} = client
-  const program = await client.useProgram()
-  subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount)
+    const { provider } = client;
+    const program = await client.useProgram();
+    subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount);
 
-const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
-  [
-    Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
-    provider.wallet.publicKey.toBuffer(),
-    subscribeToAccount.toBuffer(),
-  ],
-  program.programId
-)
+    const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
+        provider.wallet.publicKey.toBuffer(),
+        subscribeToAccount.toBuffer(),
+      ],
+      program.programId
+    );
 
-let tx;
-if (hubHandle) {
-  tx = await program.methods
-    .subscriptionSubscribeHub(hubHandle)
-    .accounts({
-      payer: provider.wallet.publicKey,
-      from: provider.wallet.publicKey,
-      subscription,
-      to: subscribeToAccount,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .transaction()
-} else {
-  tx = await program.methods.subscriptionSubscribeAccount()
-  .accounts({
-    payer: provider.wallet.publicKey,
-    from: provider.wallet.publicKey,
-    subscription,
-    to: subscribeToAccount,
-    systemProgram: anchor.web3.SystemProgram.programId,
-  })
-  .transaction()
-}
-
-tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
-
-tx.feePayer = provider.wallet.publicKey
-
-const txid = await provider.wallet.sendTransaction(tx, provider.connection)
-await getConfirmTransaction(txid, provider.connection)
-const subscriptionData = await fetch(subscription.toBase58(), txid)
-return {
-  subscriptionData: subscriptionData,
-}
-  } catch (error) {
-    console.warn(error)
-    return {
-      error
+    let tx;
+    if (hubHandle) {
+      tx = await program.methods
+        .subscriptionSubscribeHub(hubHandle)
+        .accounts({
+          payer: provider.wallet.publicKey,
+          from: provider.wallet.publicKey,
+          subscription,
+          to: subscribeToAccount,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .transaction();
+    } else {
+      tx = await program.methods
+        .subscriptionSubscribeAccount()
+        .accounts({
+          payer: provider.wallet.publicKey,
+          from: provider.wallet.publicKey,
+          subscription,
+          to: subscribeToAccount,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .transaction();
     }
+
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+
+    tx.feePayer = provider.wallet.publicKey;
+
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
+    const subscriptionData = await fetch(subscription.toBase58(), txid);
+    return {
+      subscription: subscriptionData,
+    };
+  } catch (error) {
+    console.warn(error);
+    return {
+      error,
+    };
   }
-}
+};
 /**
  * @function subscriptionUnsubscribe
  * @param {Object} client the NinaClient instance
@@ -109,9 +110,9 @@ return {
 
 const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
   try {
-    const {provider} = client
-    const program = await client.useProgram()
-    unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount)
+    const { provider } = client;
+    const program = await client.useProgram();
+    unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount);
 
     const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
       [
@@ -120,39 +121,38 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
         unsubscribeAccount.toBuffer(),
       ],
       program.programId
-    )
-    const tx = await program.methods.subscriptionUnsubscribe()
-    .accounts({
-      payer: provider.wallet.publicKey,
-      from: provider.wallet.publicKey,
-      subscription,
-      to: unsubscribeAccount,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .transaction()
+    );
+    const tx = await program.methods
+      .subscriptionUnsubscribe()
+      .accounts({
+        payer: provider.wallet.publicKey,
+        from: provider.wallet.publicKey,
+        subscription,
+        to: unsubscribeAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .transaction();
 
-    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash
-    tx.feePayer = provider.wallet.publicKey
-    const txid = await provider.wallet.sendTransaction(tx, provider.connection)
-    await getConfirmTransaction(txid, provider.connection)
+    tx.recentBlockhash = (await provider.connection.getRecentBlockhash()).blockhash;
+    tx.feePayer = provider.wallet.publicKey;
+    const txid = await provider.wallet.sendTransaction(tx, provider.connection);
+    await getConfirmTransaction(txid, provider.connection);
 
-    const subscriptionData = await fetch(subscription.toBase58(), txid)
+    const subscriptionData = await fetch(subscription.toBase58(), txid);
     return {
-      subscriptionData: subscriptionData,
-    }
-  }
-  catch (error) {
-    console.warn(error)
+      subscription: subscriptionData,
+    };
+  } catch (error) {
+    console.warn(error);
     return {
-      error
-    }
+      error,
+    };
   }
-}
-
+};
 
 export default {
   fetchAll,
   fetch,
   subscriptionSubscribe,
-  subscriptionUnsubscribe
+  subscriptionUnsubscribe,
 };
