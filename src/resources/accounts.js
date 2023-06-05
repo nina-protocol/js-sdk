@@ -31,7 +31,7 @@ const fetch = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/accounts/${publicKey}`, undefined, withAccountData);
 };
 
-/**  
+/**
  * @function fetchHubs
  * @description Fetches the Hubs that an Account is a collaborator on.
  * @param {String} publicKey

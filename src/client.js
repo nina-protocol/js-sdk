@@ -344,9 +344,9 @@ class NinaClient {
           new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
         ],
         this.program.programId
-      )
+      );
 
-      hubContentPublicKeys.push(hubContentPublicKey)
+      hubContentPublicKeys.push(hubContentPublicKey);
     }
     const hubReleases = await this.fetchAccountDataMultiple(hubReleasePublicKeys, 'hubRelease');
     const hubContent = await this.fetchAccountDataMultiple(hubContentPublicKeys, 'hubContent');

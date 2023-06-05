@@ -169,7 +169,7 @@ const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
     const exchangeResult = await fetch(exchange.publicKey, true, txid);
     return {
       exchange: exchangeResult,
-    }
+    };
   } catch (error) {
     console.error(error);
     return {

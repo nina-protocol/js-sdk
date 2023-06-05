@@ -235,7 +235,7 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -331,7 +331,7 @@ const releasePurchase = async (client, releasePublicKey) => {
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -513,7 +513,7 @@ const releaseInitViaHub = async (
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -712,7 +712,7 @@ export const releaseInit = async (
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -751,7 +751,7 @@ export const closeRelease = async (client, releasePublicKey) => {
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -816,12 +816,12 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
     await getConfirmTransaction(txid, provider.connection);
     const collectedRelease = await fetch(releasePublicKey, true);
     return {
-      release: collectedRelease
+      release: collectedRelease,
     };
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
@@ -899,7 +899,7 @@ export const addRoyaltyRecipient = async (client, release, updateData, releasePu
   } catch (error) {
     console.warn(error);
     return {
-      error
+      error,
     };
   }
 };
