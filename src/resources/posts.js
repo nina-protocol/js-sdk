@@ -32,7 +32,7 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV")
  */
-const fetch = async (publicKey, withAccountData = false, pagination) => {
+const fetch = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/posts/${publicKey}`, pagination, withAccountData);
 };
 

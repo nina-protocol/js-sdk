@@ -54,8 +54,8 @@ const fetch = async (publicKey, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collectors = await NinaClient.Release.fetchCollectors("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchCollectors = async (publicKey, withCollection = false) => {
-  return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`);
+const fetchCollectors = async (publicKey, withCollection = false, pagination = undefined) => {
+  return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`, pagination);
 };
 
 /**
@@ -65,8 +65,8 @@ const fetchCollectors = async (publicKey, withCollection = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const hubs = await NinaClient.Release.fetchHubs("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchHubs = async (publicKey, withAccountData = false) => {
-  return await NinaClient.get(`/releases/${publicKey}/hubs`, undefined, withAccountData);
+const fetchHubs = async (publicKey, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/releases/${publicKey}/hubs`, pagination, withAccountData);
 };
 
 /**
@@ -76,7 +76,7 @@ const fetchHubs = async (publicKey, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const exchanges = await NinaClient.Release.fetchExchanges("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
+const fetchExchanges = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/releases/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
@@ -87,8 +87,8 @@ const fetchExchanges = async (publicKey, withAccountData = false, pagination) =>
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const revenueShareRecipients = await NinaClient.Release.fetchRevenueShareRecipients("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  */
-const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) => {
-  return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, undefined, withAccountData);
+const fetchRevenueShareRecipients = async (publicKey, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, pagination, withAccountData);
 };
 
 /**
@@ -100,6 +100,11 @@ const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) =
  * @example const transactionId = await NinaClient.Release.purchaseViaHub(client, "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ", "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
  * @returns {String} the Release.
  */
+
+// TODO: Need to have a way to add instructions to the transaction
+// or to return the transaction so that the caller can add instructions
+// and then send the transaction.
+// Also we should remove the jupiter swap from here and put it in the client
 const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
     const { provider, endpoints } = client;
@@ -245,10 +250,12 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
  * @function releasePurchase
  * @param {Object} client NinaClient instance.
  * @param {String} releasePublicKey Public Key of the release.
- * @param {String} hubPublicKey Public Key of the hub.
  * @returns {String} the Release.
  */
 
+// TODO: Need to have a way to add instructions to the transaction
+// or to return the transaction so that the caller can add instructions
+// and then send the transaction.
 const releasePurchase = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
@@ -352,7 +359,7 @@ const releasePurchase = async (client, releasePublicKey) => {
  * @param {String} release Release of the release.
  * @param {String} releaseBump Release bump of the release.
  * @param {String} releaseMint Release mint of the release.
- * @param {Boolean} isOpen Is the release open or not.
+ * @param {Boolean} isOpen Is the release an open edition or not.
  * @returns {Object} the Release.
  */
 
@@ -521,7 +528,7 @@ const releaseInitViaHub = async (
 /**
  * @function initializeReleaseAndMint - Initializes a release and mints the first edition
  * @param {Object} client - the Nina Client
- * @param {*} hubPubkey - the hub pubkey
+ * @param {String} hubPubkey - the hub pubkey
  * @example await initializeReleaseAndMint(client, hubPubkey);
  * @returns {Object} - the release, release bump, and release mint
  */
@@ -598,7 +605,6 @@ export const releaseInit = async (
     const { provider } = client;
     const program = await client.useProgram();
     const paymentMint = new anchor.web3.PublicKey(isUsdc ? ids.mints.usdc : ids.mints.wsol);
-    const publishingCreditMint = new anchor.web3.PublicKey(ids.mints.publishingCredit);
 
     const [releaseSigner, releaseSignerBump] = await anchor.web3.PublicKey.findProgramAddress(
       [release.toBuffer()],
@@ -626,25 +632,12 @@ export const releaseInit = async (
       true
     );
 
-    const [authorityPublishingCreditTokenAccount, authorityPublishingCreditTokenAccountIx] =
-      await findOrCreateAssociatedTokenAccount(
-        provider.connection,
-        provider.wallet.publicKey,
-        provider.wallet.publicKey,
-        anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
-        publishingCreditMint
-      );
-
     let instructions = [...releaseMintIx, royaltyTokenAccountIx];
 
     if (authorityTokenAccountIx) {
       instructions.push(authorityTokenAccountIx);
     }
 
-    if (authorityPublishingCreditTokenAccountIx) {
-      instructions.push(authorityPublishingCreditTokenAccountIx);
-    }
     let now = new Date();
     const editionAmount = isOpen ? MAX_INT : amount;
     const config = {
@@ -759,29 +752,17 @@ export const closeRelease = async (client, releasePublicKey) => {
 /**
  * @function collectRoyaltyForRelease
  * @param {Object} client the NinaClient
- * @param {String} recipient Public Key of the recipient.
  * @param {String} releasePublicKey Public Key of the release.
- * @param {Object} state the NinaClient state.
  * @example collectRoyaltyForRelease(client, recipient, releasePublicKey, state)
  * @returns {Object} the Release with Account Data.
  */
-
-export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
-  if (!releasePublicKey || !recipient) {
-    return;
-  }
+export const collectRoyaltyForRelease = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
 
-    let release;
-    if (!state) {
-      release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));
-    } else {
-      release = state.tokenData[releasePublicKey];
-    }
+    let release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));      
 
-    release.paymentMint = new anchor.web3.PublicKey(release.paymentMint);
     const [authorityTokenAccount, authorityTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,
       provider.wallet.publicKey,
@@ -829,14 +810,15 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
 /**
  * @function addRoyaltyRecipient
  * @param {Object} client - the NinaClient
- * @param {String} release - the release
- * @param {Object} updateData - the data to update the release with
+ * @param {Release} release - the release
+ * @param {Number} percentShare - amount of revenue share to transfer to recipient
+ * @param {String} recipientAddress - the Public Key of the recipient
  * @param {String} releasePublicKey - the Public Key of the release
  * @example addRoyaltyRecipient(client, recipient, updateData, releasePublicKey)
  * @returns {Object} the Release with Account Data.
  */
 
-export const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {
+export const addRoyaltyRecipient = async (client, release, percentShare, recipientAddress, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -844,8 +826,8 @@ export const addRoyaltyRecipient = async (client, release, updateData, releasePu
     if (!release) {
       release = await program.account.release.fetch(releasePubkey);
     }
-    const recipientPublicKey = new anchor.web3.PublicKey(updateData.recipientAddress);
-    const updateAmount = updateData.percentShare * 10000;
+    const recipientPublicKey = new anchor.web3.PublicKey(recipientAddress);
+    const updateAmount = percentShare * 10000;
 
     let [newRoyaltyRecipientTokenAccount, newRoyaltyRecipientTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,

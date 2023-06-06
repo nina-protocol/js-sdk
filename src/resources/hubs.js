@@ -47,8 +47,8 @@ const fetch = async (publicKeyOrHandle, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
  */
-const fetchCollaborators = async (publicKeyOrHandle) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`);
+const fetchCollaborators = async (publicKeyOrHandle, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`, pagination, withAccountData);
 };
 
 /**
@@ -60,7 +60,7 @@ const fetchCollaborators = async (publicKeyOrHandle) => {
  */
 const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey) => {
   //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`);
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`, withAccountData);
 };
 
 /**
@@ -71,8 +71,8 @@ const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const releases = await NinaClient.Hub.fetchReleases('ninas-picks');
  */
-const fetchReleases = async (publicKeyOrHandle, withAccountData = false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, undefined, withAccountData);
+const fetchReleases = async (publicKeyOrHandle, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, pagination, withAccountData);
 };
 
 /**
@@ -83,8 +83,8 @@ const fetchReleases = async (publicKeyOrHandle, withAccountData = false) => {
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const posts = await NinaClient.Hub.fetchPosts('ninas-picks');
  */
-const fetchPosts = async (publicKeyOrHandle, withAccountData = false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, undefined, withAccountData);
+const fetchPosts = async (publicKeyOrHandle, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, pagination, withAccountData);
 };
 
 /**
@@ -119,23 +119,26 @@ const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData
  * @function fetchSubscriptions
  * @description Fetches the subscriptions for a Hub.
  * @param {String} publicKeyOrHandle The public key or handle of the Hub account.
+ * @param {Boolean} [withAccountData = false] Include full on-chain HubPost, HubContent, and Post accounts.
  * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
  * @example const subscriptions = await NinaClient.Hub.fetchSubscriptions("ninas-picks");
  */
 
-const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false) => {
-  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
+const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false, pagination = undefined) => {
+  return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, pagination, withAccountData);
 };
 
 /**
  * @function hubInit
  * @description Initializes a Hub account with Hub Credit.
  * @param {Object} client The NinaClient.
- * @param {Object} hubParams The Hub parameters. // NOTE: exand
+ * @param {String} handle The handle of the Hub.
+ * @param {Number} publishFee The amount revenue share hub authority receives for all releases published through the hub
+ * @param {Number} referralFee The percentage amount hub authority receives for all referral sales from the hub on top of sale price
  * @example const hub = await NinaClient.Hub.hubInit({})
  * @returns {Object} The created Hub account.
  */
-const hubInit = async (client, hubParams) => {
+const hubInit = async (client, handle, publishFee, referralFee, ) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -143,12 +146,12 @@ const hubInit = async (client, hubParams) => {
     const WRAPPED_SOL_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.wsol);
     const HUB_CREDIT_MINT = new anchor.web3.PublicKey(NinaClient.ids.mints.hubCredit);
 
-    hubParams.publishFee = new anchor.BN(hubParams.publishFee * 10000);
-    hubParams.referralFee = new anchor.BN(hubParams.referralFee * 10000);
+    publishFee = new anchor.BN(publishFee * 10000);
+    referralFee = new anchor.BN(referralFee * 10000);
     const [hub] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub')),
-        Buffer.from(anchor.utils.bytes.utf8.encode(hubParams.handle)),
+        Buffer.from(anchor.utils.bytes.utf8.encode(handle)),
       ],
       program.programId
     );
@@ -157,7 +160,6 @@ const hubInit = async (client, hubParams) => {
       [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hub.toBuffer()],
       program.programId
     );
-    hubParams.hubSignerBump = hubSignerBump;
 
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
       [
@@ -187,7 +189,12 @@ const hubInit = async (client, hubParams) => {
     );
     //add IX for create
     const tx = await program.methods
-      .hubInit(hubParams)
+      .hubInit({
+        handle,
+        publishFee,
+        referralFee,
+        hubSignerBump
+      })
       .accounts({
         authority: provider.wallet.publicKey,
         hub,
