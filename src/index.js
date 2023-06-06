@@ -16,6 +16,6 @@ const Nina = {
   Search,
   Subscription,
   client,
-}
+};
 
-export default Nina
+export default Nina;

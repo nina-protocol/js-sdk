@@ -2,40 +2,82 @@ import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
 import _ from 'lodash';
 
-const MAX_U64 = '18446744073709551615'; 
+const MAX_U64 = '18446744073709551615';
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      nina: 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: '53ueyguZx5bHjgHQdU1EcoLkcupAt97wVbcYeAi6iAYy',
+      vaultUsdc: 'HDhJyie5Gpck7opvAbYi5H22WWofAR3ygKFghdzDkmLf',
+      vaultWrappedSol: '5NnBrUiqHsx1QnGVSo73AprxgVtRjcfmGrgwJ6q1ADzs',
+    },
+    mints: {
+      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+  devnet: {
+    programs: {
+      nina: '77BKtqWTbTRxj5eZPuFbeXjx3qz4TTHoXRnpCejYWiQH',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: 'AzhSWZCtvfRkzGzzAhPxzrvBcMBcYGKp2rwCh17hARhi',
+      vaultUsdc: '2hyWtzYhwW4CSWs7TrrdhQ9DWRaKUVhSxsyVTzcyHRq6',
+      vaultWrappedSol: 'H35oumnDdCu5VGXvp24puqYvUQ3Go1JXCGum7L2J3CSP',
+    },
+    mints: {
+      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+};
 /** Class Representing the Nina Client */
 class NinaClient {
   constructor() {
-    this.provider = null  
+    this.provider = null;
     this.program = null;
     this.endpoint = null;
     this.cluster = null;
     this.programId = null;
     this.apiKey = null;
+    this.ids = null;
   }
 
-  /** 
+  /**
    * Initialize the Nina Client Class Object
    * @function init
    * @param {String} endpoint - API endpoint URL (https://api.ninaprotocol.com/v1/)
    * @param {String} cluster - Solana RPC URL (https://api.mainnet-beta.solana.com)
-   * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)   
+   * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)
    * @example Nina.client.init(endpoint, cluster, programId)
-  */
-  async init(endpoint, cluster, programId, apiKey=undefined) {
+   */
+  async init(endpoint, cluster, programId, apiKey = undefined) {
     this.apiKey = apiKey;
-    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
+    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
     const connection = new anchor.web3.Connection(this.cluster);
-    this.provider = new anchor.AnchorProvider(connection, {}, {
-      commitment: 'confirmed',
-      preflightCommitment: 'processed',
-    })  
-    this.program = await anchor.Program.at(
-      this.programId,
-      this.provider,
-    )
+    this.provider = new anchor.AnchorProvider(
+      connection,
+      {},
+      {
+        commitment: 'confirmed',
+        preflightCommitment: 'processed',
+      }
+    );
+    this.program = await anchor.Program.at(this.programId, this.provider);
+    this.ids = NINA_CLIENT_IDS[process.env.REACT_APP_CLUSTER];
   }
 
   async get(url, query = undefined, withAccountData = false) {
@@ -66,14 +108,17 @@ class NinaClient {
     return response;
   }
 
-  async fetchAccountData (publicKey, accountType) {
+  async fetchAccountData(publicKey, accountType) {
     const account = await this.program.account[accountType].fetch(new anchor.web3.PublicKey(publicKey), 'confirmed');
-    return account
+    return account;
   }
 
-  async fetchAccountDataMultiple (publicKeys, accountType) {
-    const accounts = await this.program.account[accountType].fetchMultiple(publicKeys.map(publicKey => new anchor.web3.PublicKey(publicKey)), 'confirmed');
-    return accounts
+  async fetchAccountDataMultiple(publicKeys, accountType) {
+    const accounts = await this.program.account[accountType].fetchMultiple(
+      publicKeys.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
+      'confirmed'
+    );
+    return accounts;
   }
 
   async getAccountData(url, response) {
@@ -81,54 +126,60 @@ class NinaClient {
       const hubPublicKey = response.data.hub.publicKey;
       const hub = await this.fetchAccountData(hubPublicKey, 'hub');
       response.data.hub.accountData = this.parseHubAccountData(hub);
-      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, "release");
-      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, "post");
+      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, 'release');
+      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, 'post');
       await this.processMultipleHubCollaboratorAccountDataWithHub(response.data.collaborators, hubPublicKey);
     } else if (/releases\/(.*?)\/hubs/.test(url)) {
-      const releasePublicKey = url.split("/")[2];
-      await this.processMulitpleHubAccountData(response.data.hubs)
+      const releasePublicKey = url.split('/')[2];
+      await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleHubReleasesAccountDataWithHub(response.data.hubs, releasePublicKey);
     } else if (url === '/hubs') {
-      await this.processMulitpleHubAccountData(response.data.hubs)
-    } else if (/releases\/(.*?)\/revenueShareRecipients/.test(url)) { 
-      const releasePublicKey = url.split("/")[2];
-      const release = await this.fetchAccountData(releasePublicKey, "release");
+      await this.processMulitpleHubAccountData(response.data.hubs);
+    } else if (/releases\/(.*?)\/revenueShareRecipients/.test(url)) {
+      const releasePublicKey = url.split('/')[2];
+      const release = await this.fetchAccountData(releasePublicKey, 'release');
       release = this.parseReleaseAccountData(release);
-      response.data.revenueShareRecipients.forEach(recipient => {
-        recipient.accountData = { revenueShareRecipient: release.revenueShareRecipients.filter(r => r.recipientAuthority === recipient.publicKey)[0]};
-      })
+      response.data.revenueShareRecipients.forEach((recipient) => {
+        recipient.accountData = {
+          revenueShareRecipient: release.revenueShareRecipients.filter(
+            (r) => r.recipientAuthority === recipient.publicKey
+          )[0],
+        };
+      });
     } else if (/accounts\/(.*?)\/hubs/.test(url)) {
       const publicKey = url.split('/')[2];
-      await this.processMulitpleHubAccountData(response.data.hubs)
+      await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleHubCollaboratorAccountDataWithHubs(response.data.hubs, publicKey);
     } else if (
       url === '/releases' ||
       /accounts\/(.*?)\/published/.test(url) ||
       /accounts\/(.*?)\/collected/.test(url) ||
       /accounts\/(.*?)\/revenueShares/.test(url)
-    ){
-      await this.processMultipleReleaseAccountData(response.data.releases || response.data.collected || response.data.published || response.data.revenueShares)
-    } else if (/accounts\/(.*?)\/exchanges/.test(url)) { 
-      await this.processMultipleExchangeAccountData(response.data.exchanges)
+    ) {
+      await this.processMultipleReleaseAccountData(
+        response.data.releases || response.data.collected || response.data.published || response.data.revenueShares
+      );
+    } else if (/accounts\/(.*?)\/exchanges/.test(url)) {
+      await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/^\/releases\/((?!(\/)).)*$/.test(url)) {
-      let release = await this.fetchAccountData(response.data.release.publicKey, "release");
-      response.data.release.accountData = { release: this.parseReleaseAccountData(release) }
+      let release = await this.fetchAccountData(response.data.release.publicKey, 'release');
+      response.data.release.accountData = { release: this.parseReleaseAccountData(release) };
     } else if (/\/releases\/(.*?)\/exchanges/.test(url)) {
-      await this.processMultipleExchangeAccountData(response.data.exchanges)
+      await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/hubs\/(.*?)\/releases/.test(url)) {
-      const hubPublicKey = response.data.publicKey
-      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, "release");
+      const hubPublicKey = response.data.publicKey;
+      await this.processMultipleHubContentAccountDataWithHub(response.data.releases, hubPublicKey, 'release');
     } else if (url === '/posts' || /accounts\/(.*?)\/posts/.test(url)) {
     } else if (/hubs\/(.*?)\/posts/.test(url)) {
-      const hubPublicKey = response.data.publicKey
-      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, "post");
+      const hubPublicKey = response.data.publicKey;
+      await this.processMultipleHubContentAccountDataWithHub(response.data.posts, hubPublicKey, 'post');
     } else if (/^\/posts\/((?!(\/)).)*$/.test(url)) {
       let post = await this.fetchAccountData(response.data.post.publicKey, 'post');
       post = this.parsePostAccountData(post);
       let publishedThroughHub = await this.fetchAccountData(response.data.publishedThroughHub.publicKey, 'hub');
       publishedThroughHub = this.parseHubAccountData(publishedThroughHub);
-      response.data.post.accountData = post
-      response.data.publishedThroughHub.accountData = publishedThroughHub
+      response.data.post.accountData = post;
+      response.data.publishedThroughHub.accountData = publishedThroughHub;
     } else if (/^\/accounts\/((?!(\/)).)*$/.test(url)) {
       await this.processMulitpleHubAccountData(response.data.hubs);
       await this.processMultipleReleaseAccountData(response.data.published);
@@ -142,10 +193,10 @@ class NinaClient {
       await this.processMultipleExchangeAccountData(response.data.exchanges);
     } else if (/^\/exchanges\/((?!(\/)).)*$/.test(url)) {
       const exchangePublicKey = response.data.exchange.publicKey;
-      const exchange = await this.fetchAccountData(exchangePublicKey, "exchange");
+      const exchange = await this.fetchAccountData(exchangePublicKey, 'exchange');
       response.data.exchange.accountData = this.parseExchangeAccountData(exchange);
     }
-    return response.data;        
+    return response.data;
   }
 
   async processMultiplePostAccountData(data) {
@@ -157,7 +208,7 @@ class NinaClient {
     });
   }
 
-  async processMultipleExchangeAccountData (data) {
+  async processMultipleExchangeAccountData(data) {
     const publicKeys = [];
     data.forEach((exchange) => {
       if (!exchange.cancelled && !exchange.completedBy) {
@@ -169,7 +220,7 @@ class NinaClient {
       if (exchange) {
         const publicKey = publicKeys[i];
         const parsedExchange = this.parseExchangeAccountData(exchange);
-        data.filter(exchange => exchange.publicKey === publicKey)[0].accountData = {exchange: parsedExchange};
+        data.filter((exchange) => exchange.publicKey === publicKey)[0].accountData = { exchange: parsedExchange };
       }
     });
   }
@@ -205,77 +256,77 @@ class NinaClient {
     }
   }
 
-  async processMultipleHubCollaboratorAccountDataWithHub (data, hubPublicKey) {
-    const publicKeys  = data.map(collaborator => collaborator.publicKey);
-    const hubCollaboratorPublicKeys = []
+  async processMultipleHubCollaboratorAccountDataWithHub(data, hubPublicKey) {
+    const publicKeys = data.map((collaborator) => collaborator.publicKey);
+    const hubCollaboratorPublicKeys = [];
     for await (let publicKey of publicKeys) {
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          (new anchor.web3.PublicKey(hubPublicKey)).toBuffer(),
-          (new anchor.web3.PublicKey(publicKey)).toBuffer(),
+          new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+          new anchor.web3.PublicKey(publicKey).toBuffer(),
         ],
         new anchor.web3.PublicKey(this.programId)
-      )
-      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58())
+      );
+      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58());
     }
 
-    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, "hubCollaborator");
-    let i = 0
+    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, 'hubCollaborator');
+    let i = 0;
     for await (let collaborator of collaborators) {
-      const publicKey = publicKeys[i]
-      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i]
+      const publicKey = publicKeys[i];
+      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i];
       const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
-      data.filter(collaborator => collaborator.publicKey === publicKey)[0].accountData = {
+      data.filter((collaborator) => collaborator.publicKey === publicKey)[0].accountData = {
         collaborator: parsedCollaborator,
       };
       i++;
     }
   }
 
-  async processMultipleHubCollaboratorAccountDataWithHubs (data, collaboratorPublicKey) {
-    const publicKeys  = data.map(hub => hub.publicKey);
-    const hubCollaboratorPublicKeys = []
+  async processMultipleHubCollaboratorAccountDataWithHubs(data, collaboratorPublicKey) {
+    const publicKeys = data.map((hub) => hub.publicKey);
+    const hubCollaboratorPublicKeys = [];
     for await (let publicKey of publicKeys) {
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          (new anchor.web3.PublicKey(publicKey)).toBuffer(),
-          (new anchor.web3.PublicKey(collaboratorPublicKey)).toBuffer(),
+          new anchor.web3.PublicKey(publicKey).toBuffer(),
+          new anchor.web3.PublicKey(collaboratorPublicKey).toBuffer(),
         ],
         new anchor.web3.PublicKey(this.programId)
-      )
-      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58())
+      );
+      hubCollaboratorPublicKeys.push(hubCollaborator.toBase58());
     }
 
-    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, "hubCollaborator");
-    let i = 0
+    const collaborators = await this.fetchAccountDataMultiple(hubCollaboratorPublicKeys, 'hubCollaborator');
+    let i = 0;
     for await (let collaborator of collaborators) {
-      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i]
+      const hubCollaboratorPublicKey = hubCollaboratorPublicKeys[i];
       const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
       data[i].accountData.collaborator = parsedCollaborator;
       i++;
     }
   }
 
-  async processAndParseSingleHubCollaboratorAccountDataWithHub (publicKey, hubPublicKey) {
+  async processAndParseSingleHubCollaboratorAccountDataWithHub(publicKey, hubPublicKey) {
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-        (new anchor.web3.PublicKey(hubPublicKey)).toBuffer(),
-        (new anchor.web3.PublicKey(publicKey)).toBuffer(),
+        new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+        new anchor.web3.PublicKey(publicKey).toBuffer(),
       ],
       new anchor.web3.PublicKey(this.programId)
-    )
-    const hubCollaboratorPublicKey = hubCollaborator.toBase58()
-    const collaborator = await this.fetchAccountData(hubCollaboratorPublicKey, "hubCollaborator");
+    );
+    const hubCollaboratorPublicKey = hubCollaborator.toBase58();
+    const collaborator = await this.fetchAccountData(hubCollaboratorPublicKey, 'hubCollaborator');
     const parsedCollaborator = this.parseHubCollaboratorAccountData(collaborator, hubCollaboratorPublicKey);
-    return parsedCollaborator
+    return parsedCollaborator;
   }
 
-  async processMultipleHubReleasesAccountDataWithHub (data, releasePublicKey) {
-    const hubReleasePublicKeys = []
-    const hubContentPublicKeys = []
+  async processMultipleHubReleasesAccountDataWithHub(data, releasePublicKey) {
+    const hubReleasePublicKeys = [];
+    const hubContentPublicKeys = [];
     for await (let hub of data) {
       const [hubReleasePublicKey] = await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -284,8 +335,8 @@ class NinaClient {
           new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
         ],
         this.program.programId
-      )
-      hubReleasePublicKeys.push(hubReleasePublicKey)
+      );
+      hubReleasePublicKeys.push(hubReleasePublicKey);
       const [hubContentPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-content`)),
@@ -293,9 +344,9 @@ class NinaClient {
           new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
         ],
         this.program.programId
-      )
-        
-      hubContentPublicKeys.push(hubContentPublicKey)
+      );
+
+      hubContentPublicKeys.push(hubContentPublicKey);
     }
     const hubReleases = await this.fetchAccountDataMultiple(hubReleasePublicKeys, 'hubRelease');
     const hubContent = await this.fetchAccountDataMultiple(hubContentPublicKeys, 'hubContent');
@@ -313,8 +364,8 @@ class NinaClient {
     }
   }
 
-  async processHubReleaseAccountDataWithHub (releasePublicKey, hubPublicKey) {
-    const release = await this.fetchAccountData(releasePublicKey, "release");
+  async processHubReleaseAccountDataWithHub(releasePublicKey, hubPublicKey) {
+    const release = await this.fetchAccountData(releasePublicKey, 'release');
     const [hubReleasePublicKey] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-release`)),
@@ -322,7 +373,7 @@ class NinaClient {
         new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
       ],
       this.program.programId
-    )
+    );
     const [hubContentPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-content`)),
@@ -330,23 +381,23 @@ class NinaClient {
         new anchor.web3.PublicKey(releasePublicKey).toBuffer(),
       ],
       this.program.programId
-    )
+    );
     const hubRelease = await this.fetchAccountData(hubReleasePublicKey, 'hubRelease');
     const hubContent = await this.fetchAccountData(hubContentPublicKey, 'hubContent');
 
-    const parsedHubRelease = this.parseHubReleaseAccountData(hubRelease, hubReleasePublicKey)
-    const parsedHubContent = this.parseHubContentAccountData(hubContent, hubContentPublicKey)
+    const parsedHubRelease = this.parseHubReleaseAccountData(hubRelease, hubReleasePublicKey);
+    const parsedHubContent = this.parseHubContentAccountData(hubContent, hubContentPublicKey);
     const parsedRelease = this.parseReleaseAccountData(release);
-    
+
     return {
       release: parsedRelease,
       hubRelease: parsedHubRelease,
       hubContent: parsedHubContent,
-    }
+    };
   }
 
-  async processMultipleHubContentAccountDataWithHub (data, hubPublicKey, accountType) {
-    const publicKeys  = data.map(account => account.publicKey);
+  async processMultipleHubContentAccountDataWithHub(data, hubPublicKey, accountType) {
+    const publicKeys = data.map((account) => account.publicKey);
     const accounts = await this.fetchAccountDataMultiple(publicKeys, accountType);
     const hubChildrenPublicKeys = [];
     const hubContentPublicKeys = [];
@@ -424,10 +475,10 @@ class NinaClient {
     const parsedHubContentAccount = this.parseHubContentAccountData(hubContent, hubContentPublicKey);
     return [parsedChild, parsedHubContentAccount];
   }
-  
-  async processMulitpleHubAccountData (data) {
-    const publicKeys = data.map(account => account.publicKey);
-    const hubs = await this.fetchAccountDataMultiple(publicKeys, "hub");
+
+  async processMulitpleHubAccountData(data) {
+    const publicKeys = data.map((account) => account.publicKey);
+    const hubs = await this.fetchAccountDataMultiple(publicKeys, 'hub');
     hubs.forEach((hub, i) => {
       const publicKey = publicKeys[i];
       const parsedHub = this.parseHubAccountData(hub);
@@ -440,8 +491,8 @@ class NinaClient {
     hubPost.publicKey = publicKey.toBase58();
     hubPost.hub = hubPost.hub.toBase58();
     hubPost.post = hubPost.post.toBase58();
-    hubPost.referenceContent  = hubPost.referenceContent?.toBase58() || undefined;
-    hubPost.referenceContentType = Object.keys(hubPost.referenceContentType)[0]
+    hubPost.referenceContent = hubPost.referenceContent?.toBase58() || undefined;
+    hubPost.referenceContentType = Object.keys(hubPost.referenceContentType)[0];
     hubPost.versionUri = this.decode(hubPost.versionUri);
     return hubPost;
   }
@@ -454,27 +505,27 @@ class NinaClient {
     return hubRelease;
   }
 
-  parseHubContentAccountData (hubContent, publicKey) {
-    hubContent.publicKey = typeof publicKey === 'string' ? publicKey : publicKey.toBase58()
-    hubContent.hub = hubContent.hub.toBase58()
-    hubContent.addedBy = hubContent.addedBy.toBase58()
-    hubContent.child = hubContent.child.toBase58()
-    hubContent.contentType = Object.keys(hubContent.contentType)[0]
-    hubContent.datetime = hubContent.datetime.toNumber() * 1000
-    hubContent.repostedFromHub = hubContent.repostedFromHub.toBase58()
-    return hubContent
+  parseHubContentAccountData(hubContent, publicKey) {
+    hubContent.publicKey = typeof publicKey === 'string' ? publicKey : publicKey.toBase58();
+    hubContent.hub = hubContent.hub.toBase58();
+    hubContent.addedBy = hubContent.addedBy.toBase58();
+    hubContent.child = hubContent.child.toBase58();
+    hubContent.contentType = Object.keys(hubContent.contentType)[0];
+    hubContent.datetime = hubContent.datetime.toNumber() * 1000;
+    hubContent.repostedFromHub = hubContent.repostedFromHub.toBase58();
+    return hubContent;
   }
 
-  parseHubCollaboratorAccountData (hubCollaborator, publicKey) {
-    hubCollaborator.publicKey = publicKey
-    hubCollaborator.hub = hubCollaborator.hub.toBase58()
-    hubCollaborator.collaborator = hubCollaborator.collaborator.toBase58()
-    hubCollaborator.addedBy = hubCollaborator.addedBy.toBase58()
-    hubCollaborator.datetime = hubCollaborator.datetime.toNumber() * 1000
-    return hubCollaborator
+  parseHubCollaboratorAccountData(hubCollaborator, publicKey) {
+    hubCollaborator.publicKey = publicKey;
+    hubCollaborator.hub = hubCollaborator.hub.toBase58();
+    hubCollaborator.collaborator = hubCollaborator.collaborator.toBase58();
+    hubCollaborator.addedBy = hubCollaborator.addedBy.toBase58();
+    hubCollaborator.datetime = hubCollaborator.datetime.toNumber() * 1000;
+    return hubCollaborator;
   }
 
-  parsePostAccountData (post) {
+  parsePostAccountData(post) {
     post.author = post.author.toBase58();
     post.createdAt = post.createdAt * 1000;
     post.slug = this.decode(post.slug);
@@ -524,7 +575,7 @@ class NinaClient {
     release.releaseSigner = release.releaseSigner.toBase58();
     release.resalePercentage = release.resalePercentage.toNumber();
     release.releaseDatetime = release.releaseDatetime.toNumber() * 1000;
-    release.revenueShareRecipients = release.royaltyRecipients.map(recipient => {
+    release.revenueShareRecipients = release.royaltyRecipients.map((recipient) => {
       recipient.collected = recipient.collected.toNumber();
       recipient.owed = recipient.owed.toNumber();
       recipient.percentShare = recipient.percentShare.toNumber();
@@ -532,7 +583,7 @@ class NinaClient {
       recipient.recipientTokenAccount = recipient.recipientTokenAccount.toBase58();
       return recipient;
     });
-    delete release.royaltyRecipients
+    delete release.royaltyRecipients;
     release.royaltyTokenAccount = release.royaltyTokenAccount.toBase58();
     release.saleCounter = release.saleCounter.toNumber();
     release.saleTotal = release.saleTotal.toNumber();
@@ -556,5 +607,4 @@ class NinaClient {
     return new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\u0000/g, '');
   }
 }
-
 export default new NinaClient();
