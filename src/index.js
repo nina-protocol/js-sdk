@@ -6,6 +6,7 @@ import Release from './resources/releases';
 import Search from './resources/search';
 import Subscription from './resources/subscriptions';
 import client from './client';
+import utils from './utils';
 
 const Nina = {
   Account,
@@ -16,6 +17,7 @@ const Nina = {
   Search,
   Subscription,
   client,
+  utils
 };
 
 export default Nina;
