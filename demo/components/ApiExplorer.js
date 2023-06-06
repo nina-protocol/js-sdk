@@ -56,7 +56,6 @@ const ApiExplorer = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`${resource} ${modifier} ${publicKey}`);
     if (resource === 'Accounts') {
       if (modifier === 'Collected') {
         Nina.Account.fetchCollected(publicKey, withAccountData).then(setResponse);
@@ -139,7 +138,7 @@ const ApiExplorer = () => {
 
   return (
     <div name='api_explorer' id="api_explorer" className='flex flex-col flex-grow h-screen mt-10'>
-      <h2 className='mt-2 text-2xl underline uppercase'>Nina API Explorer</h2> 
+      <h2 className='mt-2 text-2xl underline uppercase'>Nina API Explorer</h2>
       <ul>
         <p className='mt-2'>- Select a Resource and click Fetch to retrieve data from the API. Provide a publicKey or modifier to retrieve specific data.</p>
         <p className='mt-2'>- `With Account Data` returns full formatted on-chain account data.</p>
@@ -217,7 +216,7 @@ const ApiExplorer = () => {
                   <label htmlFor="withAccountData" className={`ml-2 text-sm ${!resource === true ? 'text-slate-700' : ''} `}>With Account Data</label>
                 </div>
 
-        
+
                 <button className={`py-2 ml-2 btn ${!resource == true || resource === 'resource' ? 'btn-disabled' : 'btn-outlined-default'} `}
                   disabled={!resource}
                   onClick={e => handleReset(e)}

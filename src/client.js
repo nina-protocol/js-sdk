@@ -3,6 +3,45 @@ import * as anchor from '@project-serum/anchor';
 import _ from 'lodash';
 
 const MAX_U64 = '18446744073709551615';
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      nina: 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: '53ueyguZx5bHjgHQdU1EcoLkcupAt97wVbcYeAi6iAYy',
+      vaultUsdc: 'HDhJyie5Gpck7opvAbYi5H22WWofAR3ygKFghdzDkmLf',
+      vaultWrappedSol: '5NnBrUiqHsx1QnGVSo73AprxgVtRjcfmGrgwJ6q1ADzs',
+    },
+    mints: {
+      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+  devnet: {
+    programs: {
+      nina: '77BKtqWTbTRxj5eZPuFbeXjx3qz4TTHoXRnpCejYWiQH',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: 'AzhSWZCtvfRkzGzzAhPxzrvBcMBcYGKp2rwCh17hARhi',
+      vaultUsdc: '2hyWtzYhwW4CSWs7TrrdhQ9DWRaKUVhSxsyVTzcyHRq6',
+      vaultWrappedSol: 'H35oumnDdCu5VGXvp24puqYvUQ3Go1JXCGum7L2J3CSP',
+    },
+    mints: {
+      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+};
 /** Class Representing the Nina Client */
 class NinaClient {
   constructor() {
@@ -12,6 +51,7 @@ class NinaClient {
     this.cluster = null;
     this.programId = null;
     this.apiKey = null;
+    this.ids = null;
   }
 
   /**
@@ -24,7 +64,7 @@ class NinaClient {
    */
   async init(endpoint, cluster, programId, apiKey = undefined) {
     this.apiKey = apiKey;
-    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/';
+    this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
     const connection = new anchor.web3.Connection(this.cluster);
@@ -37,6 +77,7 @@ class NinaClient {
       }
     );
     this.program = await anchor.Program.at(this.programId, this.provider);
+    this.ids = NINA_CLIENT_IDS[process.env.REACT_APP_CLUSTER];
   }
 
   async get(url, query = undefined, withAccountData = false) {
@@ -566,5 +607,4 @@ class NinaClient {
     return new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\u0000/g, '');
   }
 }
-
 export default new NinaClient();
