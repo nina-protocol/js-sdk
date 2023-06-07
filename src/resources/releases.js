@@ -23,8 +23,9 @@ const MAX_INT = '18446744073709551615';
  * @param {Object} [pagination = {limit: 20, offset: 0, sort: 'desc'}] Pagination options.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Release accounts.
  * @example const releases = await NinaClient.Release.fetchAll();
+ * @returns {Array} an array of all of the Releases on Nina.
  */
-const fetchAll = async (pagination = {}, withAccountData = false) => {
+export const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/releases',
@@ -39,68 +40,80 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
 
 /**
  * @function fetch
- * @param {String} publicKey The public key of the release.
- * @param {Boolean} [withAccountData = false] Fetch full on-chain Release account.
+ * @param {String} publicKey - The public key of the release.
+ * @param {Boolean} [withAccountData = false] - A boolean determining wether or not to fetch the full on-chain data for the Release account and include in the response object.
  * @example const release = await NinaClient.Release.fetch("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {Object} an object containing the Release data.
  */
-const fetch = async (publicKey, withAccountData = false) => {
+
+export const fetch = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}`, undefined, withAccountData);
 };
 
 /**
  * @function fetchCollectors
- * @param {String} publicKey The public key of the release.
- * @param {Boolean} [withCollection = false] Fetch collectors collections.
- * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+ * @param {String} publicKey - The public key of the release.
+ * @param {Boolean} [withCollection = false] - A boolean determining wether or not to fetch collectors' collections and include in the response object.
+ * @param {Object} [pagination = {limit, offset, sort}] - Pagination options.
  * @example const collectors = await NinaClient.Release.fetchCollectors("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {Array} an array of all of the collectors of a Release.
  */
-const fetchCollectors = async (publicKey, withCollection = false) => {
+
+export const fetchCollectors = async (publicKey, withCollection = false) => {
   return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`);
 };
 
 /**
  * @function fetchHubs
- * @param {String} publicKey The public key of the release.
- * @param {Boolean} [withAccountData = false] Fetch full on-chain Hub and HubRelease accounts.
- * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+ * @param {String} publicKey - The public key of the release.
+ * @param {Boolean} [withAccountData = false] - A boolean determining wether or not to fetch the full on-chain data for the Hub account and include in the response object.
+ * @param {Object} [pagination = {limit, offset, sort}] - Pagination options.
  * @example const hubs = await NinaClient.Release.fetchHubs("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {Array} an array of all of the Hubs that a Release belongs to.
  */
-const fetchHubs = async (publicKey, withAccountData = false) => {
+
+export const fetchHubs = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}/hubs`, undefined, withAccountData);
 };
 
 /**
  * @function fetchExchanges
- * @param {String} publicKey The public key of the release.
- * @param {Boolean} [withAccountData = false] Fetch full on-chain Exchange accounts.
- * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+ * @param {String} publicKey - The public key of the release.
+ * @param {Boolean} [withAccountData = false] - A boolean determining wether or not to fetch the full on-chain data for the Exchange account and include in the response object.
+ * @param {Object} [pagination = {limit, offset, sort}] - Pagination options.
  * @example const exchanges = await NinaClient.Release.fetchExchanges("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {Array} an array of all of the Exchanges that belong to a Release.
  */
-const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
+
+export const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
   return await NinaClient.get(`/releases/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
 /**
  * @function fetchRevenueShareRecipients
- * @param {String} publicKey The public key of the release.
- * @param {Boolean} [withAccountData = false] Fetch full on-chain Release accounts.
- * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
- * @example const revenueShareRecipients = await NinaClient.Release.fetchRevenueShareRecipients("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @param {String} publicKey - The public key of the release.
+ * @param {Boolean} [withAccountData = false] - A boolean determining wether or not to fetch the full on-chain data for the Release account and royalty recipients and include in the response object.
+ * @param {Object} [pagination = {limit, offset, sort}] - Pagination options.
+ * @example const revenueShareRecipients = await fetchRevenueShareRecipients("4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
+ * @returns {Array} an array of all of the Revenue Share Recipients that belong to a Release.
  */
-const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) => {
+
+export const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, undefined, withAccountData);
 };
 
 /**
  *
  * @function purchaseViaHub
- * @param {Object} client NinaClient instance.
- * @param {String} releasePublicKey Public Key of the release.
- * @param {String} hubPublicKey Public Key of the hub.
- * @example const transactionId = await NinaClient.Release.purchaseViaHub(client, "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ", "4dS4v5dGrUwEZmjCFu56qgyAmRfaPmns9PveWAw61rEQ");
- * @returns {String} the Release.
+ * @description Purchases a Release from a Hub.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} releasePublicKey - The public key of the Release.
+ * @param {String} hubPublicKey - The public key of the Hub.
+ * @example const transactionId = await purchaseViaHub(client, "DDiezQSSNWF1XxKfhJv4YqB2y4xGYzCDVvVYU46wHhKW", "2CMyS4k6HQvLVdA2DxB6em3izhNw7uq2hzX7E4f7UJ3f");
+ * @returns {Object} the Release that was purchased.
  */
-const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
+
+export const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
     const { provider, endpoints } = client;
     const program = await client.useProgram();
@@ -243,13 +256,14 @@ const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
 /**
  *
  * @function releasePurchase
- * @param {Object} client NinaClient instance.
- * @param {String} releasePublicKey Public Key of the release.
- * @param {String} hubPublicKey Public Key of the hub.
- * @returns {String} the Release.
+ * @description Purchases a Release outside of a Hub.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} releasePublicKey - The public key of the Release being purchased.
+ * @example await NinaClient.Releases.releasePurchase(ninaClient, "DDiezQSSNWF1XxKfhJv4YqB2y4xGYzCDVvVYU46wHhKW");
+ * @returns {String} the Release that was Purchased.
  */
 
-const releasePurchase = async (client, releasePublicKey) => {
+export const releasePurchase = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -339,26 +353,28 @@ const releasePurchase = async (client, releasePublicKey) => {
 /**
  *
  * @function releaseInitViaHub
- * @param {Object} client the NinaClient
- * @param {String} hubPublicKey Public Key of the hub.
- * @param {Number} retailPrice Retail price of the release.
- * @param {Number} amount Amount of the release.
- * @param {Number} resalePercentage Resale percentage of the release.
- * @param {Boolean} isUsdc Is the payment in USDC or SOL.
- * @param {String} metadataUri Metadata URI of the release.
- * @param {String} artist Artist of the release.
- * @param {String} title Title of the release.
- * @param {String} catalogNumber Catalog number of the release.
- * @param {String} release Release of the release.
- * @param {String} releaseBump Release bump of the release.
- * @param {String} releaseMint Release mint of the release.
- * @param {Boolean} isOpen Is the release open or not.
- * @returns {Object} the Release.
+ * @description Initializes and creates a Release via a Hub. Once a Release is created, it will surface to the Hub that it was initalized to and can be listened to or purchased.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} hubPublicKey - The public key of the Hub that the Release will belong to.
+ * @param {Number} retailPrice - The retail price of the Release.
+ * @param {Number} amount - The number of editions available for a Release.
+ * @param {Number} resalePercentage - The resale percentage of the Release. When a Release is resold on an Exchange, the authority of the Release receives this percentage of the resale price.
+ * @param {String} artist - The name of the artist for the Release.
+ * @param {String} title - The title of the Release.
+ * @param {String} catalogNumber - The catalog number of the Release. Similar to the categorical system that record labels use i.e. NINA001.
+ * @param {String} metadataUri - The Arweave URI of the Release.
+ * @param {Boolean} isUsdc - A boolean determining wether the Release priced in USDC or not.
+ * @param {String} release - The initialization of the Release via initializeReleaseAndMint().
+ * @param {String} releaseBump - The Release bump of the Release.
+ * @param {String} releaseMint - The Release mint of the Release.
+ * @param {Boolean} isOpen - A boolean determining if the Release is open or not. If a Release is open, the Release will have an unlimited number of editions.
+ * @example const release = await NinaClient.Releases.releaseInitViaHub(ninaClient, 'H2BdseAHX3tEjxXKtLREEsJsf8Y2zZxz8679MBGNPEC4', 10, 100, 20, "dBridge", "Pantheon", "TRUETO004", "https://arweave.net/797hCskMy6lndMc4rN7ovp7NfNsDCJhNdKaCSrl_G0U", true, release, releaseBump, releaseMint, false);
+ * @returns {Object} the created Release.
  */
 
-const releaseInitViaHub = async (
+export const releaseInitViaHub = async (
   client,
-  hubPubkey,
+  hubPublicKey,
   retailPrice,
   amount,
   resalePercentage,
@@ -376,8 +392,8 @@ const releaseInitViaHub = async (
     const ids = NinaClient.ids;
     const { provider } = client;
     const program = await client.useProgram();
-    hubPubkey = new anchor.web3.PublicKey(hubPubkey);
-    const hub = await program.account.hub.fetch(hubPubkey);
+    hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
+    const hub = await program.account.hub.fetch(hubPublicKey);
     const paymentMint = new anchor.web3.PublicKey(isUsdc ? ids.mints.usdc : ids.mints.wsol);
 
     const [releaseSigner, releaseSignerBump] = await anchor.web3.PublicKey.findProgramAddress(
@@ -407,24 +423,24 @@ const releaseInitViaHub = async (
     const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-        hubPubkey.toBuffer(),
+        hubPublicKey.toBuffer(),
         provider.wallet.publicKey.toBuffer(),
       ],
       program.programId
     );
 
     const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hubPubkey.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hubPublicKey.toBuffer()],
       program.programId
     );
 
     const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')), hubPubkey.toBuffer(), release.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')), hubPublicKey.toBuffer(), release.toBuffer()],
       program.programId
     );
 
     const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')), hubPubkey.toBuffer(), release.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')), hubPublicKey.toBuffer(), release.toBuffer()],
       program.programId
     );
 
@@ -482,7 +498,7 @@ const releaseInitViaHub = async (
         release,
         releaseSigner,
         hubCollaborator,
-        hub: hubPubkey,
+        hub: hubPublicKey,
         hubRelease,
         hubContent,
         hubSigner,
@@ -506,7 +522,7 @@ const releaseInitViaHub = async (
     const txid = await provider.wallet.sendTransaction(tx, provider.connection);
 
     await getConfirmTransaction(txid, provider.connection);
-    const createdRelease = await Hub.fetchHubRelease(hubPubkey.toBase58(), hubRelease.toBase58());
+    const createdRelease = await Hub.fetchHubRelease(hubPublicKey.toBase58(), hubRelease.toBase58());
     return {
       release: createdRelease,
     };
@@ -519,14 +535,15 @@ const releaseInitViaHub = async (
 };
 
 /**
- * @function initializeReleaseAndMint - Initializes a release and mints the first edition
- * @param {Object} client - the Nina Client
- * @param {*} hubPubkey - the hub pubkey
- * @example await initializeReleaseAndMint(client, hubPubkey);
- * @returns {Object} - the release, release bump, and release mint
+ * @function initializeReleaseAndMint
+ * @description Initializes a release and mints the first edition.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} hubPublicKey - The public key of the Hub that the Release will be initialized to, if applicable.
+ * @example await NinaClient.Releases.initializeReleaseAndMint(ninaClient, "2CMyS4k6HQvLVdA2DxB6em3izhNw7uq2hzX7E4f7UJ3f");
+ * @returns {Object} the Release, Release bump, Release mint, and Hub Release.
  */
 
-const initializeReleaseAndMint = async (client, hubPubkey) => {
+const initializeReleaseAndMint = async (client, hubPublicKey) => {
   try {
     const program = await client.useProgram();
     const releaseMint = anchor.web3.Keypair.generate();
@@ -535,11 +552,11 @@ const initializeReleaseAndMint = async (client, hubPubkey) => {
       program.programId
     );
     let hubRelease;
-    if (hubPubkey) {
+    if (hubPublicKey) {
       const [_hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
-          new anchor.web3.PublicKey(hubPubkey).toBuffer(),
+          new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
           release.toBuffer(),
         ],
         program.programId
@@ -561,21 +578,22 @@ const initializeReleaseAndMint = async (client, hubPubkey) => {
 /**
  *
  * @function releaseInit
- * @param {Object} client the NinaClient
- * @param {Number} retailPrice Retail price of the release.
- * @param {Number} amount Amount of the release.
- * @param {Number} resalePercentage Resale percentage of the release.
- * @param {String} metadataUri Metadata URI of the release.
- * @param {String} artist Artist of the release.
- * @param {String} title Title of the release.
- * @param {String} catalogNumber Catalog number of the release.
- * @param {String} metadataUri Metadata URI of the release.
- * @param {Boolean} isUsdc Is the release priced in USDC or not.
- * @param {String} release Release of the release.
- * @param {String} releaseBump Release bump of the release.
- * @param {String} releaseMint Release mint of the release.
- * @param {Boolean} isOpen Is the release open or not.
- * @returns {Object} the Release.
+ * @description Initializes and creates a Release without a Hub. Once a Release is created, it can be listened to or purchased.
+ * @param {Object} client - The Nina Client instance.
+ * @param {Number} retailPrice - The retail price of the Release.
+ * @param {Number} amount - The number of editions available for a Release.
+ * @param {Number} resalePercentage - The resale percentage of the Release. When a Release is resold on an Exchange, the authority of the Release receives this percentage of the resale price.
+ * @param {String} artist - The name of the artist for the Release.
+ * @param {String} title - The title of the Release.
+ * @param {String} catalogNumber - The catalog number of the Release. Similar to the categorical system that record labels use i.e. NINA001.
+ * @param {String} metadataUri - The Arweave URI of the Metadata JSON for the Release.
+ * @param {Boolean} isUsdc - A boolean determining wether the Release priced in USDC or not.
+ * @param {String} release - The PDA derived from releaseMint that will become the Release Account via initializeReleaseAndMint().
+ * @param {String} releaseBump - The Release bump from Release PDA.
+ * @param {String} releaseMint - The Release mint of the Release.
+ * @param {Boolean} isOpen - A boolean determining if the Release is open or not. If a Release is open, the Release will have an unlimited number of editions.
+ * @example const release = await NinaClient.Releases.releaseInit(ninaClient, 10, 100, 20, "dBridge", "Pantheon", "TRUETO004", "https://arweave.net/797hCskMy6lndMc4rN7ovp7NfNsDCJhNdKaCSrl_G0U", true, release, releaseBump, releaseMint, false);
+ * @returns {Object} the created Release.
  */
 
 export const releaseInit = async (
@@ -719,10 +737,11 @@ export const releaseInit = async (
 
 /**
  * @function closeRelease
- * @param {Object} client the NinaClient
- * @param {String} releasePublicKey Public Key of the release.
- * @example await closeRelease(ninaClient, 'releasePublicKey');
- * @returns {Object} The closed Release.
+ * @description Sets the remaining amount of a Release to 0. After this is called, the Release is no longer for sale.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} releasePublicKey - The public key of the Release being closed.
+ * @example await NinaClient.Releases.closeRelease(ninaClient, "f9mMsu26rtMtH55zR31rHABZkkeRwTLuGhKMXZdwG9z");
+ * @returns {Object} The data of the closed Release.
  */
 
 export const closeRelease = async (client, releasePublicKey) => {
@@ -758,28 +777,23 @@ export const closeRelease = async (client, releasePublicKey) => {
 
 /**
  * @function collectRoyaltyForRelease
- * @param {Object} client the NinaClient
- * @param {String} recipient Public Key of the recipient.
- * @param {String} releasePublicKey Public Key of the release.
- * @param {Object} state the NinaClient state.
- * @example collectRoyaltyForRelease(client, recipient, releasePublicKey, state)
- * @returns {Object} the Release with Account Data.
+ * @description Collects the royalty for a Release. Royalties can be in the form of sales on a Release page, or from a Release being resold on an Exchange.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} recipient - The public key of the recipient receiving the royalty.
+ * @param {String} releasePublicKey - The public key of the Release.
+ * @example collectRoyaltyForRelease(ninaClient, "52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ", "HYCQ2Nk1CuMSLyusY7yYrQ3Zp221S3UnzNwSuXYmUWy7")
+ * @returns {Object} the Release with Account data.
  */
 
-export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey, state) => {
+export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey) => {
   if (!releasePublicKey || !recipient) {
     return;
   }
   try {
     const { provider } = client;
     const program = await client.useProgram();
+    const release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));
 
-    let release;
-    if (!state) {
-      release = await program.account.release.fetch(new anchor.web3.PublicKey(releasePublicKey));
-    } else {
-      release = state.tokenData[releasePublicKey];
-    }
 
     release.paymentMint = new anchor.web3.PublicKey(release.paymentMint);
     const [authorityTokenAccount, authorityTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
@@ -828,24 +842,23 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
 
 /**
  * @function addRoyaltyRecipient
- * @param {Object} client - the NinaClient
- * @param {String} release - the release
- * @param {Object} updateData - the data to update the release with
- * @param {String} releasePublicKey - the Public Key of the release
- * @example addRoyaltyRecipient(client, recipient, updateData, releasePublicKey)
- * @returns {Object} the Release with Account Data.
+ * @description Adds a royalty recipient to a Release. Royalty recipients are paid out their percentage when a Release is purchased or resold on an Exchange.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} recipientAddress - The public key of the royalty recipient.
+ * @param {Number} percentShare - The percentage of the royalties of a Release that the recipient will receive. For example, if the percentage is 50, the recipient will receive 50% of the royalties from the sale of a Release or Exchange.
+ * @param {String} releasePublicKey - The public key of the Release.
+ * @example await NinaClient.Releases.addRoyaltyRecipient(ninaClient, "8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX", 50, "HYCQ2Nk1CuMSLyusY7yYrQ3Zp221S3UnzNwSuXYmUWy7")
+ * @returns {Object} the Release with Account data.
  */
 
-export const addRoyaltyRecipient = async (client, release, updateData, releasePublicKey) => {
+export const addRoyaltyRecipient = async (client, recipientAddress, percentShare, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
-    const releasePubkey = new anchor.web3.PublicKey(releasePublicKey);
-    if (!release) {
-      release = await program.account.release.fetch(releasePubkey);
-    }
-    const recipientPublicKey = new anchor.web3.PublicKey(updateData.recipientAddress);
-    const updateAmount = updateData.percentShare * 10000;
+    releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
+      const release = await program.account.release.fetch(releasePublicKey);
+      const recipientPublicKey = new anchor.web3.PublicKey(recipientAddress);
+    const updateAmount = percentShare * 10000;
 
     let [newRoyaltyRecipientTokenAccount, newRoyaltyRecipientTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -902,21 +915,4 @@ export const addRoyaltyRecipient = async (client, release, updateData, releasePu
       error,
     };
   }
-};
-
-export default {
-  fetchAll,
-  fetch,
-  fetchCollectors,
-  fetchHubs,
-  fetchExchanges,
-  fetchRevenueShareRecipients,
-  purchaseViaHub,
-  releaseInitViaHub,
-  initializeReleaseAndMint,
-  releasePurchase,
-  releaseInit,
-  closeRelease,
-  collectRoyaltyForRelease,
-  addRoyaltyRecipient,
 };

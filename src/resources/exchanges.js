@@ -8,11 +8,13 @@ import { findOrCreateAssociatedTokenAccount, TOKEN_PROGRAM_ID } from '../utils';
 /**
  * @function fetchAll
  * @description Fetches all exchanges.
- * @param {Object} [pagination = {limit: 20, offset: 0, sort: 'desc'}] Pagination options.
- * @param {Boolean} [withAccountData = false] Include full on-chain Exchange accounts.
+ * @param {Object} [pagination = {limit: 20, offset: 0, sort: 'desc'}] - Pagination options.
+ * @param {Boolean} [withAccountData = false] - Include full on-chain Exchange accounts.
  * @example const exchanges = await NinaClient.Exchange.fetchAll();
+ * @returns {Array} an array of all of the exchanges on Nina.
  */
-const fetchAll = async (pagination = {}, withAccountData = false) => {
+
+export const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/exchanges',
@@ -28,28 +30,30 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
 /**
  * @function fetch
  * @description Fetches an exchange.
- * @param {String} publicKey The Public key of an Exchange account.
- * @param {Boolean} [withAccountData = false] Include full on-chain Exchange account.
- * @param {String} [transactionId = undefined] A transaction id from an interaction with an account -
+ * @param {String} publicKey - The Public key of an Exchange account.
+ * @param {Boolean} [withAccountData = false] - Include full on-chain Exchange account.
+ * @param {String} [transactionId = undefined] - A transaction id from an interaction with an account -
  *        cancelling and completing Exchanges closes their on-chain accounts - by fetching a transaction
  *        we can have more context around interactions with an Exchange - useful for indexing.
  * @example const exchange = await NinaClient.Exchange.fetch('Fxv2G4cQQAeEXN2WkaSAusbNV7E1ouV9W6XHXf3DEfQ8');
+ * @returns {Object} an object containing the data pertaining to a particular Exchange.
  */
-const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
+
+export const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
   return NinaClient.get(`/exchanges/${publicKey}`, transactionId ? { transactionId } : undefined, withAccountData);
 };
 
 /**
  * @function exchangeInit
  * @description Initializes an Exchange account.
- * @param {Object} client The NinaClient instance.
- * @param {String} exchangeAccount The public key of the Exchange account.
- * @param {Boolean} isSelling Whether the Exchange is selling or buying.
- * @param {String} releasePublicKey The public key of the Release account.
- * @returns {Object} the Exchange data
+ * @param {Object} client - The Nina Client instance.
+ * @param {Number} amount - The amount being offered for the Exchange.
+ * @param {Boolean} isSelling - A boolean determining whether the Exchange is selling or buying a Release on the secondary market.
+ * @param {String} releasePublicKey - The public key of the Release account.
+ * @returns {Object} the data for the initialized Exchange.
  */
 
-const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
+export const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -181,21 +185,23 @@ const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
 /**
  * @function exchangeAccept
  * @description Initializes an Exchange account.
- * @param {Object} client The NinaClient instance.
- * @param {String} exchangeAccount The public key of the Exchange account.
- * @param {String} releasePublicKey The public key of the Release account.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} exchangePublicKey  - The public key of the Exchange.
+ * @param {Boolean} isSelling - A boolean determining whether the Exchange is selling or buying a Release on the secondary market.
+ * @param {Number} expectedAmount - The amount expected for the Exchange.
+ * @param {String} releasePublicKey - The public key of the Release account.
  * @returns {Object} { exchangePublicKey: String?, error: Error?}
- * @example const {exchangePublicKey, error} = await exchangeAccept(client, exchangeAccount, releasePublicKey);
- * @returns {String} the Exchange public key
+ * @example const {exchangePublicKey, error} = await exchangeAccept(client, exchangePublicKey, isSelling, expectedAmount, releasePublicKey);
+ * @returns {String} the original Exchange public key.
  */
 
-const exchangeAccept = async (client, exchange, releasePublicKey) => {
+export const exchangeAccept = async (client, exchangePublicKey, isSelling, expectedAmount, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
     const releaseKey = new anchor.web3.PublicKey(releasePublicKey);
     const release = await program.account.release.fetch(releaseKey);
-    const exchangePubkey = new anchor.web3.PublicKey(exchange.publicKey);
+    const exchangePubkey = new anchor.web3.PublicKey(exchangePublicKey);
     const exchangeAccount = await program.account.exchange.fetch(exchangePubkey);
     const [takerSendingTokenAccount, takerSendingTokenAccountIx] = await findOrCreateAssociatedTokenAccount(
       provider.connection,
@@ -236,7 +242,7 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
       exchangeEscrowTokenAccount: exchangeAccount.exchangeEscrowTokenAccount,
       exchangeSigner: exchangeAccount.exchangeSigner,
       taker: provider.wallet.publicKey,
-      exchange: new anchor.web3.PublicKey(exchange.publicKey),
+      exchange: new anchor.web3.PublicKey(exchangePublicKey),
       exchangeHistory: exchangeHistory.publicKey,
       release: new anchor.web3.PublicKey(releasePublicKey),
       royaltyTokenAccount: release.royaltyTokenAccount,
@@ -255,12 +261,8 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
       instructions.push(initializerExpectedTokenAccountIx);
     }
 
-    if (client.isSol(release.paymentMint) && exchange.isSelling) {
-      const [wrappedSolAccount, wrappedSolInstructions] = await wrapSol(
-        provider,
-        exchange.expectedAmount,
-        release.paymentMint
-      );
+    if (client.isSol(release.paymentMint) && isSelling) {
+      const [wrappedSolAccount, wrappedSolInstructions] = await wrapSol(provider, expectedAmount, release.paymentMint);
       instructions.push(...wrappedSolInstructions);
       accounts.takerSendingTokenAccount = wrappedSolAccount;
     }
@@ -299,16 +301,27 @@ const exchangeAccept = async (client, exchange, releasePublicKey) => {
 /**
  * @function exchangeCancel
  * @description Cancels an initialized Exchange.
- * @param {Object} client The NinaClient instance.
- * @param {String} exchangeAccount The public key of the Exchange account.
+ * @param {Object} client - The Nina Client instance.
+ * @param {String} exchangePublicKey - The public key of the Exchange.
+ * @param {String} initializerSendingMint - The mint of the token being sent by the initializer.
+ * @param {Boolean} isSelling - A boolean determining whether the Exchange is selling or buying a Release on the secondary market.
+ * @param {Number} initializerAmount - The amount being offered for the Exchange.
+ * @param {String} exchangeEscrowTokenAccount - The public key of the Exchange Escrow Token Account.
  * @returns {Object} { exchangePublicKey: String?, error: Error?}
  * @example const {exchange, error} = await exchangeCancel(client, exchangeAccount);
  * @returns {String} the Exchange public key
  */
 
-const exchangeCancel = async (client, exchange) => {
+export const exchangeCancel = async (
+  client,
+  exchangePublicKey,
+  initializerSendingMint,
+  isSelling,
+  initializerAmount,
+  exchangeEscrowTokenAccount
+) => {
   try {
-    const exchangePublicKey = new anchor.web3.PublicKey(exchange.publicKey);
+    exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey);
     const { provider } = client;
     const program = await client.useProgram();
     exchange = await program.account.exchange.fetch(exchangePublicKey);
@@ -318,7 +331,7 @@ const exchangeCancel = async (client, exchange) => {
       provider.wallet.publicKey,
       anchor.web3.SystemProgram.programId,
       anchor.web3.SYSVAR_RENT_PUBKEY,
-      exchange.initializerSendingMint
+      initializerSendingMint
     );
 
     let instructions;
@@ -327,15 +340,15 @@ const exchangeCancel = async (client, exchange) => {
     }
 
     let tx;
-    const params = new anchor.BN(exchange.isSelling ? 1 : exchange.initializerAmount.toNumber());
-    if (client.isSol(exchange.initializerSendingMint)) {
+    const params = new anchor.BN(isSelling ? 1 : initializerAmount.toNumber());
+    if (client.isSol(initializerSendingMint)) {
       tx = await program.methods
         .exchangeCancelSol(params)
         .accounts({
           initializer: provider.wallet.publicKey,
           initializerSendingTokenAccount: initializerReturnTokenAccount,
-          exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
-          exchangeSigner: exchange.exchangeSigner,
+          exchangeEscrowTokenAccount: exchangeEscrowTokenAccount,
+          exchangeSigner: exchangeSigner,
           exchange: exchangePublicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
@@ -348,8 +361,8 @@ const exchangeCancel = async (client, exchange) => {
         .accounts({
           initializer: provider.wallet.publicKey,
           initializerSendingTokenAccount: initializerReturnTokenAccount,
-          exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
-          exchangeSigner: exchange.exchangeSigner,
+          exchangeEscrowTokenAccount: exchangeEscrowTokenAccount,
+          exchangeSigner: exchangeSigner,
           exchange: exchangePublicKey,
           tokenProgram: TOKEN_PROGRAM_ID,
         })
@@ -372,12 +385,4 @@ const exchangeCancel = async (client, exchange) => {
       error,
     };
   }
-};
-
-export default {
-  fetchAll,
-  fetch,
-  exchangeInit,
-  exchangeAccept,
-  exchangeCancel,
 };

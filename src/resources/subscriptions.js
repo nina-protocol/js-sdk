@@ -8,11 +8,12 @@ import { getConfirmTransaction } from '../utils';
 
 /**
  * @function fetchAll
- * @description Fetches all Subscriptionss.
+ * @description Fetches all Subscriptions.
  * @param {Object} [pagination = {limit: 20, offset: 0, sort: 'desc'}] Pagination options.
- * @example const subscriptions = await NinaClient.Subscription.fetchAll();
+ * @example const subscriptions = await subscription.fetchAll();
+ * @returns {Array} an array of all of the Subscriptions on Nina.
  */
-const fetchAll = async (pagination = {}, withAccountData = false) => {
+export const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/subscriptions',
@@ -27,24 +28,27 @@ const fetchAll = async (pagination = {}, withAccountData = false) => {
 
 /**
  * @function fetch
- * @description Fetches a Post.
+ * @description Fetches a subscription.
  * @param {String} publicKey - The public key of the Subscription.
  * @param {String} Transaction - The transaction Id of an already existing Subscription.
- * @example const subscriptions = await NinaClient.Subscription.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
+ * @example const subscription = await subscription.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
+ * @returns {Object} an object containing the Subscription's data.
  */
-const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
+export const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
   return NinaClient.get(`/subscriptions/${publicKey}`, transactionId ? { transactionId } : undefined);
 };
 
 /**
  * @function subscriptionSubscribe
- * @param {Object} client the NinaClient instance
- * @param {String} subscribeToAccount the account to subscribe to
- * @param {String} hubHandle the hub handle to subscribe to
- * @returns {Object} the Subscription data
+ * @description Subscribes to, or "follows" an Account.
+ * @param {Object} client - The Nina Client.
+ * @param {String} subscribeToAccount - The public key of the Account to be subscribed to.
+ * @param {String} hubHandle - If present, the Hub handle being subscribed to.
+ * @example await subscriptionSubscribe(ninaClient, "8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX")
+ * @returns {Object} the Subscription data.
  */
 
-const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
+export const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -103,12 +107,14 @@ const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
 };
 /**
  * @function subscriptionUnsubscribe
- * @param {Object} client the NinaClient instance
- * @param {String} unsubscribeAccount the account to unsubscribe from
- * @returns {Object} the Subscription data
+ * @description Unsubscribes from, or "unfollows" an Account.
+ * @param {Object} client - The Nina Client.
+ * @param {String} unsubscribeAccount - The public key of the Account to unsubscribe from.
+ * @example await subscriptionUnsubscribe(ninaClient, "8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX")
+ * @returns {Object} the Subscription data.
  */
 
-const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
+export const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -148,11 +154,4 @@ const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
       error,
     };
   }
-};
-
-export default {
-  fetchAll,
-  fetch,
-  subscriptionSubscribe,
-  subscriptionUnsubscribe,
 };
