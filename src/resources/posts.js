@@ -12,7 +12,7 @@ import NinaClient from '../client';
  * @example const posts = await NinaClient.Post.fetchAll();
  * @returns {Array} an array of all of the Posts on Nina.
  */
-export const fetchAll = async (pagination = {}, withAccountData = false) => {
+const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/posts',
@@ -34,7 +34,7 @@ export const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV")
  * @returns {Object} an object containing the Post's data.
  */
-export const fetch = async (publicKey, withAccountData = false, pagination) => {
+const fetch = async (publicKey, withAccountData = false, pagination) => {
   return await NinaClient.get(`/posts/${publicKey}`, pagination, withAccountData);
 };
 
@@ -50,7 +50,7 @@ export const fetch = async (publicKey, withAccountData = false, pagination) => {
  * @returns {Object} The created Post.
  */
 
-export const postInitViaHub = async (client, hubPublicKey, slug, uri, referenceRelease = undefined, fromHub) => {
+const postInitViaHub = async (client, hubPublicKey, slug, uri, referenceRelease = undefined, fromHub) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -169,7 +169,7 @@ export const postInitViaHub = async (client, hubPublicKey, slug, uri, referenceR
  * @returns {Object} The updated Post.
  */
 
-export const postUpdateViaHub = async (client, hubPublicKey, slug, uri) => {
+const postUpdateViaHub = async (client, hubPublicKey, slug, uri) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -225,3 +225,10 @@ export const postUpdateViaHub = async (client, hubPublicKey, slug, uri) => {
     };
   }
 };
+
+export default {
+  fetchAll,
+  fetch,
+  postInitViaHub,
+  postUpdateViaHub,
+}

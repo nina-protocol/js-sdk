@@ -13,7 +13,7 @@ import NinaClient from '../client';
  * @returns {Object} an object containing the fetched search results.
  */
 
-export const withQuery = async (query, withAccountData = false) => {
+const withQuery = async (query, withAccountData = false) => {
   return await NinaClient.post(
     '/search',
     {
@@ -22,3 +22,7 @@ export const withQuery = async (query, withAccountData = false) => {
     withAccountData
   );
 };
+
+export default {
+  withQuery,
+}

@@ -25,7 +25,7 @@ const MAX_INT = '18446744073709551615';
  * @example const releases = await NinaClient.Release.fetchAll();
  * @returns {Array} an array of all of the Releases on Nina.
  */
-export const fetchAll = async (pagination = {}, withAccountData = false) => {
+const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/releases',
@@ -46,7 +46,7 @@ export const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @returns {Object} an object containing the Release data.
  */
 
-export const fetch = async (publicKey, withAccountData = false) => {
+const fetch = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}`, undefined, withAccountData);
 };
 
@@ -59,7 +59,7 @@ export const fetch = async (publicKey, withAccountData = false) => {
  * @returns {Array} an array of all of the collectors of a Release.
  */
 
-export const fetchCollectors = async (publicKey, withCollection = false) => {
+const fetchCollectors = async (publicKey, withCollection = false) => {
   return await NinaClient.get(`/releases/${publicKey}/collectors${withCollection ? '?withCollection=true' : ''}`);
 };
 
@@ -72,7 +72,7 @@ export const fetchCollectors = async (publicKey, withCollection = false) => {
  * @returns {Array} an array of all of the Hubs that a Release belongs to.
  */
 
-export const fetchHubs = async (publicKey, withAccountData = false) => {
+const fetchHubs = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}/hubs`, undefined, withAccountData);
 };
 
@@ -85,7 +85,7 @@ export const fetchHubs = async (publicKey, withAccountData = false) => {
  * @returns {Array} an array of all of the Exchanges that belong to a Release.
  */
 
-export const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
+const fetchExchanges = async (publicKey, withAccountData = false, pagination) => {
   return await NinaClient.get(`/releases/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
@@ -98,13 +98,13 @@ export const fetchExchanges = async (publicKey, withAccountData = false, paginat
  * @returns {Array} an array of all of the Revenue Share Recipients that belong to a Release.
  */
 
-export const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) => {
+const fetchRevenueShareRecipients = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/releases/${publicKey}/revenueShareRecipients`, undefined, withAccountData);
 };
 
 /**
  *
- * @function purchaseViaHub
+ * @function releasePurchaseViaHub
  * @description Purchases a Release from a Hub.
  * @param {Object} client - The Nina Client instance.
  * @param {String} releasePublicKey - The public key of the Release.
@@ -113,7 +113,7 @@ export const fetchRevenueShareRecipients = async (publicKey, withAccountData = f
  * @returns {Object} the Release that was purchased.
  */
 
-export const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
+const releasePurchaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
     const { provider, endpoints } = client;
     const program = await client.useProgram();
@@ -263,7 +263,7 @@ export const purchaseViaHub = async (client, releasePublicKey, hubPublicKey) => 
  * @returns {String} the Release that was Purchased.
  */
 
-export const releasePurchase = async (client, releasePublicKey) => {
+const releasePurchase = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -372,7 +372,7 @@ export const releasePurchase = async (client, releasePublicKey) => {
  * @returns {Object} the created Release.
  */
 
-export const releaseInitViaHub = async (
+const releaseInitViaHub = async (
   client,
   hubPublicKey,
   retailPrice,
@@ -596,7 +596,7 @@ const initializeReleaseAndMint = async (client, hubPublicKey) => {
  * @returns {Object} the created Release.
  */
 
-export const releaseInit = async (
+const releaseInit = async (
   client,
   retailPrice,
   amount,
@@ -744,7 +744,7 @@ export const releaseInit = async (
  * @returns {Object} The data of the closed Release.
  */
 
-export const closeRelease = async (client, releasePublicKey) => {
+const closeRelease = async (client, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -785,7 +785,7 @@ export const closeRelease = async (client, releasePublicKey) => {
  * @returns {Object} the Release with Account data.
  */
 
-export const collectRoyaltyForRelease = async (client, recipient, releasePublicKey) => {
+const collectRoyaltyForRelease = async (client, recipient, releasePublicKey) => {
   if (!releasePublicKey || !recipient) {
     return;
   }
@@ -851,7 +851,7 @@ export const collectRoyaltyForRelease = async (client, recipient, releasePublicK
  * @returns {Object} the Release with Account data.
  */
 
-export const addRoyaltyRecipient = async (client, recipientAddress, percentShare, releasePublicKey) => {
+const addRoyaltyRecipient = async (client, recipientAddress, percentShare, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -915,4 +915,20 @@ export const addRoyaltyRecipient = async (client, recipientAddress, percentShare
       error,
     };
   }
+};
+
+export default {
+  fetchAll,
+  fetch,
+  fetchCollectors,
+  fetchHubs,
+  fetchExchanges,
+  fetchRevenueShareRecipients,
+  releasePurchaseViaHub,
+  releasePurchase,
+  releaseInitViaHub,
+  releaseInit,
+  closeRelease,
+  collectRoyaltyForRelease,
+  addRoyaltyRecipient,
 };

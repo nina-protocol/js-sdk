@@ -14,7 +14,7 @@ import { findOrCreateAssociatedTokenAccount, TOKEN_PROGRAM_ID } from '../utils';
  * @returns {Array} an array of all of the exchanges on Nina.
  */
 
-export const fetchAll = async (pagination = {}, withAccountData = false) => {
+const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/exchanges',
@@ -39,7 +39,7 @@ export const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @returns {Object} an object containing the data pertaining to a particular Exchange.
  */
 
-export const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
+const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
   return NinaClient.get(`/exchanges/${publicKey}`, transactionId ? { transactionId } : undefined, withAccountData);
 };
 
@@ -53,7 +53,7 @@ export const fetch = async (publicKey, withAccountData = false, transactionId = 
  * @returns {Object} the data for the initialized Exchange.
  */
 
-export const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
+const exchangeInit = async (client, amount, isSelling, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -195,7 +195,7 @@ export const exchangeInit = async (client, amount, isSelling, releasePublicKey) 
  * @returns {String} the original Exchange public key.
  */
 
-export const exchangeAccept = async (client, exchangePublicKey, isSelling, expectedAmount, releasePublicKey) => {
+const exchangeAccept = async (client, exchangePublicKey, isSelling, expectedAmount, releasePublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -312,7 +312,7 @@ export const exchangeAccept = async (client, exchangePublicKey, isSelling, expec
  * @returns {String} the Exchange public key
  */
 
-export const exchangeCancel = async (
+const exchangeCancel = async (
   client,
   exchangePublicKey,
   initializerSendingMint,
@@ -386,3 +386,11 @@ export const exchangeCancel = async (
     };
   }
 };
+
+export default {
+  fetchAll,
+  fetch,
+  exchangeInit,
+  exchangeAccept,
+  exchangeCancel,
+}

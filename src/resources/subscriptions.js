@@ -13,7 +13,7 @@ import { getConfirmTransaction } from '../utils';
  * @example const subscriptions = await subscription.fetchAll();
  * @returns {Array} an array of all of the Subscriptions on Nina.
  */
-export const fetchAll = async (pagination = {}, withAccountData = false) => {
+const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/subscriptions',
@@ -34,7 +34,7 @@ export const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @example const subscription = await subscription.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
  * @returns {Object} an object containing the Subscription's data.
  */
-export const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
+const fetch = async (publicKey, withAccountData = false, transactionId = undefined) => {
   return NinaClient.get(`/subscriptions/${publicKey}`, transactionId ? { transactionId } : undefined);
 };
 
@@ -48,7 +48,7 @@ export const fetch = async (publicKey, withAccountData = false, transactionId = 
  * @returns {Object} the Subscription data.
  */
 
-export const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
+const subscriptionSubscribe = async (client, subscribeToAccount, hubHandle) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -114,7 +114,7 @@ export const subscriptionSubscribe = async (client, subscribeToAccount, hubHandl
  * @returns {Object} the Subscription data.
  */
 
-export const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
+const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -155,3 +155,10 @@ export const subscriptionUnsubscribe = async (client, unsubscribeAccount) => {
     };
   }
 };
+
+export default {
+  fetchAll,
+  fetch,
+  subscriptionSubscribe,
+  subscriptionUnsubscribe,
+}

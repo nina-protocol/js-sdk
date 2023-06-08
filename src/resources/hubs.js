@@ -2,7 +2,6 @@ import NinaClient from '../client';
 import axios from 'axios';
 import * as anchor from '@project-serum/anchor';
 import { findOrCreateAssociatedTokenAccount, getConfirmTransaction, uiToNative } from '../utils';
-import MD5 from 'crypto-js/md5';
 import Release from './releases';
 /**
  * @module Hub
@@ -17,7 +16,7 @@ import Release from './releases';
  * @returns {Array} an array of all of the Hubs on Nina.
  */
 
-export const fetchAll = async (pagination = {}, withAccountData = false) => {
+const fetchAll = async (pagination = {}, withAccountData = false) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get(
     '/hubs',
@@ -39,7 +38,7 @@ export const fetchAll = async (pagination = {}, withAccountData = false) => {
  * @returns {Object} The Hub account.
  */
 
-export const fetch = async (publicKeyOrHandle, withAccountData = false) => {
+const fetch = async (publicKeyOrHandle, withAccountData = false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}`, undefined, withAccountData);
 };
 
@@ -53,7 +52,7 @@ export const fetch = async (publicKeyOrHandle, withAccountData = false) => {
  * @returns {Array} an array of all of the Collaborators that belong to a Hub.
  */
 
-export const fetchCollaborators = async (publicKeyOrHandle) => {
+const fetchCollaborators = async (publicKeyOrHandle) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators`);
 };
 
@@ -66,7 +65,7 @@ export const fetchCollaborators = async (publicKeyOrHandle) => {
  * @returns {Object} a specific Collaborator that belongs to a Hub.
  */
 
-export const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey) => {
+const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey) => {
   //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`);
 };
@@ -81,7 +80,7 @@ export const fetchHubCollaborator = async (publicKeyOrHandle, collaboratorPubkey
  * @returns {Array} an array of all of the Releases that belong to a Hub.
  */
 
-export const fetchReleases = async (publicKeyOrHandle, withAccountData = false) => {
+const fetchReleases = async (publicKeyOrHandle, withAccountData = false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/releases`, undefined, withAccountData);
 };
 
@@ -95,7 +94,7 @@ export const fetchReleases = async (publicKeyOrHandle, withAccountData = false) 
  * @returns {Array} an array of all of the Posts that belong to a Hub.
  */
 
-export const fetchPosts = async (publicKeyOrHandle, withAccountData = false) => {
+const fetchPosts = async (publicKeyOrHandle, withAccountData = false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/posts`, undefined, withAccountData);
 };
 
@@ -109,7 +108,7 @@ export const fetchPosts = async (publicKeyOrHandle, withAccountData = false) => 
  * @returns {Object} a specific Release from a Hub.
  */
 
-export const fetchHubRelease = async (publicKeyOrHandle, hubReleasePublicKey, withAccountData = false) => {
+const fetchHubRelease = async (publicKeyOrHandle, hubReleasePublicKey, withAccountData = false) => {
   return await NinaClient.get(
     `/hubs/${publicKeyOrHandle}/hubReleases/${hubReleasePublicKey}`,
     undefined,
@@ -127,7 +126,7 @@ export const fetchHubRelease = async (publicKeyOrHandle, hubReleasePublicKey, wi
  * @returns {Object} a specific Hub Post.
  */
 
-export const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData = false) => {
+const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAccountData = false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/hubPosts/${hubPostPublicKey}`, undefined, withAccountData);
 };
 
@@ -140,7 +139,7 @@ export const fetchHubPost = async (publicKeyOrHandle, hubPostPublicKey, withAcco
  * @returns {Array} an array of all of the Subscriptions that belong to a Hub.
  */
 
-export const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false) => {
+const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = false) => {
   return await NinaClient.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
 };
 
@@ -156,7 +155,7 @@ export const fetchSubscriptions = async (publicKeyOrHandle, withAccountData = fa
  * @returns {Object} The created Hub account.
  */
 
-export const hubInit = async (client, handle, publishFee, referralFee) => {
+const hubInit = async (client, handle, publishFee, referralFee) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -252,7 +251,7 @@ export const hubInit = async (client, handle, publishFee, referralFee) => {
  * @returns {Object} The updated Hub account.
  */
 
-export const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, referralFee) => {
+const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, referralFee) => {
   try {
     const { provider, endpoints } = client;
     const program = await client.useProgram();
@@ -297,7 +296,7 @@ export const hubUpdateConfig = async (client, hubPublicKey, uri, publishFee, ref
  * @returns {Object} the added collaborator of a Hub.
  */
 
-export const hubAddCollaborator = async (
+const hubAddCollaborator = async (
   client,
   hubPublicKey,
   collaboratorPubkey,
@@ -371,7 +370,7 @@ export const hubAddCollaborator = async (
  * @returns {Object} the updated account of a collaborator of a Hub.
  */
 
-export const hubUpdateCollaboratorPermission = async (
+const hubUpdateCollaboratorPermission = async (
   client,
   hubPublicKey,
   collaboratorPubkey,
@@ -442,7 +441,7 @@ export const hubUpdateCollaboratorPermission = async (
  * @returns {Object} the account of the removed collaborator from the Hub.
  */
 
-export const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) => {
+const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPubkey) => {
   try {
     const { provider, endpoints } = client;
     const program = await client.useProgram();
@@ -499,7 +498,7 @@ export const hubRemoveCollaborator = async (client, hubPublicKey, collaboratorPu
  * @returns {Object} The toggled Post or Release.
  */
 
-export const hubContentToggleVisibility = async (client, hubPublicKey, contentAccountPublicKey, type) => {
+const hubContentToggleVisibility = async (client, hubPublicKey, contentAccountPublicKey, type) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -570,7 +569,7 @@ export const hubContentToggleVisibility = async (client, hubPublicKey, contentAc
  * @returns {Object} the Hub Release data.
  */
 
-export const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) => {
+const hubAddRelease = async (client, hubPublicKey, releasePublicKey, fromHub) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -655,7 +654,7 @@ export const hubAddRelease = async (client, hubPublicKey, releasePublicKey, from
  * @returns { Object } the Hub Release.
  */
 
-export const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
+const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, hubPublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -724,7 +723,7 @@ export const collectRoyaltyForReleaseViaHub = async (client, releasePublicKey, h
  * @returns { Object } the Hub account that made the withdrawal.
  */
 
-export const hubWithdraw = async (client, hubPublicKey) => {
+const hubWithdraw = async (client, hubPublicKey) => {
   try {
     const { provider } = client;
     const program = await client.useProgram();
@@ -789,3 +788,24 @@ export const hubWithdraw = async (client, hubPublicKey) => {
     };
   }
 };
+
+export default {
+  fetchAll,
+  fetch,
+  fetchCollaborators,
+  fetchHubCollaborator,
+  fetchReleases,
+  fetchPosts,
+  fetchHubRelease,
+  fetchHubPost,
+  fetchSubscriptions,
+  hubInit,
+  hubUpdateConfig,
+  hubAddCollaborator,
+  hubUpdateCollaboratorPermission,
+  hubRemoveCollaborator,
+  hubContentToggleVisibility,
+  hubAddRelease,
+  collectRoyaltyForReleaseViaHub,
+  hubWithdraw,
+}

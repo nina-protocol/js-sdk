@@ -11,7 +11,7 @@ import NinaClient from '../client';
  * @example const accounts = await NinaClient.Account.fetchAll();
  * @returns {Array} an array of all of the Accounts on Nina.
  */
-export const fetchAll = async (pagination = {}) => {
+const fetchAll = async (pagination = {}) => {
   const { limit, offset, sort } = pagination;
   return await NinaClient.get('/accounts', {
     limit: limit || 20,
@@ -29,7 +29,7 @@ export const fetchAll = async (pagination = {}) => {
  * @example const account = await NinaClient.Account.fetch("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Object} an object containing the Account's data.
  */
-export const fetch = async (publicKey, withAccountData = false) => {
+const fetch = async (publicKey, withAccountData = false) => {
   return await NinaClient.get(`/accounts/${publicKey}`, undefined, withAccountData);
 };
 
@@ -42,7 +42,7 @@ export const fetch = async (publicKey, withAccountData = false) => {
  * @example const hubs = await NinaClient.Account.fetchHubs("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ";
  * @returns {Array} an array of Hubs that an Account is a collaborator or authority on.
  */
-export const fetchHubs = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchHubs = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/hubs`, pagination, withAccountData);
 };
 
@@ -55,7 +55,7 @@ export const fetchHubs = async (publicKey, withAccountData = false, pagination =
  * @example const collection = await NinaClient.Account.fetchCollected("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Releases collected by an Account.
  */
-export const fetchCollected = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchCollected = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/collected`, pagination, withAccountData);
 };
 
@@ -68,7 +68,7 @@ export const fetchCollected = async (publicKey, withAccountData = false, paginat
  * @example const published = await NinaClient.Account.fetchPublished("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Releases published by an Account.
  * */
-export const fetchPublished = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchPublished = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/published`, pagination, withAccountData);
 };
 
@@ -81,7 +81,7 @@ export const fetchPublished = async (publicKey, withAccountData = false, paginat
  * @example const posts = await NinaClient.Account.fetchPosts("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Posts published by an Account.
  * */
-export const fetchPosts = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchPosts = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/posts`, pagination, withAccountData);
 };
 
@@ -94,7 +94,7 @@ export const fetchPosts = async (publicKey, withAccountData = false, pagination 
  * @example const exchanges = await NinaClient.Account.fetchExchanges("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Exchanges belonging to an Account.
  * */
-export const fetchExchanges = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchExchanges = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/exchanges`, pagination, withAccountData);
 };
 
@@ -107,7 +107,7 @@ export const fetchExchanges = async (publicKey, withAccountData = false, paginat
  * @example const revenueShares = await NinaClient.Account.fetchRevenueShares("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Releases that an Account is a royalty recipient of.
  * */
-export const fetchRevenueShares = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchRevenueShares = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/revenueShares`, pagination, withAccountData);
 };
 
@@ -120,7 +120,7 @@ export const fetchRevenueShares = async (publicKey, withAccountData = false, pag
  * @example const subscriptions = await NinaClient.Account.fetchSubscriptions("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Accounts or Hubs that an Account is subscribed to.
  *  */
-export const fetchSubscriptions = async (publicKey, withAccountData = false, pagination = undefined) => {
+const fetchSubscriptions = async (publicKey, withAccountData = false, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/subscriptions`, pagination, withAccountData);
 };
 
@@ -132,6 +132,20 @@ export const fetchSubscriptions = async (publicKey, withAccountData = false, pag
  * @example const verifications = await NinaClient.Account.fetchVerifications("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
  * @returns {Array} an array of all of the Verifications for an Account.
  * */
-export const fetchVerifications = async (publicKey, pagination = undefined) => {
+const fetchVerifications = async (publicKey, pagination = undefined) => {
   return await NinaClient.get(`/accounts/${publicKey}/verifications`, pagination);
 };
+
+export default {
+  fetch,
+  fetchAll,
+  fetchHubs,
+  fetchCollected,
+  fetchPublished,
+  fetchPosts,
+  fetchExchanges,
+  fetchRevenueShares,
+  fetchSubscriptions,
+  fetchVerifications
+
+}
