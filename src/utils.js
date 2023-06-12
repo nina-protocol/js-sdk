@@ -1,8 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import promiseRetry from 'promise-retry';
 
-import NinaClient from './client';
-
 const USDC_DECIMAL_AMOUNT = 6;
 const SOL_DECIMAL_AMOUNT = 9;
 
@@ -95,7 +93,7 @@ export const getUsdcBalance = async (publicKey, connection) => {
         publicKey,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        new anchor.web3.PublicKey(NinaClient.ids.mints.usdc)
+        new anchor.web3.PublicKey(NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].ids.mints.usdc)
       );
 
       if (usdcTokenAccountPubkey) {
@@ -143,9 +141,9 @@ export const getConfirmTransaction = async (txid, connection) => {
 
 export const decimalsForMint = (mint) => {
   switch (typeof mint === 'string' ? mint : mint.toBase58()) {
-    case NinaClient.ids.mints.usdc:
+    case NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc:
       return USDC_DECIMAL_AMOUNT;
-    case NinaClient.ids.mints.wsol:
+    case NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol:
       return SOL_DECIMAL_AMOUNT;
     default:
       return undefined;
@@ -189,3 +187,89 @@ export const createMintInstructions = async (provider, authority, mint, decimals
 
   return instructions;
 };
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      nina: 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: '53ueyguZx5bHjgHQdU1EcoLkcupAt97wVbcYeAi6iAYy',
+      vaultUsdc: 'HDhJyie5Gpck7opvAbYi5H22WWofAR3ygKFghdzDkmLf',
+      vaultWrappedSol: '5NnBrUiqHsx1QnGVSo73AprxgVtRjcfmGrgwJ6q1ADzs',
+    },
+    mints: {
+      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+  devnet: {
+    programs: {
+      nina: '77BKtqWTbTRxj5eZPuFbeXjx3qz4TTHoXRnpCejYWiQH',
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+      token: anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
+    },
+    accounts: {
+      vault: 'AzhSWZCtvfRkzGzzAhPxzrvBcMBcYGKp2rwCh17hARhi',
+      vaultUsdc: '2hyWtzYhwW4CSWs7TrrdhQ9DWRaKUVhSxsyVTzcyHRq6',
+      vaultWrappedSol: 'H35oumnDdCu5VGXvp24puqYvUQ3Go1JXCGum7L2J3CSP',
+    },
+    mints: {
+      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      wsol: 'So11111111111111111111111111111111111111112',
+      publishingCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+      hubCredit: 'NpCbciSYfzrSk9aQ2gkr17TX2fjkm6XGRYhkZ811QDE',
+    },
+  },
+};
+
+export const MAX_U64 = '18446744073709551615';
+
+export const isUsdc = (mint) => {
+  if (typeof mint !== 'string') {
+    return mint.toBase58() === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc
+  }
+  return mint === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc
+}
+
+export const nativeToUiString = (
+  amount,
+  mint,
+  decimalOverride = false,
+  showCurrency = true
+) => {
+  let amountString = nativeToUi(amount, mint)
+    .toFixed(isUsdc(mint) || decimalOverride ? 2 : 3)
+
+  if (showCurrency) {
+    amountString = `${isUsdc(mint) ? '$' : ''}${amountString} ${
+      isUsdc(mint) ? 'USDC' : 'SOL'
+    }`
+  }
+  return amountString
+}
+
+export const isSol = (mint) => {
+  if (typeof mint !== 'string') {
+    return mint.toBase58() === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol
+  }
+  return mint === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol
+}
+
+export default {
+  NINA_CLIENT_IDS,
+  decimalsForMint,
+  nativeToUi,
+  uiToNative,
+  decodeNonEncryptedByteArray,
+  createMintInstructions,
+  isUsdc,
+  isSol,
+  nativeToUiString,
+  MAX_U64,
+
+}
