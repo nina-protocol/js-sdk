@@ -20,8 +20,13 @@ class NinaClient {
     this.programId = null;
     this.apiKey = null;
     this.ids = null;
+
     this.Account = null;
+    this.Exchange = null;
+    this.Hub = null;
+    this.Post = null;
     this.Release = null;
+    this.Subscription = null;
   }
 
   /**
@@ -32,12 +37,12 @@ class NinaClient {
    * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)
    * @example Nina.client.init(endpoint, cluster, programId)
    */
-  async init(endpoint, cluster, programId, apiKey = undefined, wallet={}) {
+  async init(endpoint, cluster, programId, apiKey = undefined, wallet={}, connection=undefined) {
     this.apiKey = apiKey;
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/'; //NOTE: trailing slash should be removed
     this.cluster = cluster || 'https://api.mainnet-beta.solana.com';
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4';
-    const connection = new anchor.web3.Connection(this.cluster);
+    connection = connection || new anchor.web3.Connection(this.cluster);
     this.provider = new anchor.AnchorProvider(
       connection,
       wallet,
