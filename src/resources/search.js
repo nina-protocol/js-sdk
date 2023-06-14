@@ -1,4 +1,4 @@
-import NinaClient from '../client';
+import NinaClient from "../client";
 
 /**
  * @module Search
@@ -13,16 +13,15 @@ import NinaClient from '../client';
  * @returns {Object} an object containing the fetched search results.
  */
 
-const withQuery = async (query, withAccountData = false) => {
-  return await NinaClient.post(
-    '/search',
+const withQuery = async (query, withAccountData = false) =>
+  NinaClient.post(
+    "/search",
     {
       query,
     },
     withAccountData
   );
-};
 
 export default {
   withQuery,
-}
+};

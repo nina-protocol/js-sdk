@@ -1,12 +1,73 @@
-import * as anchor from '@project-serum/anchor';
-import promiseRetry from 'promise-retry';
+import * as anchor from "@project-serum/anchor";
+import promiseRetry from "promise-retry";
+import { Uint8Array, Buffer } from "buffer";
+import { TextDecoder } from "util";
+import { createSyncNativeInstruction } from "@solana/spl-token";
 
 const USDC_DECIMAL_AMOUNT = 6;
 const SOL_DECIMAL_AMOUNT = 9;
 
-export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.TOKEN_PROGRAM_ID.toString());
+export const MAX_U64 = "18446744073709551615";
 
-const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString());
+export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
+  anchor.utils.token.TOKEN_PROGRAM_ID.toString()
+);
+
+const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
+  anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString()
+);
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      metaplex: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+    },
+    mints: {
+      usdc: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      wsol: "So11111111111111111111111111111111111111112",
+    },
+  },
+  devnet: {
+    programs: {
+      metaplex: "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+    },
+    mints: {
+      usdc: "J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K",
+      wsol: "So11111111111111111111111111111111111111112",
+    },
+  },
+};
+
+export const isSol = (mint, cluster) => {
+  if (typeof mint !== "string") {
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster].mints.wsol;
+  }
+
+  return mint === NINA_CLIENT_IDS[cluster].mints.wsol;
+};
+
+export const isUsdc = (mint, cluster) => {
+  if (typeof mint !== "string") {
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster].mints.usdc;
+  }
+
+  return mint === NINA_CLIENT_IDS[cluster].mints.usdc;
+};
+
+export const findAssociatedTokenAddress = async (
+  ownerAddress,
+  tokenMintAddress
+) =>
+  (
+    await anchor.web3.PublicKey.findProgramAddress(
+      [
+        ownerAddress.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        tokenMintAddress.toBuffer(),
+      ],
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    )
+  )[0];
 
 export const findOrCreateAssociatedTokenAccount = async (
   connection,
@@ -17,11 +78,17 @@ export const findOrCreateAssociatedTokenAccount = async (
   splTokenMintAddress,
   skipLookup = false
 ) => {
-  const associatedTokenAddress = await findAssociatedTokenAddress(owner, splTokenMintAddress);
+  const associatedTokenAddress = await findAssociatedTokenAddress(
+    owner,
+    splTokenMintAddress
+  );
 
   let userAssociatedTokenAddress = null;
+
   if (!skipLookup) {
-    userAssociatedTokenAddress = await connection.getAccountInfo(associatedTokenAddress);
+    userAssociatedTokenAddress = await connection.getAccountInfo(
+      associatedTokenAddress
+    );
   }
 
   if (!userAssociatedTokenAddress) {
@@ -70,61 +137,27 @@ export const findOrCreateAssociatedTokenAccount = async (
     });
 
     return [associatedTokenAddress, ix];
-  } else {
-    return [associatedTokenAddress, undefined];
   }
-};
 
-export const findAssociatedTokenAddress = async (ownerAddress, tokenMintAddress) => {
-  return (
-    await anchor.web3.PublicKey.findProgramAddress(
-      [ownerAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMintAddress.toBuffer()],
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    )
-  )[0];
-};
-
-export const getUsdcBalance = async (publicKey, connection) => {
-  if (publicKey) {
-    try {
-      let [usdcTokenAccountPubkey] = await findOrCreateAssociatedTokenAccount(
-        connection,
-        publicKey,
-        publicKey,
-        anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
-        new anchor.web3.PublicKey(NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].ids.mints.usdc)
-      );
-
-      if (usdcTokenAccountPubkey) {
-        let usdcTokenAccount = await connection.getTokenAccountBalance(usdcTokenAccountPubkey);
-        return usdcTokenAccount.value.uiAmount.toFixed(2);
-      } else {
-        return 0;
-      }
-    } catch (error) {
-      console.warn('error getting usdc balance: ', error);
-      return 0;
-    }
-  } else {
-    return 0;
-  }
+  return [associatedTokenAddress, undefined];
 };
 
 export const getConfirmTransaction = async (txid, connection) => {
   const res = await promiseRetry(
     async (retry) => {
-      let txResult = await connection.getTransaction(txid, {
-        commitment: 'confirmed',
+      const txResult = await connection.getTransaction(txid, {
+        commitment: "confirmed",
       });
 
       if (!txResult) {
-        const error = new Error('unable_to_confirm_transaction');
+        const error = new Error("unable_to_confirm_transaction");
         error.txid = txid;
 
         retry(error);
+
         return;
       }
+
       return txResult;
     },
     {
@@ -133,45 +166,59 @@ export const getConfirmTransaction = async (txid, connection) => {
       maxTimeout: 1000,
     }
   );
+
   if (res.meta.err) {
-    throw new Error('Transaction failed');
+    throw new Error("Transaction failed");
   }
+
   return txid;
 };
 
-export const decimalsForMint = (mint) => {
-  switch (typeof mint === 'string' ? mint : mint.toBase58()) {
-    case NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc:
+export const decimalsForMint = (mint, cluster) => {
+  switch (typeof mint === "string" ? mint : mint.toBase58()) {
+    case NINA_CLIENT_IDS[cluster].mints.usdc:
       return USDC_DECIMAL_AMOUNT;
-    case NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol:
+    case NINA_CLIENT_IDS[cluster].mints.wsol:
       return SOL_DECIMAL_AMOUNT;
     default:
       return undefined;
   }
 };
 
-export const nativeToUi = (amount, mint) => {
-  return amount / Math.pow(10, decimalsForMint(mint));
-};
+export const nativeToUi = (amount, mint, cluster) =>
+  amount / Math.pow(10, decimalsForMint(mint, cluster));
 
-export const uiToNative = (amount, mint) => {
-  return Math.round(amount * Math.pow(10, decimalsForMint(mint)));
-};
+export const uiToNative = (amount, mint, cluster) =>
+  Math.round(amount * Math.pow(10, decimalsForMint(mint, cluster)));
 
-export const decodeNonEncryptedByteArray = (byteArray) => {
-  return new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\u0000/g, '');
-};
+export const decodeNonEncryptedByteArray = (byteArray) =>
+  new TextDecoder()
+    .decode(new Uint8Array(byteArray))
+    .replaceAll(/\\u0000/g, "");
 
-export const createMintInstructions = async (provider, authority, mint, decimals) => {
+export const createMintInstructions = async (
+  provider,
+  authority,
+  mint,
+  decimals
+) => {
   const tokenProgram = anchor.Spl.token(provider);
   const systemProgram = anchor.Native.system(provider);
-  const mintSize = tokenProgram.coder.accounts.size(tokenProgram.idl.accounts[0]);
 
-  const mintRentExemption = await provider.connection.getMinimumBalanceForRentExemption(mintSize);
+  const mintSize = tokenProgram.coder.accounts.size(
+    tokenProgram.idl.accounts[0]
+  );
 
-  let instructions = [
+  const mintRentExemption =
+    await provider.connection.getMinimumBalanceForRentExemption(mintSize);
+
+  const instructions = [
     await systemProgram.methods
-      .createAccount(new anchor.BN(mintRentExemption), new anchor.BN(mintSize), tokenProgram.programId)
+      .createAccount(
+        new anchor.BN(mintRentExemption),
+        new anchor.BN(mintSize),
+        tokenProgram.programId
+      )
       .accounts({
         from: authority,
         to: mint,
@@ -188,59 +235,50 @@ export const createMintInstructions = async (provider, authority, mint, decimals
   return instructions;
 };
 
-export const NINA_CLIENT_IDS = {
-  mainnet: {
-    programs: {
-      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-    },
-    mints: {
-      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-      wsol: 'So11111111111111111111111111111111111111112',
-    },
-  },
-  devnet: {
-    programs: {
-      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
-    },
-    mints: {
-      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
-      wsol: 'So11111111111111111111111111111111111111112',
-    },
-  },
-};
-
-export const MAX_U64 = '18446744073709551615';
-
-export const isUsdc = (mint) => {
-  if (typeof mint !== 'string') {
-    return mint.toBase58() === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc
-  }
-  return mint === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc
-}
-
 export const nativeToUiString = (
   amount,
   mint,
+  cluster,
   decimalOverride = false,
   showCurrency = true
 ) => {
-  let amountString = nativeToUi(amount, mint)
-    .toFixed(isUsdc(mint) || decimalOverride ? 2 : 3)
+  let amountString = nativeToUi(amount, mint, cluster).toFixed(
+    isUsdc(mint, cluster) || decimalOverride ? 2 : 3
+  );
 
   if (showCurrency) {
-    amountString = `${isUsdc(mint) ? '$' : ''}${amountString} ${
-      isUsdc(mint) ? 'USDC' : 'SOL'
-    }`
+    amountString = `${isUsdc(mint, cluster) ? "$" : ""}${amountString} ${
+      isUsdc(mint, cluster) ? "USDC" : "SOL"
+    }`;
   }
-  return amountString
-}
 
-export const isSol = (mint) => {
-  if (typeof mint !== 'string') {
-    return mint.toBase58() === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol
-  }
-  return mint === NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.wsol
-}
+  return amountString;
+};
+
+export const wrapSol = async (provider, amount, mint, publicKey) => {
+  const wrappedSolInstructions = [];
+
+  const [wrappedSolAccount] = await findOrCreateAssociatedTokenAccount(
+    provider.connection,
+    new anchor.web3.PublicKey(publicKey),
+    new anchor.web3.PublicKey(publicKey),
+    anchor.web3.SystemProgram.programId,
+    anchor.web3.SYSVAR_RENT_PUBKEY,
+    mint
+  );
+
+  const wrappedSolTransferIx = anchor.web3.SystemProgram.transfer({
+    fromPubkey: new anchor.web3.PublicKey(publicKey),
+    toPubkey: wrappedSolAccount,
+    lamports: new anchor.BN(amount),
+  });
+
+  // sync wrapped SOL balance
+  const syncNativeIx = createSyncNativeInstruction(wrappedSolAccount);
+  wrappedSolInstructions.push(wrappedSolTransferIx, syncNativeIx);
+
+  return [wrappedSolAccount, wrappedSolInstructions];
+};
 
 export default {
   NINA_CLIENT_IDS,
@@ -253,5 +291,5 @@ export default {
   isSol,
   nativeToUiString,
   MAX_U64,
-
-}
+  wrapSol,
+};

@@ -1,0 +1,36 @@
+{
+  "parserOptions": { "sourceType": "module", "ecmaVersion": 2018 },
+  "plugins": ["eslint-plugin-zero-config"],
+  "extends": ["plugin:zero-config/recommended"],
+  "rules": {
+    "padding-line-between-statements": [
+      "error",
+      { "blankLine": "never", "prev": ["const"], "next": ["*"] },
+      { "blankLine": "always", "prev": ["*"], "next": ["export"] },
+      { "blankLine": "always", "prev": ["*"], "next": ["return"] },
+      { "blankLine": "always", "prev": ["multiline-const"], "next": ["*"] },
+      { "blankLine": "always", "prev": ["*"], "next": ["multiline-const"] },
+      { "blankLine": "always", "prev": ["*"], "next": ["if"] },
+      { "blankLine": "always", "prev": ["if"], "next": ["*"] }
+    ],
+    "no-console": [
+      2,
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "no-multiple-empty-lines": [
+      "error",
+      { "max": 1, "maxEOF": 1, "maxBOF": 0 }
+    ],
+    "prefer-named-capture-group": "off",
+    "require-atomic-updates": "off",
+    "require-unicode-regexp": "off",
+    "prefer-destructuring": "off",
+    "complexity": ["error", { "max": 25 }]
+  },
+  "env": {
+    "browser": true,
+    "node": true
+  }
+}

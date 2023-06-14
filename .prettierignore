@@ -1,1 +1,5 @@
-./dist
+dist
+demo
+docs
+node_modules
+tsconfig.json

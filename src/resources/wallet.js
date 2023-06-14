@@ -1,9 +1,16 @@
-import * as anchor from '@project-serum/anchor';
-import axios from 'axios';
-import { NINA_CLIENT_IDS, findOrCreateAssociatedTokenAccount, uiToNative } from '../utils';
+import * as anchor from "@project-serum/anchor";
+import axios from "axios";
+import { getAccount } from "@solana/spl-token";
+import {
+  NINA_CLIENT_IDS,
+  findOrCreateAssociatedTokenAccount,
+  uiToNative,
+  getConfirmTransaction,
+} from "../utils";
 
 export default class Wallet {
-  constructor({ provider }) {
+  constructor({ provider, cluster }) {
+    this.cluster = cluster;
     this.provider = provider;
   }
 
@@ -11,169 +18,196 @@ export default class Wallet {
     try {
       const priceResult = await axios.get(
         `https://price.jup.ag/v4/price?ids=SOL`
-      )
-      return priceResult.data.data.SOL.price
+      );
+
+      return priceResult.data.data.SOL.price;
     } catch (error) {
-      return error
+      return error;
     }
   }
-  
+
   async getUsdcBalanceForPublicKey(publicKey) {
-    let usdc = 0
+    const usdc = 0;
+
     if (publicKey) {
       try {
-        let [usdcTokenAccountPubkey] = await findOrCreateAssociatedTokenAccount(
-          this.provider.connection,
-          new anchor.web3.PublicKey(publicKey),
-          new anchor.web3.PublicKey(publicKey),
-          anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
-          new anchor.web3.PublicKey(ids.mints.usdc)
-        )
+        const [usdcTokenAccountPubkey] =
+          await findOrCreateAssociatedTokenAccount(
+            this.provider.connection,
+            new anchor.web3.PublicKey(publicKey),
+            new anchor.web3.PublicKey(publicKey),
+            anchor.web3.SystemProgram.programId,
+            anchor.web3.SYSVAR_RENT_PUBKEY,
+            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
+          );
+
         if (usdcTokenAccountPubkey) {
-          let usdcTokenAccount =
+          const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
               usdcTokenAccountPubkey
-            )
-          return usdcTokenAccount.value.uiAmount.toFixed(4)
-        } else {
-          return 0
+            );
+
+          return usdcTokenAccount.value.uiAmount.toFixed(4);
         }
+
+        return 0;
       } catch (error) {
-        console.warn('error getting usdc balance')
+        console.warn("error getting usdc balance");
       }
     } else {
-      return 0
+      return 0;
     }
-    return usdc
+
+    return usdc;
   }
-  
+
   async getSolBalanceForPublicKey(publicKey) {
-    let solUsdcBalanceResult = await this.provider.connection.getBalance(
+    const solUsdcBalanceResult = await this.provider.connection.getBalance(
       new anchor.web3.PublicKey(publicKey)
-    )
-    return solUsdcBalanceResult
+    );
+
+    return solUsdcBalanceResult;
   }
 
   async sendUsdc(amount, destination) {
     try {
       const destinationInfo = await this.provider.connection.getAccountInfo(
         new anchor.web3.PublicKey(destination)
-      )
+      );
 
-      let isSystemAccount = false
-      let isUsdcTokenAccount = false
-      let toUsdcTokenAccount = null
-      let toUsdcTokenAccountIx = null
+      let isSystemAccount = false;
+      let isUsdcTokenAccount = false;
+      let toUsdcTokenAccount = null;
+      let toUsdcTokenAccountIx = null;
 
       if (
         destinationInfo.owner.toBase58() ===
         anchor.web3.SystemProgram.programId.toBase58()
       ) {
-        isSystemAccount = true
+        isSystemAccount = true;
       }
 
       if (!isSystemAccount) {
-        if (destinationInfo.owner.toBase58() === anchor.utils.token.TOKEN_PROGRAM_ID.toBase58()) {
+        if (
+          destinationInfo.owner.toBase58() ===
+          anchor.utils.token.TOKEN_PROGRAM_ID.toBase58()
+        ) {
           const tokenAccount = await getAccount(
-            provider.connection,
+            this.provider.connection,
             new anchor.web3.PublicKey(destination)
-          )
-          if (tokenAccount.mint.toBase58() === ids.mints.usdc) {
-            isUsdcTokenAccount = true
+          );
+
+          if (
+            tokenAccount.mint.toBase58() ===
+            NINA_CLIENT_IDS[this.cluster].mints.usdc
+          ) {
+            isUsdcTokenAccount = true;
           }
         }
       }
 
       if (!isSystemAccount && !isUsdcTokenAccount) {
         throw new Error(
-          'Destination is not a valid Solana address or USDC account'
-        )
+          "Destination is not a valid Solana address or USDC account"
+        );
       }
 
-      let [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
+      const [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
-          provider.connection,
-          provider.wallet.publicKey,
-          provider.wallet.publicKey,
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          new anchor.web3.PublicKey(NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc)
-        )
+          new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
+        );
 
-      isSystemAccount
-        ? ([toUsdcTokenAccount, toUsdcTokenAccountIx] =
-            await findOrCreateAssociatedTokenAccount(
-              provider.connection,
-              provider.wallet.publicKey,
-              new anchor.web3.PublicKey(destination),
-              anchor.web3.SystemProgram.programId,
-              anchor.web3.SYSVAR_RENT_PUBKEY,
-              new anchor.web3.PublicKey(NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc)
-            ))
-        : (toUsdcTokenAccount = new anchor.web3.PublicKey(destination))
+      if (isSystemAccount) {
+        const [_toUsdcTokenAccount, _toUsdcTokenAccountIx] =
+          await findOrCreateAssociatedTokenAccount(
+            this.provider.connection,
+            this.provider.wallet.publicKey,
+            new anchor.web3.PublicKey(destination),
+            anchor.web3.SystemProgram.programId,
+            anchor.web3.SYSVAR_RENT_PUBKEY,
+            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
+          );
+
+        toUsdcTokenAccount = _toUsdcTokenAccount;
+        toUsdcTokenAccountIx = _toUsdcTokenAccountIx;
+      } else {
+        toUsdcTokenAccount = new anchor.web3.PublicKey(destination);
+      }
 
       const tokenProgram = anchor.Spl.token({
-        provider,
-      })
+        provider: this.provider,
+      });
 
-      const instructions = []
+      const instructions = [];
 
       if (fromUsdcTokenAccountIx) {
-        instructions.push(fromUsdcTokenAccountIx)
+        instructions.push(fromUsdcTokenAccountIx);
       }
 
       if (toUsdcTokenAccountIx) {
-        instructions.push(toUsdcTokenAccountIx)
+        instructions.push(toUsdcTokenAccountIx);
       }
 
       const tx = await tokenProgram.methods
-        .transfer(new anchor.BN(uiToNative(amount, NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER].mints.usdc)))
+        .transfer(
+          new anchor.BN(
+            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc)
+          )
+        )
         .accounts({
           source: fromUsdcTokenAccount,
           destination: toUsdcTokenAccount,
-          authority: provider.wallet.publicKey,
+          authority: this.provider.wallet.publicKey,
         })
         .preInstructions(instructions)
-        .transaction()
+        .transaction();
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
-    
+      ).blockhash;
+      tx.feePayer = this.provider.wallet.publicKey;
+
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        provider.connection
-      )
+        this.provider.connection
+      );
 
-      await getConfirmTransaction(txid, provider.connection)
+      await getConfirmTransaction(txid, this.provider.connection);
 
       return {
         success: true,
-        txid
-      }
+        txid,
+      };
     } catch (error) {
       return {
         success: false,
         error,
-      }
+      };
     }
   }
 
   async getAmountHeld(release, accountPublicKey) {
-    let amount = 0
-    let tokenAccounts =
-      await provider.connection.getParsedTokenAccountsByOwner(
+    let amount = 0;
+
+    const tokenAccounts =
+      await this.provider.connection.getParsedTokenAccountsByOwner(
         new anchor.web3.PublicKey(accountPublicKey),
         { programId: anchor.utils.token.TOKEN_PROGRAM_ID.toBase58() }
-      )
+      );
+
     tokenAccounts.value.forEach((value) => {
-      const account = value.account.data.parsed.info
+      const account = value.account.data.parsed.info;
+
       if (account.mint === release.releaseMint) {
-        amount = account.tokenAmount.uiAmount
+        amount = account.tokenAmount.uiAmount;
       }
-    })
-    return amount
+    });
+
+    return amount;
   }
 }

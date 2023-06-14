@@ -1,5 +1,5 @@
-import client from './client';
-import utils from './utils';
+import client from "./client";
+import utils from "./utils";
 
 const Nina = {
   client,

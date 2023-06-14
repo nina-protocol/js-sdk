@@ -1,20 +1,23 @@
-import axios from 'axios';
-import * as anchor from '@project-serum/anchor';
-import { findOrCreateAssociatedTokenAccount, getConfirmTransaction, uiToNative, NINA_CLIENT_IDS } from '../utils';
+import axios from "axios";
+import * as anchor from "@project-serum/anchor";
+import MD5 from "crypto-js/md5";
+import {
+  findOrCreateAssociatedTokenAccount,
+  getConfirmTransaction,
+  uiToNative,
+  NINA_CLIENT_IDS,
+} from "../utils";
 
 /**
  * @module Hub
  */
 
 export default class Hub {
-  constructor({
-    http,
-    program,
-    provider,
-  }) {
+  constructor({ http, program, provider, cluster }) {
     this.http = http;
     this.program = program;
     this.provider = provider;
+    this.cluster = cluster;
   }
 
   /**
@@ -25,20 +28,21 @@ export default class Hub {
    * @example const hubs = await NinaClient.Hub.fetchAll();
    * @returns {Array} an array of all of the Hubs on Nina.
    */
-  
+
   async fetchAll(pagination = {}, withAccountData = false) {
     const { limit, offset, sort } = pagination;
-    return await this.http.get(
-      '/hubs',
+
+    return this.http.get(
+      "/hubs",
       {
         limit: limit || 20,
         offset: offset || 0,
-        sort: sort || 'desc',
+        sort: sort || "desc",
       },
       withAccountData
     );
-  };
-  
+  }
+
   /**
    * @function fetch
    * @description Fetches a Hub along with its Releases, Collaborators, and Posts.
@@ -47,11 +51,15 @@ export default class Hub {
    * @example const hub = await NinaClient.Hub.fetch('ninas-picks');
    * @returns {Object} The Hub account.
    */
-  
+
   async fetch(publicKeyOrHandle, withAccountData = false) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}`, undefined, withAccountData);
-  };
-  
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}`,
+      undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function fetchCollaborators
    * @description Fetches the Collaborators of a Hub.
@@ -61,11 +69,11 @@ export default class Hub {
    * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
    * @returns {Array} an array of all of the Collaborators that belong to a Hub.
    */
-  
+
   async fetchCollaborators(publicKeyOrHandle) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/collaborators`);
-  };
-  
+    return this.http.get(`/hubs/${publicKeyOrHandle}/collaborators`);
+  }
+
   /**
    * @function fetchCollaborator
    * @description Fetches a Collaborator by Publickey.
@@ -74,12 +82,14 @@ export default class Hub {
    * @example const collaborators = await NinaClient.Hub.fetchCollaborators('ninas-picks');
    * @returns {Object} a specific Collaborator that belongs to a Hub.
    */
-  
+
   async fetchHubCollaborator(publicKeyOrHandle, collaboratorPubkey) {
     //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`);
-  };
-  
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`
+    );
+  }
+
   /**
    * @function fetchReleases
    * @description Fetches Releases for a Hub.
@@ -89,11 +99,15 @@ export default class Hub {
    * @example const releases = await NinaClient.Hub.fetchReleases('ninas-picks');
    * @returns {Array} an array of all of the Releases that belong to a Hub.
    */
-  
+
   async fetchReleases(publicKeyOrHandle, withAccountData = false) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/releases`, undefined, withAccountData);
-  };
-  
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/releases`,
+      undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function fetchPosts
    * @description Fetches Posts for a hub.
@@ -103,11 +117,15 @@ export default class Hub {
    * @example const posts = await NinaClient.Hub.fetchPosts('ninas-picks');
    * @returns {Array} an array of all of the Posts that belong to a Hub.
    */
-  
+
   async fetchPosts(publicKeyOrHandle, withAccountData = false) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/posts`, undefined, withAccountData);
-  };
-  
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/posts`,
+      undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function fetchHubRelease
    * @description Fetches a Release for a Hub.
@@ -117,15 +135,19 @@ export default class Hub {
    * @example const hubRelease = await NinaClient.Hub.fetchHubRelease('ninas-picks', 'H2aoAZfxbQX6s77yj31Duy7DiJnJcN3Gg1HkA2VuvNUZ);
    * @returns {Object} a specific Release from a Hub.
    */
-  
-  async fetchHubRelease(publicKeyOrHandle, hubReleasePublicKey, withAccountData = false) {
-    return await this.http.get(
+
+  async fetchHubRelease(
+    publicKeyOrHandle,
+    hubReleasePublicKey,
+    withAccountData = false
+  ) {
+    return this.http.get(
       `/hubs/${publicKeyOrHandle}/hubReleases/${hubReleasePublicKey}`,
       undefined,
       withAccountData
     );
-  };
-  
+  }
+
   /**
    * @function fetchHubPost
    * @description Fetches a hubPost
@@ -135,11 +157,19 @@ export default class Hub {
    * @example const hubPost = await NinaClient.Hub.fetchHubPost('ninas-picks', 'H2aoAZfxbQX6s77yj31Duy7DiJnJcN3Gg1HkA2VuvNUZ');
    * @returns {Object} a specific Hub Post.
    */
-  
-  async fetchHubPost(publicKeyOrHandle, hubPostPublicKey, withAccountData = false) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/hubPosts/${hubPostPublicKey}`, undefined, withAccountData);
-  };
-  
+
+  async fetchHubPost(
+    publicKeyOrHandle,
+    hubPostPublicKey,
+    withAccountData = false
+  ) {
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/hubPosts/${hubPostPublicKey}`,
+      undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function fetchSubscriptions
    * @description Fetches the subscriptions for a Hub.
@@ -148,11 +178,15 @@ export default class Hub {
    * @example const subscriptions = await NinaClient.Hub.fetchSubscriptions("ninas-picks");
    * @returns {Array} an array of all of the Subscriptions that belong to a Hub.
    */
-  
+
   async fetchSubscriptions(publicKeyOrHandle, withAccountData = false) {
-    return await this.http.get(`/hubs/${publicKeyOrHandle}/subscriptions`, undefined, withAccountData);
-  };
-  
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/subscriptions`,
+      undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function hubInit
    * @description Initializes a Hub account with Hub Credit.
@@ -163,51 +197,56 @@ export default class Hub {
    * @example const hub = await NinaClient.Hub.hubInit({})
    * @returns {Object} The created Hub account.
    */
-  
+
   async hubInit(handle, publishFee, referralFee) {
     try {
-      const USDC_MINT = new anchor.web3.PublicKey(NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].mints.usdc);
-      const WRAPPED_SOL_MINT = new anchor.web3.PublicKey(NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].mints.wsol);
-      const HUB_CREDIT_MINT = new anchor.web3.PublicKey(NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].mints.hubCredit);
-  
       publishFee = new anchor.BN(publishFee * 10000);
       referralFee = new anchor.BN(referralFee * 10000);
+
       const [hub] = await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub')), Buffer.from(anchor.utils.bytes.utf8.encode(handle))],
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub")),
+          Buffer.from(anchor.utils.bytes.utf8.encode(handle)),
+        ],
         this.program.programId
       );
-  
-      const [hubSigner, hubSignerBump] = await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hub.toBuffer()],
-        this.program.programId
-      );
-  
+
+      const [hubSigner, hubSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-signer")),
+            hub.toBuffer(),
+          ],
+          this.program.programId
+        );
+
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
           hub.toBuffer(),
           this.provider.wallet.publicKey.toBuffer(),
         ],
         this.program.programId
       );
-  
-      let [, usdcVaultIx] = await findOrCreateAssociatedTokenAccount(
+
+      const [, usdcVaultIx] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
         this.provider.wallet.publicKey,
         hubSigner,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        USDC_MINT
+        new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
       );
-  
-      let [, wrappedSolVaultIx] = await findOrCreateAssociatedTokenAccount(
+
+      const [, wrappedSolVaultIx] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
         this.provider.wallet.publicKey,
         hubSigner,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        WRAPPED_SOL_MINT
+        new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol)
       );
+
       //add IX for create
       const tx = await this.program.methods
         .hubInit({
@@ -221,31 +260,38 @@ export default class Hub {
           hub,
           hubSigner,
           hubCollaborator,
-          hubCreditMint: HUB_CREDIT_MINT,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .preInstructions([usdcVaultIx, wrappedSolVaultIx])
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-  
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
       const createdHub = await fetch(hub.toBase58());
+
       return {
-        createdHub: createdHub,
+        createdHub,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubUpdateConfig
    * @description Updates the configuration of a Hub.
@@ -256,37 +302,53 @@ export default class Hub {
    * @example const hub = await NinaClient.Hub.hubUpdateConfig(hubPublicKey, 'https://nina.com', 0.1, 0.1, wallet, connection);
    * @returns {Object} The updated Hub account.
    */
-  
+
   async hubUpdateConfig(hubPublicKey, uri, publishFee, referralFee) {
     try {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
-  
+
       const tx = await this.program.methods
-        .hubUpdateConfig(uri, hub.handle, new anchor.BN(publishFee * 10000), new anchor.BN(referralFee * 10000))
+        .hubUpdateConfig(
+          uri,
+          hub.handle,
+          new anchor.BN(publishFee * 10000),
+          new anchor.BN(referralFee * 10000)
+        )
         .accounts({
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
         })
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
-      await axios.get(endpoints.api + `/hubs/${hubPublicKey.toBase58()}/tx/${txid}`);
+      await axios.get(
+        `${this.http.endpoint}/hubs/${hubPublicKey.toBase58()}/tx/${txid}`
+      );
       const updatedHub = await fetch(hubPublicKey);
+
       return {
-        updatedHub: updatedHub,
+        updatedHub,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubAddCollaborator
    * @description Adds a collaborator to a Hub.
@@ -298,7 +360,7 @@ export default class Hub {
    * @example await NinaClient.Hub.hubAddCollaborator(ninaClient, hubPublicKey, collaboratorPubkey, true, true, 10);
    * @returns {Object} the added collaborator of a Hub.
    */
-  
+
   async hubAddCollaborator(
     hubPublicKey,
     collaboratorPubkey,
@@ -310,24 +372,35 @@ export default class Hub {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey);
+
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
           hubPublicKey.toBuffer(),
           collaboratorPubkey.toBuffer(),
         ],
         this.program.programId
       );
-      const [authorityHubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          hubPublicKey.toBuffer(),
-          this.provider.wallet.publicKey.toBuffer(),
-        ],
-        this.program.programId
-      );
+
+      const [authorityHubCollaborator] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(
+              anchor.utils.bytes.utf8.encode("nina-hub-collaborator")
+            ),
+            hubPublicKey.toBuffer(),
+            this.provider.wallet.publicKey.toBuffer(),
+          ],
+          this.program.programId
+        );
+
       const tx = await this.program.methods
-        .hubAddCollaborator(canAddContent, canAddCollaborator, allowance, hub.handle)
+        .hubAddCollaborator(
+          canAddContent,
+          canAddCollaborator,
+          allowance,
+          hub.handle
+        )
         .accounts({
           authority: this.provider.wallet.publicKey,
           authorityHubCollaborator,
@@ -338,12 +411,24 @@ export default class Hub {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .transaction();
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
-  
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
-      await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
+      await axios.get(
+        `${this.http.endpoint}/hubs/${
+          hub.handle
+        }/collaborators/${hubCollaborator.toBase58()}`
+      );
+
       // endpoint needs to be updated to return collaborator
       return {
         collaboratorPublicKey: collaboratorPubkey.toBase58(),
@@ -351,12 +436,13 @@ export default class Hub {
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubUpdateCollaboratorPermission
    * @description Updates the permissions of a collaborator on a Hub.
@@ -368,7 +454,7 @@ export default class Hub {
    * @example const hub = await NinaClient.Hub.hubUpdateCollaboratorPermission(ninaClient, hubPublicKey, collaboratorPubkey, true, true, 10);
    * @returns {Object} the updated account of a collaborator of a Hub.
    */
-  
+
   async hubUpdateCollaboratorPermission(
     hubPublicKey,
     collaboratorPubkey,
@@ -380,25 +466,35 @@ export default class Hub {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey);
+
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
           hubPublicKey.toBuffer(),
           collaboratorPubkey.toBuffer(),
         ],
         this.program.programId
       );
-      const [authorityHubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
-          hubPublicKey.toBuffer(),
-          this.provider.wallet.publicKey.toBuffer(),
-        ],
-        this.program.programId
-      );
-  
+
+      const [authorityHubCollaborator] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(
+              anchor.utils.bytes.utf8.encode("nina-hub-collaborator")
+            ),
+            hubPublicKey.toBuffer(),
+            this.provider.wallet.publicKey.toBuffer(),
+          ],
+          this.program.programId
+        );
+
       const tx = await this.program.methods
-        .hubUpdateCollaboratorPermissions(canAddContent, canAddCollaborator, allowance, hub.handle)
+        .hubUpdateCollaboratorPermissions(
+          canAddContent,
+          canAddCollaborator,
+          allowance,
+          hub.handle
+        )
         .accounts({
           authority: this.provider.wallet.publicKey,
           authorityHubCollaborator,
@@ -407,13 +503,25 @@ export default class Hub {
           collaborator: collaboratorPubkey,
         })
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
-      await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
-  
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
+      await axios.get(
+        `${this.http.endpoint}/hubs/${
+          hub.handle
+        }/collaborators/${hubCollaborator.toBase58()}`
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
+
       // endpoint needs to be updated to return collaborator
       return {
         collaboratorPublicKey: collaboratorPubkey.toBase58(),
@@ -421,12 +529,13 @@ export default class Hub {
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubRemoveCollaborator
    * @description Removes a collaborator from a Hub.
@@ -435,21 +544,23 @@ export default class Hub {
    * @example await NinaClient.Hub.hubRemoveCollaborator(ninaClient,"DDiezQSSNWF1XxKfhJv4YqB2y4xGYzCDVvVYU46wHhKW","8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX");
    * @returns {Object} the account of the removed collaborator from the Hub.
    */
-  
+
   async hubRemoveCollaborator(hubPublicKey, collaboratorPubkey) {
     try {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
-  
+
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey);
+
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
           hubPublicKey.toBuffer(),
           collaboratorPubkey.toBuffer(),
         ],
         this.program.programId
       );
+
       const tx = await this.program.methods
         .hubRemoveCollaborator(hub.handle)
         .accounts({
@@ -460,13 +571,24 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
-  
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
-      await axios.get(endpoints.api + `/hubs/${hub.handle}/collaborators/${hubCollaborator.toBase58()}`);
+      await axios.get(
+        `${this.http.endpoint}/hubs/${
+          hub.handle
+        }/collaborators/${hubCollaborator.toBase58()}`
+      );
+
       // endpoint needs to be updated to return collaborator
       return {
         collaboratorPublicKey: collaboratorPubkey.toBase58(),
@@ -474,12 +596,13 @@ export default class Hub {
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubContentToggleVisibility
    * @description Toggles the visibility of a piece of content on a Hub.
@@ -489,30 +612,40 @@ export default class Hub {
    * @example const hub = await NinaClient.Hub.hubContentToggleVisibility(ninaClient, "DDiezQSSNWF1XxKfhJv4YqB2y4xGYzCDVvVYU46wHhKW", "9XxDDBePiuR1y1M1gkxnbv7AAu6WqaHKMsxUwGirMZwP", 'Release');
    * @returns {Object} The toggled Post or Release.
    */
-  
-  async hubContentToggleVisibility(hubPublicKey, contentAccountPublicKey, type) {
+
+  async hubContentToggleVisibility(
+    hubPublicKey,
+    contentAccountPublicKey,
+    type
+  ) {
     try {
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
-  
-      contentAccountPublicKey = new anchor.web3.PublicKey(contentAccountPublicKey);
-  
+      const hub = this.program.account.hub.fetch(hubPublicKey);
+      contentAccountPublicKey = new anchor.web3.PublicKey(
+        contentAccountPublicKey
+      );
+
       const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-content")),
           hubPublicKey.toBuffer(),
           contentAccountPublicKey.toBuffer(),
         ],
         this.program.programId
       );
-      const [hubChildPublicKey] = await anchor.web3.PublicKey.findProgramAddress(
-        [
-          Buffer.from(anchor.utils.bytes.utf8.encode(`nina-hub-${type.toLowerCase()}`)),
-          hubPublicKey.toBuffer(),
-          contentAccountPublicKey.toBuffer(),
-        ],
-        this.program.programId
-      );
-  
+
+      const [hubChildPublicKey] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(
+              anchor.utils.bytes.utf8.encode(`nina-hub-${type.toLowerCase()}`)
+            ),
+            hubPublicKey.toBuffer(),
+            contentAccountPublicKey.toBuffer(),
+          ],
+          this.program.programId
+        );
+
       const tx = await this.program.methods
         .hubContentToggleVisibility(hub.handle)
         .accounts({
@@ -523,30 +656,45 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
-      await this.provider.connection.getParsedTransaction(txid, 'finalized');
-  
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
+      await this.provider.connection.getParsedTransaction(txid, "finalized");
+
       let toggledResult;
-      if (type === 'Release') {
-        toggledResult = await fetchHubRelease(hubPublicKey.toBase58(), hubChildPublicKey.toBase58());
-      } else if (type === 'Post') {
-        toggledResult = await fetchHubPost(hubPublicKey.toBase58(), hubChildPublicKey.toBase58());
+
+      if (type === "Release") {
+        toggledResult = await this.fetchHubRelease(
+          hubPublicKey.toBase58(),
+          hubChildPublicKey.toBase58()
+        );
+      } else if (type === "Post") {
+        toggledResult = await this.fetchHubPost(
+          hubPublicKey.toBase58(),
+          hubChildPublicKey.toBase58()
+        );
       }
-  
+
       return {
         hubRelease: toggledResult,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubAddRelease
    * @description Reposts a Release to a Hub. When you repost a release, it will surface to your Hub alongside Releases you have published.
@@ -556,40 +704,42 @@ export default class Hub {
    * @example await NinaClient.Hubs.hubAddRelease(ninaClient, "9XxDDBePiuR1y1M1gkxnbv7AAu6WqaHKMsxUwGirMZwP", "9XxDDBePiuR1y1M1gkxnbv7AAu6WqaHKMsxUwGirMZwP", "DDiezQSSNWF1XxKfhJv4YqB2y4xGYzCDVvVYU46wHhKW");
    * @returns {Object} the Hub Release data.
    */
-  
+
   async hubAddRelease(hubPublicKey, releasePublicKey, fromHub) {
     try {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
-  
+
       const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-release")),
           hubPublicKey.toBuffer(),
           releasePublicKey.toBuffer(),
         ],
         this.program.programId
       );
-  
+
       const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-content")),
           hubPublicKey.toBuffer(),
           releasePublicKey.toBuffer(),
         ],
         this.program.programId
       );
-  
+
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
           hubPublicKey.toBuffer(),
           this.provider.wallet.publicKey.toBuffer(),
         ],
         this.program.programId
       );
+
       let remainingAccounts;
+
       if (fromHub) {
         remainingAccounts = [
           {
@@ -599,6 +749,7 @@ export default class Hub {
           },
         ];
       }
+
       const tx = await this.program.methods
         .hubAddRelease(hub.handle)
         .accounts({
@@ -611,25 +762,38 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
+        .remainingAccounts(remainingAccounts)
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
-  
-      const hubReleaseData = await fetchHubRelease(hubPublicKey.toBase58(), hubRelease.toBase58());
+
+      const hubReleaseData = await this.fetchHubRelease(
+        hubPublicKey.toBase58(),
+        hubRelease.toBase58()
+      );
+
       return {
         hubRelease: hubReleaseData,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
-  
+  }
+
   /**
    * @function hubWithdraw
    * @description Withdraws Hub fees in the Hub dashboard.
@@ -637,18 +801,25 @@ export default class Hub {
    * @example const txid = await NinaClient.Hub.hubWithdraw(ninaClient, hubPublicKey);
    * @returns { Object } the Hub account that made the withdrawal.
    */
-  
+
   async hubWithdraw(hubPublicKey) {
     try {
       const { hub } = await fetch(hubPublicKey);
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
-      const USDC_MINT = new anchor.web3.PublicKey(NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].mints.usdc);
-  
+
+      const USDC_MINT = new anchor.web3.PublicKey(
+        NINA_CLIENT_IDS[this.cluster].mints.usdc
+      );
+
       const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
-        [Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')), hubPublicKey.toBuffer()],
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-signer")),
+          hubPublicKey.toBuffer(),
+        ],
         this.program.programId
       );
-      let [withdrawTarget] = await findOrCreateAssociatedTokenAccount(
+
+      const [withdrawTarget] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
         this.provider.wallet.publicKey,
         hubSigner,
@@ -656,8 +827,8 @@ export default class Hub {
         anchor.web3.SYSVAR_RENT_PUBKEY,
         USDC_MINT
       );
-  
-      let [withdrawDestination] = await findOrCreateAssociatedTokenAccount(
+
+      const [withdrawDestination] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
         this.provider.wallet.publicKey,
         this.provider.wallet.publicKey,
@@ -665,15 +836,23 @@ export default class Hub {
         anchor.web3.SYSVAR_RENT_PUBKEY,
         USDC_MINT
       );
-  
-      let tokenAccounts = await this.provider.connection.getParsedTokenAccountsByOwner(hubSigner, {
-        mint: USDC_MINT,
-      });
-  
-      const withdrawAmount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-  
+
+      const tokenAccounts =
+        await this.provider.connection.getParsedTokenAccountsByOwner(
+          hubSigner,
+          {
+            mint: USDC_MINT,
+          }
+        );
+
+      const withdrawAmount =
+        tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+
       const tx = await this.program.methods
-        .hubWithdraw(new anchor.BN(uiToNative(withdrawAmount, USDC_MINT)), hub.handle)
+        .hubWithdraw(
+          new anchor.BN(uiToNative(withdrawAmount, USDC_MINT)),
+          hub.handle
+        )
         .accounts({
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
@@ -684,21 +863,272 @@ export default class Hub {
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         })
         .transaction();
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-  
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
-  
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
       const hubData = await fetch(hubPublicKey.toBase58());
+
       return {
         hub: hubData,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
+  }
+
+  /**
+   * @function postInitViaHub
+   * @description Creates a Post on a Hub.
+   * @param {String} hubPublicKey - The public key of the Hub.
+   * @param {String} slug - The slug of the Post.
+   * @param {String} uri - The URI of the Post.
+   * @param {String} fromHub - The public key of the referenced Hub.
+   * @param {String} referenceRelease - The public key of the Release referenced in the post.
+   * @example const post = await NinaClient.Hub.postInitViaHub(ninaClient, hubPublicKey, slug, uri);
+   * @returns {Object} The created Post.
+   */
+
+  async postInitViaHub(
+    hubPublicKey,
+    slug,
+    uri,
+    fromHub,
+    referenceRelease = undefined
+  ) {
+    try {
+      const { hub } = await fetch(hubPublicKey);
+      hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
+
+      if (referenceRelease) {
+        referenceRelease = new anchor.web3.PublicKey(referenceRelease);
+      }
+
+      const slugHash = MD5(slug).toString().slice(0, 32);
+
+      const [post] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-post")),
+          hubPublicKey.toBuffer(),
+          Buffer.from(anchor.utils.bytes.utf8.encode(slugHash)),
+        ],
+        this.program.programId
+      );
+
+      const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-post")),
+          hubPublicKey.toBuffer(),
+          post.toBuffer(),
+        ],
+        this.program.programId
+      );
+
+      const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-content")),
+          hubPublicKey.toBuffer(),
+          post.toBuffer(),
+        ],
+        this.program.programId
+      );
+
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
+          hubPublicKey.toBuffer(),
+          this.provider.wallet.publicKey.toBuffer(),
+        ],
+        this.program.programId
+      );
+
+      let tx;
+      const params = [hub.handle, slugHash, uri];
+
+      const request = {
+        accounts: {
+          author: this.provider.wallet.publicKey,
+          hub: hubPublicKey,
+          post,
+          hubPost,
+          hubContent,
+          hubCollaborator,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+      };
+
+      if (fromHub) {
+        request.remainingAccounts = [
+          {
+            pubkey: new anchor.web3.PublicKey(fromHub),
+            isWritable: false,
+            isSigner: false,
+          },
+        ];
+      }
+
+      if (referenceRelease) {
+        request.accounts.referenceRelease = referenceRelease;
+
+        const [_referenceReleaseHubRelease] =
+          await anchor.web3.PublicKey.findProgramAddress(
+            [
+              Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-release")),
+              hubPublicKey.toBuffer(),
+              referenceRelease.toBuffer(),
+            ],
+            this.program.programId
+          );
+
+        request.accounts.referenceReleaseHubRelease =
+          _referenceReleaseHubRelease;
+
+        const [referenceReleaseHubContent] =
+          await anchor.web3.PublicKey.findProgramAddress(
+            [
+              Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-content")),
+              hubPublicKey.toBuffer(),
+              referenceRelease.toBuffer(),
+            ],
+            this.program.programId
+          );
+
+        request.accounts.referenceReleaseHubContent =
+          referenceReleaseHubContent;
+        tx = await this.program.methods
+          .postInitViaHubWithReferenceRelease(...params)
+          .accounts(request.accounts)
+          .transaction();
+      } else {
+        tx = await this.program.methods
+          .postInitViaHub(...params)
+          .accounts(request.accounts)
+          .transaction();
+      }
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
+      tx.feePayer = this.provider.wallet.publicKey;
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
+      await getConfirmTransaction(txid, this.provider.connection);
+
+      const hubPostData = await this.fetchHubPost(
+        hubPublicKey.toBase58(),
+        hubPost.toBase58()
+      );
+
+      return {
+        post: hubPostData,
+      };
+    } catch (error) {
+      console.warn(error);
+
+      return {
+        error,
+      };
+    }
+  }
+
+  /**
+   * @function postUpdateViaHub
+   * @description Creates a Post on a Hub.
+   * @param {String} hubPublicKey - The public key of the Hub.
+   * @param {String} slug - The slug of the Post.
+   * @param {String} uri - The URI of the Post.
+   * @param {String=} referenceRelease - The public key of the Release referenced in the Post.
+   * @param {String=} fromHub - The public key of the referenced Hub.
+   * @example const post = await NinaClient.Hub.postInitViaHub(ninaClient, hubPublicKey, slug, uri);
+   * @returns {Object} The updated Post.
+   */
+
+  async postUpdateViaHub(hubPublicKey, slug, uri) {
+    try {
+      hubPublicKey = new anchor.web3.PublicKey(hubPublicKey);
+      const hub = await this.program.account.Hub.fetch(hubPublicKey);
+
+      const [post] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-post")),
+          hubPublicKey.toBuffer(),
+          Buffer.from(anchor.utils.bytes.utf8.encode(slug)),
+        ],
+        this.program.programId
+      );
+
+      const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-post")),
+          hubPublicKey.toBuffer(),
+          post.toBuffer(),
+        ],
+        this.program.programId
+      );
+
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-hub-collaborator")),
+          hubPublicKey.toBuffer(),
+          this.provider.wallet.publicKey.toBuffer(),
+        ],
+        this.program.programId
+      );
+
+      const tx = await this.program.methods
+        .postUpdateViaHubPost(hub.handle, slug, uri)
+        .accounts({
+          author: this.provider.wallet.publicKey,
+          hub: hubPublicKey,
+          post,
+          hubPost,
+          hubCollaborator,
+        })
+        .transaction();
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
+      tx.feePayer = this.provider.wallet.publicKey;
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
+      await getConfirmTransaction(txid, this.provider.connection);
+
+      const hubPostData = await this.fetchHubPost(
+        hubPublicKey.toBase58(),
+        hubPost.toBase58()
+      );
+
+      return {
+        post: hubPostData,
+      };
+    } catch (error) {
+      console.warn(error);
+
+      return {
+        error,
+      };
+    }
+  }
 }

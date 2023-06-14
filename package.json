@@ -20,26 +20,33 @@
   "scripts": {
     "build": "microbundle build",
     "watch": "microbundle watch --compress false",
-    "format": "yarn prettier --write",
+    "format": "yarn prettier --check --ignore-path .prettierignore .",
+    "format:fix": "yarn prettier --write --ignore-path .prettierignore .",
+    "lint": "yarn eslint ./ --ignore-path .prettierignore",
+    "lint:fix": "yarn eslint ./ --ignore-path .prettierignore --fix",
     "build:docs": "yarn jsdoc -c jsdoc.json --verbose",
     "watch:doc-src": "yarn nodemon --exec 'npm run build:docs' --watch src",
     "watch:doc-output": "yarn livereload out",
     "watch:docs": "yarn run watch:doc-output & npm run watch:doc-src",
     "serve:docs": "cd docs && python3 -m http.server",
     "docs:dev": "yarn run watch:docs & yarn run serve:docs",
-    "buildAndPublish": "npm run build & npm publish"
+    "publish": "npm run build & npm publish"
   },
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
   "dependencies": {
     "@bundlr-network/client": "^0.11.2",
     "@project-serum/anchor": "^0.25.0",
+    "@solana/spl-token": "^0.3.8",
     "axios": "^0.27.2",
     "crypto-js": "^4.1.1",
+    "md5": "^2.3.0",
     "promise-retry": "^2.0.1"
   },
   "devDependencies": {
     "clean-jsdoc-theme": "^4.1.7",
+    "eslint": "^8.42.0",
+    "eslint-plugin-zero-config": "^2.2.9",
     "husky": "^8.0.1",
     "jsdoc": "^3.6.11",
     "livereload": "^0.9.3",

@@ -1,15 +1,11 @@
-import * as anchor from '@project-serum/anchor';
-import { getConfirmTransaction } from '../utils';
+import * as anchor from "@project-serum/anchor";
+import { getConfirmTransaction } from "../utils";
 
 /**
  * @module Subscription
  */
 export default class Subscription {
-  constructor({
-    http,
-    program,
-    provider,
-  }) {
+  constructor({ http, program, provider }) {
     this.http = http;
     this.program = program;
     this.provider = provider;
@@ -24,29 +20,34 @@ export default class Subscription {
    */
   async fetchAll(pagination = {}, withAccountData = false) {
     const { limit, offset, sort } = pagination;
-    return await this.http.get(
-      '/subscriptions',
+
+    return this.http.get(
+      "/subscriptions",
       {
         limit: limit || 20,
         offset: offset || 0,
-        sort: sort || 'desc',
+        sort: sort || "desc",
       },
       withAccountData
     );
-  };
-  
+  }
+
   /**
    * @function fetch
    * @description Fetches a subscription.
    * @param {String} publicKey - The public key of the Subscription.
-   * @param {String} Transaction - The transaction Id of an already existing Subscription.
+   * @param {String} transactionId - The transaction Id of an already existing Subscription.
    * @example const subscription = await subscription.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV");
    * @returns {Object} an object containing the Subscription's data.
    */
   async fetch(publicKey, withAccountData = false, transactionId = undefined) {
-    return this.http.get(`/subscriptions/${publicKey}`, transactionId ? { transactionId } : undefined);
-  };
-  
+    return this.http.get(
+      `/subscriptions/${publicKey}`,
+      transactionId ? { transactionId } : undefined,
+      withAccountData
+    );
+  }
+
   /**
    * @function subscriptionSubscribe
    * @description Subscribes to, or "follows" an Account.
@@ -55,21 +56,22 @@ export default class Subscription {
    * @example await subscriptionSubscribe(ninaClient, "8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX")
    * @returns {Object} the Subscription data.
    */
-  
+
   async subscriptionSubscribe(subscribeToAccount, hubHandle) {
     try {
       subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount);
-  
+
       const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-subscription")),
           this.provider.wallet.publicKey.toBuffer(),
           subscribeToAccount.toBuffer(),
         ],
         this.program.programId
       );
-  
+
       let tx;
+
       if (hubHandle) {
         tx = await this.program.methods
           .subscriptionSubscribeHub(hubHandle)
@@ -93,24 +95,32 @@ export default class Subscription {
           })
           .transaction();
       }
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
-  
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
+
       tx.feePayer = this.provider.wallet.publicKey;
-  
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
       const subscriptionData = await fetch(subscription.toBase58(), txid);
+
       return {
         subscription: subscriptionData,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
+  }
   /**
    * @function subscriptionUnsubscribe
    * @description Unsubscribes from, or "unfollows" an Account.
@@ -118,19 +128,20 @@ export default class Subscription {
    * @example await subscriptionUnsubscribe(ninaClient, "8sFiVz6kemckYUKRr9CRLuM8Pvkq4Lpvkx2mH3jPgGRX")
    * @returns {Object} the Subscription data.
    */
-  
+
   async subscriptionUnsubscribe(unsubscribeAccount) {
     try {
       unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount);
-  
+
       const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
+          Buffer.from(anchor.utils.bytes.utf8.encode("nina-subscription")),
           this.provider.wallet.publicKey.toBuffer(),
           unsubscribeAccount.toBuffer(),
         ],
         this.program.programId
       );
+
       const tx = await this.program.methods
         .subscriptionUnsubscribe()
         .accounts({
@@ -141,21 +152,30 @@ export default class Subscription {
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .transaction();
-  
-      tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash;
       tx.feePayer = this.provider.wallet.publicKey;
-      const txid = await this.provider.wallet.sendTransaction(tx, this.provider.connection);
+
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection
+      );
+
       await getConfirmTransaction(txid, this.provider.connection);
-  
+
       const subscriptionData = await fetch(subscription.toBase58(), txid);
+
       return {
         subscription: subscriptionData,
       };
     } catch (error) {
       console.warn(error);
+
       return {
         error,
       };
     }
-  };
+  }
 }
