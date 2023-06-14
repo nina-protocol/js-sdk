@@ -1,21 +1,22 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from '@project-serum/anchor'
 import {
-  findOrCreateAssociatedTokenAccount,
-  TOKEN_PROGRAM_ID,
   NINA_CLIENT_IDS,
-  wrapSol,
+  TOKEN_PROGRAM_ID,
+  findOrCreateAssociatedTokenAccount,
   isSol,
-} from "../utils";
+  wrapSol,
+} from '../utils'
+
 /**
  * @module Exchange
  */
 
 export default class Exchange {
   constructor({ http, program, provider, cluster }) {
-    this.http = http;
-    this.program = program;
-    this.provider = provider;
-    this.cluster = cluster;
+    this.http = http
+    this.program = program
+    this.provider = provider
+    this.cluster = cluster
   }
   /**
    * @function fetchAll
@@ -27,17 +28,17 @@ export default class Exchange {
    */
 
   async fetchAll(pagination = {}, withAccountData = false) {
-    const { limit, offset, sort } = pagination;
+    const { limit, offset, sort } = pagination
 
     return this.http.get(
-      "/exchanges",
+      '/exchanges',
       {
         limit: limit || 20,
         offset: offset || 0,
-        sort: sort || "desc",
+        sort: sort || 'desc',
       },
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -56,8 +57,8 @@ export default class Exchange {
     return this.http.get(
       `/exchanges/${publicKey}`,
       transactionId ? { transactionId } : undefined,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -71,33 +72,33 @@ export default class Exchange {
 
   async exchangeInit(amount, isSelling, releasePublicKey) {
     try {
-      let initializerSendingMint = null;
-      let initializerExpectedMint = null;
-      let expectedAmount = null;
-      let initializerAmount = null;
-      const release = new anchor.web3.PublicKey(releasePublicKey);
-      const releaseAccount = await this.program.account.release.fetch(release);
-      const { releaseMint } = releaseAccount;
+      let initializerSendingMint = null
+      let initializerExpectedMint = null
+      let expectedAmount = null
+      let initializerAmount = null
+      const release = new anchor.web3.PublicKey(releasePublicKey)
+      const releaseAccount = await this.program.account.release.fetch(release)
+      const { releaseMint } = releaseAccount
 
       if (isSelling) {
-        expectedAmount = new anchor.BN(amount);
-        initializerSendingMint = releaseMint;
-        initializerAmount = new anchor.BN(1);
-        initializerExpectedMint = releaseAccount.paymentMint;
+        expectedAmount = new anchor.BN(amount)
+        initializerSendingMint = releaseMint
+        initializerAmount = new anchor.BN(1)
+        initializerExpectedMint = releaseAccount.paymentMint
       } else {
-        expectedAmount = new anchor.BN(1);
-        initializerSendingMint = releaseAccount.paymentMint;
-        initializerAmount = new anchor.BN(amount);
-        initializerExpectedMint = releaseMint;
+        expectedAmount = new anchor.BN(1)
+        initializerSendingMint = releaseAccount.paymentMint
+        initializerAmount = new anchor.BN(amount)
+        initializerExpectedMint = releaseMint
       }
 
-      const exchange = anchor.web3.Keypair.generate();
+      const exchange = anchor.web3.Keypair.generate()
 
       const [exchangeSigner, bump] =
         await anchor.web3.PublicKey.findProgramAddress(
           [exchange.publicKey.toBuffer()],
-          this.program.programId
-        );
+          this.program.programId,
+        )
 
       const [initializerSendingTokenAccount, initializerSendingTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
@@ -106,8 +107,8 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          initializerSendingMint
-        );
+          initializerSendingMint,
+        )
 
       const [exchangeEscrowTokenAccount, exchangeEscrowTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
@@ -116,8 +117,8 @@ export default class Exchange {
           exchangeSigner,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          initializerSendingMint
-        );
+          initializerSendingMint,
+        )
 
       const [
         initializerExpectedTokenAccount,
@@ -128,11 +129,11 @@ export default class Exchange {
         this.provider.wallet.publicKey,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        initializerExpectedMint
-      );
+        initializerExpectedMint,
+      )
 
       const exchangeCreateIx =
-        await this.program.account.exchange.createInstruction(exchange);
+        await this.program.account.exchange.createInstruction(exchange)
 
       const accounts = {
         initializer: this.provider.wallet.publicKey,
@@ -148,73 +149,73 @@ export default class Exchange {
         systemProgram: anchor.web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      };
+      }
 
-      const signers = [exchange];
-      let instructions = [exchangeCreateIx, exchangeEscrowTokenAccountIx];
+      const signers = [exchange]
+      let instructions = [exchangeCreateIx, exchangeEscrowTokenAccountIx]
 
       if (initializerExpectedTokenAccountIx) {
-        instructions.push(initializerExpectedTokenAccountIx);
+        instructions.push(initializerExpectedTokenAccountIx)
       }
 
       if (initializerSendingTokenAccountIx) {
-        instructions.push(initializerSendingTokenAccountIx);
+        instructions.push(initializerSendingTokenAccountIx)
       }
 
       if (isSol(releaseAccount.paymentMint) && !isSelling) {
         const [wrappedSolAccount, wrappedSolInstructions] = await wrapSol(
           this.provider,
           initializerAmount,
-          new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol)
-        );
+          new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
+        )
 
         if (!instructions) {
-          instructions = [...wrappedSolInstructions];
+          instructions = [...wrappedSolInstructions]
         } else {
-          instructions.push(...wrappedSolInstructions);
+          instructions.push(...wrappedSolInstructions)
         }
 
-        accounts.initializerSendingTokenAccount = wrappedSolAccount;
+        accounts.initializerSendingTokenAccount = wrappedSolAccount
       }
 
       const config = {
         expectedAmount,
         initializerAmount,
         isSelling,
-      };
+      }
 
       const tx = await this.program.methods
         .exchangeInit(config, bump)
         .accounts(accounts)
         .preInstructions(instructions)
         .signers(signers)
-        .transaction();
+        .transaction()
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
-      tx.feePayer = this.provider.wallet.publicKey;
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
       for await (const signer of signers) {
-        tx.partialSign(signer);
+        tx.partialSign(signer)
       }
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await this.provider.connection.getParsedTransaction(txid, "confirmed");
-      const exchangeResult = await fetch(exchange.publicKey, true, txid);
+      await this.provider.connection.getParsedTransaction(txid, 'confirmed')
+      const exchangeResult = await fetch(exchange.publicKey, true, txid)
 
       return {
         exchange: exchangeResult,
-      };
+      }
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
       return {
         error,
-      };
+      }
     }
   }
 
@@ -234,20 +235,18 @@ export default class Exchange {
     exchangePublicKey,
     isSelling,
     expectedAmount,
-    releasePublicKey
+    releasePublicKey,
   ) {
     try {
-      releasePublicKey = new anchor.web3.PublicKey(releasePublicKey);
+      releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
-      const release = await this.program.account.release.fetch(
-        releasePublicKey
-      );
+      const release = await this.program.account.release.fetch(releasePublicKey)
 
-      exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey);
+      exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey)
 
       const exchangeAccount = await this.program.account.exchange.fetch(
-        exchangePublicKey
-      );
+        exchangePublicKey,
+      )
 
       const [takerSendingTokenAccount, takerSendingTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
@@ -256,8 +255,8 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          exchangeAccount.initializerExpectedMint
-        );
+          exchangeAccount.initializerExpectedMint,
+        )
 
       const [takerExpectedTokenAccount, takerExpectedTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
@@ -266,8 +265,8 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          exchangeAccount.initializerSendingMint
-        );
+          exchangeAccount.initializerSendingMint,
+        )
 
       const [
         initializerExpectedTokenAccount,
@@ -278,17 +277,17 @@ export default class Exchange {
         exchangeAccount.initializer,
         anchor.web3.SystemProgram.programId,
         anchor.web3.SYSVAR_RENT_PUBKEY,
-        exchangeAccount.initializerExpectedMint
-      );
+        exchangeAccount.initializerExpectedMint,
+      )
 
-      const exchangeHistory = anchor.web3.Keypair.generate();
+      const exchangeHistory = anchor.web3.Keypair.generate()
 
       const createExchangeHistoryIx =
         await this.program.account.exchangeHistory.createInstruction(
-          exchangeHistory
-        );
+          exchangeHistory,
+        )
 
-      const instructions = [createExchangeHistoryIx];
+      const instructions = [createExchangeHistoryIx]
 
       const accounts = {
         initializer: exchangeAccount.initializer,
@@ -305,29 +304,29 @@ export default class Exchange {
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      };
+      }
 
       if (takerSendingTokenAccountIx) {
-        instructions.push(takerSendingTokenAccountIx);
+        instructions.push(takerSendingTokenAccountIx)
       }
 
       if (takerExpectedTokenAccountIx) {
-        instructions.push(takerExpectedTokenAccountIx);
+        instructions.push(takerExpectedTokenAccountIx)
       }
 
       if (initializerExpectedTokenAccountIx) {
-        instructions.push(initializerExpectedTokenAccountIx);
+        instructions.push(initializerExpectedTokenAccountIx)
       }
 
       if (isSol(release.paymentMint) && isSelling) {
         const [wrappedSolAccount, wrappedSolInstructions] = await wrapSol(
           this.provider,
           expectedAmount,
-          release.paymentMint
-        );
+          release.paymentMint,
+        )
 
-        instructions.push(...wrappedSolInstructions);
-        accounts.takerSendingTokenAccount = wrappedSolAccount;
+        instructions.push(...wrappedSolInstructions)
+        accounts.takerSendingTokenAccount = wrappedSolAccount
       }
 
       const params = {
@@ -335,40 +334,40 @@ export default class Exchange {
         initializerAmount: exchangeAccount.initializerAmount,
         resalePercentage: release.resalePercentage,
         datetime: new anchor.BN(Date.now() / 1000),
-      };
+      }
 
       const tx = await this.program.methods
         .exchangeAccept(params)
         .accounts(accounts)
         .preInstructions(instructions)
         .signers([exchangeHistory])
-        .transaction();
+        .transaction()
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
-      tx.feePayer = this.provider.wallet.publicKey;
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
       for await (const signer of [exchangeHistory]) {
-        tx.partialSign(signer);
+        tx.partialSign(signer)
       }
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await this.provider.connection.getParsedTransaction(txid, "finalized");
-      await fetch(exchangePublicKey.toBase58());
+      await this.provider.connection.getParsedTransaction(txid, 'finalized')
+      await fetch(exchangePublicKey.toBase58())
 
       return {
         exchangePublicKey: exchangePublicKey.toBase58(),
-      };
+      }
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
       return {
         error,
-      };
+      }
     }
   }
 
@@ -382,10 +381,10 @@ export default class Exchange {
 
   async exchangeCancel(exchangePublicKey) {
     try {
-      exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey);
+      exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey)
       const exchange = await this.program.account.exchange.fetch(
-        exchangePublicKey
-      );
+        exchangePublicKey,
+      )
 
       const [initializerReturnTokenAccount, initializerReturnTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
@@ -394,20 +393,20 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          exchange.initializerSendingMint
-        );
+          exchange.initializerSendingMint,
+        )
 
-      let instructions;
+      let instructions
 
       if (initializerReturnTokenAccountIx) {
-        instructions.push(initializerReturnTokenAccountIx);
+        instructions.push(initializerReturnTokenAccountIx)
       }
 
-      let tx;
+      let tx
 
       const amount = exchange.isSelling
         ? new anchor.BN(1)
-        : exchange.initializerAmount;
+        : exchange.initializerAmount
 
       if (isSol(exchange.initializerSendingMint, this.cluster)) {
         tx = await this.program.methods
@@ -422,7 +421,7 @@ export default class Exchange {
           })
           .preInstructions(instructions || [])
           .signers([])
-          .transaction();
+          .transaction()
       } else {
         tx = await this.program.methods
           .exchangeCancel(amount)
@@ -436,31 +435,31 @@ export default class Exchange {
           })
           .preInstructions(instructions || [])
           .signers([])
-          .transaction();
+          .transaction()
       }
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
-      tx.feePayer = this.provider.wallet.publicKey;
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await this.provider.connection.getParsedTransaction(txid, "confirmed");
-      await fetch(exchangePublicKey.toBase58());
+      await this.provider.connection.getParsedTransaction(txid, 'confirmed')
+      await fetch(exchangePublicKey.toBase58())
 
       return {
         exchangePublicKey: exchangePublicKey.toBase58(),
-      };
+      }
     } catch (error) {
-      console.error(error);
+      console.error(error)
 
       return {
         error,
-      };
+      }
     }
   }
 }

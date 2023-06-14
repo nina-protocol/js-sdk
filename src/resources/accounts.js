@@ -3,7 +3,7 @@
  * */
 export default class Account {
   constructor({ http }) {
-    this.http = http;
+    this.http = http
   }
 
   /**
@@ -14,13 +14,13 @@ export default class Account {
    * @returns {Array} an array of all of the Accounts on Nina.
    */
   async fetchAll(pagination = {}) {
-    const { limit, offset, sort } = pagination;
+    const { limit, offset, sort } = pagination
 
-    return this.http.get("/accounts", {
+    return this.http.get('/accounts', {
       limit: limit || 20,
       offset: offset || 0,
-      sort: sort || "desc",
-    });
+      sort: sort || 'desc',
+    })
   }
 
   /**
@@ -33,7 +33,7 @@ export default class Account {
    * @returns {Object} an object containing the Account's data.
    */
   async fetch(publicKey, withAccountData = false) {
-    return this.http.get(`/accounts/${publicKey}`, undefined, withAccountData);
+    return this.http.get(`/accounts/${publicKey}`, undefined, withAccountData)
   }
 
   /**
@@ -49,8 +49,8 @@ export default class Account {
     return this.http.get(
       `/accounts/${publicKey}/hubs`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -65,13 +65,13 @@ export default class Account {
   async fetchCollected(
     publicKey,
     withAccountData = false,
-    pagination = undefined
+    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/collected`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -86,13 +86,13 @@ export default class Account {
   async fetchPublished(
     publicKey,
     withAccountData = false,
-    pagination = undefined
+    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/published`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -108,8 +108,8 @@ export default class Account {
     return this.http.get(
       `/accounts/${publicKey}/posts`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -124,13 +124,13 @@ export default class Account {
   async fetchExchanges(
     publicKey,
     withAccountData = false,
-    pagination = undefined
+    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/exchanges`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -145,13 +145,13 @@ export default class Account {
   async fetchRevenueShares(
     publicKey,
     withAccountData = false,
-    pagination = undefined
+    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/revenueShares`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -166,13 +166,13 @@ export default class Account {
   async fetchSubscriptions(
     publicKey,
     withAccountData = false,
-    pagination = undefined
+    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/subscriptions`,
       pagination,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -184,6 +184,6 @@ export default class Account {
    * @returns {Array} an array of all of the Verifications for an Account.
    * */
   async fetchVerifications(publicKey, pagination = undefined) {
-    return this.http.get(`/accounts/${publicKey}/verifications`, pagination);
+    return this.http.get(`/accounts/${publicKey}/verifications`, pagination)
   }
 }

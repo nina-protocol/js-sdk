@@ -44,6 +44,7 @@
     "promise-retry": "^2.0.1"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.1.1",
     "clean-jsdoc-theme": "^4.1.7",
     "eslint": "^8.42.0",
     "eslint-plugin-zero-config": "^2.2.9",

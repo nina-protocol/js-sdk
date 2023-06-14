@@ -1,14 +1,14 @@
-import * as anchor from "@project-serum/anchor";
-import { getConfirmTransaction } from "../utils";
+import * as anchor from '@project-serum/anchor'
+import { getConfirmTransaction } from '../utils'
 
 /**
  * @module Subscription
  */
 export default class Subscription {
   constructor({ http, program, provider }) {
-    this.http = http;
-    this.program = program;
-    this.provider = provider;
+    this.http = http
+    this.program = program
+    this.provider = provider
   }
 
   /**
@@ -19,17 +19,17 @@ export default class Subscription {
    * @returns {Array} an array of all of the Subscriptions on Nina.
    */
   async fetchAll(pagination = {}, withAccountData = false) {
-    const { limit, offset, sort } = pagination;
+    const { limit, offset, sort } = pagination
 
     return this.http.get(
-      "/subscriptions",
+      '/subscriptions',
       {
         limit: limit || 20,
         offset: offset || 0,
-        sort: sort || "desc",
+        sort: sort || 'desc',
       },
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -44,8 +44,8 @@ export default class Subscription {
     return this.http.get(
       `/subscriptions/${publicKey}`,
       transactionId ? { transactionId } : undefined,
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -59,18 +59,18 @@ export default class Subscription {
 
   async subscriptionSubscribe(subscribeToAccount, hubHandle) {
     try {
-      subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount);
+      subscribeToAccount = new anchor.web3.PublicKey(subscribeToAccount)
 
       const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode("nina-subscription")),
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
           this.provider.wallet.publicKey.toBuffer(),
           subscribeToAccount.toBuffer(),
         ],
-        this.program.programId
-      );
+        this.program.programId,
+      )
 
-      let tx;
+      let tx
 
       if (hubHandle) {
         tx = await this.program.methods
@@ -82,7 +82,7 @@ export default class Subscription {
             to: subscribeToAccount,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
-          .transaction();
+          .transaction()
       } else {
         tx = await this.program.methods
           .subscriptionSubscribeAccount()
@@ -93,32 +93,32 @@ export default class Subscription {
             to: subscribeToAccount,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
-          .transaction();
+          .transaction()
       }
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
+      ).blockhash
 
-      tx.feePayer = this.provider.wallet.publicKey;
+      tx.feePayer = this.provider.wallet.publicKey
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await getConfirmTransaction(txid, this.provider.connection);
-      const subscriptionData = await fetch(subscription.toBase58(), txid);
+      await getConfirmTransaction(txid, this.provider.connection)
+      const subscriptionData = await fetch(subscription.toBase58(), txid)
 
       return {
         subscription: subscriptionData,
-      };
+      }
     } catch (error) {
-      console.warn(error);
+      console.warn(error)
 
       return {
         error,
-      };
+      }
     }
   }
   /**
@@ -131,16 +131,16 @@ export default class Subscription {
 
   async subscriptionUnsubscribe(unsubscribeAccount) {
     try {
-      unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount);
+      unsubscribeAccount = new anchor.web3.PublicKey(unsubscribeAccount)
 
       const [subscription] = await anchor.web3.PublicKey.findProgramAddress(
         [
-          Buffer.from(anchor.utils.bytes.utf8.encode("nina-subscription")),
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-subscription')),
           this.provider.wallet.publicKey.toBuffer(),
           unsubscribeAccount.toBuffer(),
         ],
-        this.program.programId
-      );
+        this.program.programId,
+      )
 
       const tx = await this.program.methods
         .subscriptionUnsubscribe()
@@ -151,31 +151,31 @@ export default class Subscription {
           to: unsubscribeAccount,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
-        .transaction();
+        .transaction()
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
-      tx.feePayer = this.provider.wallet.publicKey;
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await getConfirmTransaction(txid, this.provider.connection);
+      await getConfirmTransaction(txid, this.provider.connection)
 
-      const subscriptionData = await fetch(subscription.toBase58(), txid);
+      const subscriptionData = await fetch(subscription.toBase58(), txid)
 
       return {
         subscription: subscriptionData,
-      };
+      }
     } catch (error) {
-      console.warn(error);
+      console.warn(error)
 
       return {
         error,
-      };
+      }
     }
   }
 }

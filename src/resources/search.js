@@ -1,4 +1,4 @@
-import NinaClient from "../client";
+import NinaClient from '../client'
 
 /**
  * @module Search
@@ -15,13 +15,13 @@ import NinaClient from "../client";
 
 const withQuery = async (query, withAccountData = false) =>
   NinaClient.post(
-    "/search",
+    '/search',
     {
       query,
     },
-    withAccountData
-  );
+    withAccountData,
+  )
 
 export default {
   withQuery,
-};
+}

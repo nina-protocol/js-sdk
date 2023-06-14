@@ -1,33 +1,33 @@
-import * as anchor from "@project-serum/anchor";
-import axios from "axios";
-import { getAccount } from "@solana/spl-token";
+import * as anchor from '@project-serum/anchor'
+import { getAccount } from '@solana/spl-token'
+import axios from 'axios'
 import {
   NINA_CLIENT_IDS,
   findOrCreateAssociatedTokenAccount,
-  uiToNative,
   getConfirmTransaction,
-} from "../utils";
+  uiToNative,
+} from '../utils'
 
 export default class Wallet {
   constructor({ provider, cluster }) {
-    this.cluster = cluster;
-    this.provider = provider;
+    this.cluster = cluster
+    this.provider = provider
   }
 
   async getSolPrice() {
     try {
       const priceResult = await axios.get(
-        `https://price.jup.ag/v4/price?ids=SOL`
-      );
+        `https://price.jup.ag/v4/price?ids=SOL`,
+      )
 
-      return priceResult.data.data.SOL.price;
+      return priceResult.data.data.SOL.price
     } catch (error) {
-      return error;
+      return error
     }
   }
 
   async getUsdcBalanceForPublicKey(publicKey) {
-    const usdc = 0;
+    const usdc = 0
 
     if (publicKey) {
       try {
@@ -38,53 +38,53 @@ export default class Wallet {
             new anchor.web3.PublicKey(publicKey),
             anchor.web3.SystemProgram.programId,
             anchor.web3.SYSVAR_RENT_PUBKEY,
-            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
-          );
+            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
+          )
 
         if (usdcTokenAccountPubkey) {
           const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
-              usdcTokenAccountPubkey
-            );
+              usdcTokenAccountPubkey,
+            )
 
-          return usdcTokenAccount.value.uiAmount.toFixed(4);
+          return usdcTokenAccount.value.uiAmount.toFixed(4)
         }
 
-        return 0;
+        return 0
       } catch (error) {
-        console.warn("error getting usdc balance");
+        console.warn('error getting usdc balance')
       }
     } else {
-      return 0;
+      return 0
     }
 
-    return usdc;
+    return usdc
   }
 
   async getSolBalanceForPublicKey(publicKey) {
     const solUsdcBalanceResult = await this.provider.connection.getBalance(
-      new anchor.web3.PublicKey(publicKey)
-    );
+      new anchor.web3.PublicKey(publicKey),
+    )
 
-    return solUsdcBalanceResult;
+    return solUsdcBalanceResult
   }
 
   async sendUsdc(amount, destination) {
     try {
       const destinationInfo = await this.provider.connection.getAccountInfo(
-        new anchor.web3.PublicKey(destination)
-      );
+        new anchor.web3.PublicKey(destination),
+      )
 
-      let isSystemAccount = false;
-      let isUsdcTokenAccount = false;
-      let toUsdcTokenAccount = null;
-      let toUsdcTokenAccountIx = null;
+      let isSystemAccount = false
+      let isUsdcTokenAccount = false
+      let toUsdcTokenAccount = null
+      let toUsdcTokenAccountIx = null
 
       if (
         destinationInfo.owner.toBase58() ===
         anchor.web3.SystemProgram.programId.toBase58()
       ) {
-        isSystemAccount = true;
+        isSystemAccount = true
       }
 
       if (!isSystemAccount) {
@@ -94,22 +94,22 @@ export default class Wallet {
         ) {
           const tokenAccount = await getAccount(
             this.provider.connection,
-            new anchor.web3.PublicKey(destination)
-          );
+            new anchor.web3.PublicKey(destination),
+          )
 
           if (
             tokenAccount.mint.toBase58() ===
             NINA_CLIENT_IDS[this.cluster].mints.usdc
           ) {
-            isUsdcTokenAccount = true;
+            isUsdcTokenAccount = true
           }
         }
       }
 
       if (!isSystemAccount && !isUsdcTokenAccount) {
         throw new Error(
-          "Destination is not a valid Solana address or USDC account"
-        );
+          'Destination is not a valid Solana address or USDC account',
+        )
       }
 
       const [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
@@ -119,8 +119,8 @@ export default class Wallet {
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
-          new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
-        );
+          new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
+        )
 
       if (isSystemAccount) {
         const [_toUsdcTokenAccount, _toUsdcTokenAccountIx] =
@@ -130,34 +130,34 @@ export default class Wallet {
             new anchor.web3.PublicKey(destination),
             anchor.web3.SystemProgram.programId,
             anchor.web3.SYSVAR_RENT_PUBKEY,
-            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc)
-          );
+            new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
+          )
 
-        toUsdcTokenAccount = _toUsdcTokenAccount;
-        toUsdcTokenAccountIx = _toUsdcTokenAccountIx;
+        toUsdcTokenAccount = _toUsdcTokenAccount
+        toUsdcTokenAccountIx = _toUsdcTokenAccountIx
       } else {
-        toUsdcTokenAccount = new anchor.web3.PublicKey(destination);
+        toUsdcTokenAccount = new anchor.web3.PublicKey(destination)
       }
 
       const tokenProgram = anchor.Spl.token({
         provider: this.provider,
-      });
+      })
 
-      const instructions = [];
+      const instructions = []
 
       if (fromUsdcTokenAccountIx) {
-        instructions.push(fromUsdcTokenAccountIx);
+        instructions.push(fromUsdcTokenAccountIx)
       }
 
       if (toUsdcTokenAccountIx) {
-        instructions.push(toUsdcTokenAccountIx);
+        instructions.push(toUsdcTokenAccountIx)
       }
 
       const tx = await tokenProgram.methods
         .transfer(
           new anchor.BN(
-            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc)
-          )
+            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc),
+          ),
         )
         .accounts({
           source: fromUsdcTokenAccount,
@@ -165,49 +165,49 @@ export default class Wallet {
           authority: this.provider.wallet.publicKey,
         })
         .preInstructions(instructions)
-        .transaction();
+        .transaction()
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
-      ).blockhash;
-      tx.feePayer = this.provider.wallet.publicKey;
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
 
       const txid = await this.provider.wallet.sendTransaction(
         tx,
-        this.provider.connection
-      );
+        this.provider.connection,
+      )
 
-      await getConfirmTransaction(txid, this.provider.connection);
+      await getConfirmTransaction(txid, this.provider.connection)
 
       return {
         success: true,
         txid,
-      };
+      }
     } catch (error) {
       return {
         success: false,
         error,
-      };
+      }
     }
   }
 
   async getAmountHeld(release, accountPublicKey) {
-    let amount = 0;
+    let amount = 0
 
     const tokenAccounts =
       await this.provider.connection.getParsedTokenAccountsByOwner(
         new anchor.web3.PublicKey(accountPublicKey),
-        { programId: anchor.utils.token.TOKEN_PROGRAM_ID.toBase58() }
-      );
+        { programId: anchor.utils.token.TOKEN_PROGRAM_ID.toBase58() },
+      )
 
     tokenAccounts.value.forEach((value) => {
-      const account = value.account.data.parsed.info;
+      const account = value.account.data.parsed.info
 
       if (account.mint === release.releaseMint) {
-        amount = account.tokenAmount.uiAmount;
+        amount = account.tokenAmount.uiAmount
       }
-    });
+    })
 
-    return amount;
+    return amount
   }
 }

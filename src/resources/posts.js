@@ -3,9 +3,9 @@
  */
 export default class Post {
   constructor({ http, provider, program }) {
-    this.http = http;
-    this.provider = provider;
-    this.program = program;
+    this.http = http
+    this.provider = provider
+    this.program = program
   }
 
   /**
@@ -17,17 +17,17 @@ export default class Post {
    * @returns {Array} an array of all of the Posts on Nina.
    */
   async fetchAll(pagination = {}, withAccountData = false) {
-    const { limit, offset, sort } = pagination;
+    const { limit, offset, sort } = pagination
 
     return this.http.get(
-      "/posts",
+      '/posts',
       {
         limit: limit || 20,
         offset: offset || 0,
-        sort: sort || "desc",
+        sort: sort || 'desc',
       },
-      withAccountData
-    );
+      withAccountData,
+    )
   }
 
   /**
@@ -40,6 +40,6 @@ export default class Post {
    * @returns {Object} an object containing the Post's data.
    */
   async fetch(publicKey, pagination, withAccountData = false) {
-    return this.http.get(`/posts/${publicKey}`, pagination, withAccountData);
+    return this.http.get(`/posts/${publicKey}`, pagination, withAccountData)
   }
 }
