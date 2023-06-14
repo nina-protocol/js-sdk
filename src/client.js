@@ -6,6 +6,7 @@ import Exchange from './resources/exchanges';
 import Hub from './resources/hubs';
 import Post from './resources/posts';
 import Subscription from './resources/subscriptions';
+import Wallet from './resources/wallet';
 
 import { NINA_CLIENT_IDS } from './utils';
 import Http from './http';
@@ -27,6 +28,7 @@ class NinaClient {
     this.Post = null;
     this.Release = null;
     this.Subscription = null;
+    this.Wallet = null;
   }
 
   /**
@@ -59,6 +61,7 @@ class NinaClient {
       program: this.program,
       apiKey: this.apiKey,
     });
+    
     const config = {
       http,
       program: this.program,
@@ -70,6 +73,7 @@ class NinaClient {
     this.Post = new Post(config);
     this.Release = new Release(config);
     this.Subscription = new Subscription(config);
+    this.Wallet = new Wallet(config);
   }
 }
 export default new NinaClient();

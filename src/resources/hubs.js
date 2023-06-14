@@ -223,7 +223,7 @@ export default class Hub {
           hubCollaborator,
           hubCreditMint: HUB_CREDIT_MINT,
           systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].programs.token,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .preInstructions([usdcVaultIx, wrappedSolVaultIx])
@@ -681,7 +681,7 @@ export default class Hub {
           withdrawTarget,
           withdrawDestination,
           withdrawMint: USDC_MINT,
-          tokenProgram: NINA_CLIENT_IDS[provess.env.SOLANA_CLUSTER].programs.token,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         })
         .transaction();
       tx.recentBlockhash = (await this.provider.connection.getRecentBlockhash()).blockhash;

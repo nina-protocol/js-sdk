@@ -506,7 +506,7 @@ export default class Release {
           authorityTokenAccount,
           paymentMint,
           royaltyTokenAccount,
-          tokenProgram: new anchor.web3.PublicKey(this.ids.programs.token),
+          tokenProgram: new anchor.web3.PublicKey(anchor.utils.token.TOKEN_PROGRAM_ID),
           metadata,
           metadataProgram,
           systemProgram: anchor.web3.SystemProgram.programId,
@@ -879,7 +879,7 @@ export default class Release {
           hubRelease,
           hubSigner: hub.hubSigner,
           hubWallet,
-          tokenProgram: NinaClient.ids.programs.token,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         })
         .transaction();
 
