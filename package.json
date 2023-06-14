@@ -26,7 +26,8 @@
     "watch:doc-output": "yarn livereload out",
     "watch:docs": "yarn run watch:doc-output & npm run watch:doc-src",
     "serve:docs": "cd docs && python3 -m http.server",
-    "docs:dev": "yarn run watch:docs & yarn run serve:docs"
+    "docs:dev": "yarn run watch:docs & yarn run serve:docs",
+    "buildAndPublish": "npm run build & npm publish"
   },
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
