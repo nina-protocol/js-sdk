@@ -6,6 +6,7 @@ import Hub from './resources/hubs'
 import Post from './resources/posts'
 import Release from './resources/releases'
 import Subscription from './resources/subscriptions'
+import Uploader from './resources/uploader'
 import Wallet from './resources/wallet'
 import utils from './utils'
 
@@ -18,7 +19,6 @@ class NinaClient {
     this.cluster = null
     this.programId = null
     this.apiKey = null
-    this.ids = null
     this.cluster = 'mainnet'
 
     this.Account = null
@@ -27,6 +27,7 @@ class NinaClient {
     this.Post = null
     this.Release = null
     this.Subscription = null
+    this.Uploader = null
     this.Wallet = null
   }
 
@@ -59,7 +60,6 @@ class NinaClient {
       preflightCommitment: 'processed',
     })
     this.program = await anchor.Program.at(this.programId, this.provider)
-    this.ids = utils.NINA_CLIENT_IDS[process.env.SOLANA_CLUSTER]
 
     const http = new Http({
       endpoint: this.endpoint,
@@ -80,6 +80,7 @@ class NinaClient {
     this.Post = new Post(config)
     this.Release = new Release(config)
     this.Subscription = new Subscription(config)
+    this.Uploader = new Uploader(config)
     this.Wallet = new Wallet(config)
   }
 

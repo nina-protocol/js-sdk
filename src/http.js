@@ -20,7 +20,6 @@ export default class Http {
     }
 
     const queryString = query ? `?${new URLSearchParams(query).toString()}` : ''
-
     let response = await axios.get(`${this.endpoint}${url}${queryString}`)
 
     if (withAccountData) {

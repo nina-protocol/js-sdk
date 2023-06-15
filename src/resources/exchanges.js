@@ -241,7 +241,6 @@ export default class Exchange {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
       const release = await this.program.account.release.fetch(releasePublicKey)
-
       exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey)
 
       const exchangeAccount = await this.program.account.exchange.fetch(
@@ -382,6 +381,7 @@ export default class Exchange {
   async exchangeCancel(exchangePublicKey) {
     try {
       exchangePublicKey = new anchor.web3.PublicKey(exchangePublicKey)
+
       const exchange = await this.program.account.exchange.fetch(
         exchangePublicKey,
       )

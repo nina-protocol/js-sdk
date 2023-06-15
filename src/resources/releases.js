@@ -274,28 +274,6 @@ export default class Release {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
       const release = await this.program.account.release.fetch(releasePublicKey)
-
-      // if (release.price.toNumber === 0) {
-      //   const message = new TextEncoder().encode(releasePublicKey.toBase58());
-      //   const messageBase64 = encodeBase64(message);
-      //   const signature = await provider.wallet.sign(message);
-      //   const signatureBase64 = encodeBase64(signature);
-
-      //   const response = await axios.get(
-      //     `${
-      //       process.env.NINA_IDENTITY_ENDPOINT
-      //     }/collect/${releasePublicKey.toBase58()}?message=${encodeURIComponent(
-      //       messageBase64
-      //     )}&signature=${encodeURIComponent(
-      //       signatureBase64
-      //     )}&publicKey=${encodeURIComponent(
-      //       provider.wallet.publicKey.toBase58()
-      //     )}`
-      //   );
-
-      //   return response.data.txid;
-      // }
-
       let [payerTokenAccount] = await findOrCreateAssociatedTokenAccount(
         provider.connection,
         provider.wallet.publicKey,

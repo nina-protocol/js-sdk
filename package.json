@@ -41,6 +41,7 @@
     "axios": "^0.27.2",
     "crypto-js": "^4.1.1",
     "md5": "^2.3.0",
+    "promise": "^8.3.0",
     "promise-retry": "^2.0.1"
   },
   "devDependencies": {
