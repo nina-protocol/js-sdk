@@ -3,6 +3,7 @@ import axios from 'axios'
 import CryptoJS from 'crypto-js'
 import Promise from 'promise'
 import {
+  MAX_U64,
   NINA_CLIENT_IDS,
   createMintInstructions,
   decodeNonEncryptedByteArray,
@@ -14,8 +15,6 @@ import {
   wrapSol,
 } from '../utils'
 import Uploader from './uploader'
-
-const MAX_INT = '18446744073709551615'
 
 /**
  * @module Release
@@ -539,7 +538,7 @@ export default class Release {
       }
 
       const now = new Date()
-      const editionAmount = isOpen ? MAX_INT : amount
+      const editionAmount = isOpen ? MAX_U64 : amount
 
       const config = {
         amountTotalSupply: new anchor.BN(editionAmount),

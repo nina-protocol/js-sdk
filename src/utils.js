@@ -352,17 +352,3 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
 
   readNext()
 }
-
-export default {
-  NINA_CLIENT_IDS,
-  decimalsForMint,
-  nativeToUi,
-  uiToNative,
-  decodeNonEncryptedByteArray,
-  createMintInstructions,
-  isUsdc,
-  isSol,
-  nativeToUiString,
-  MAX_U64,
-  wrapSol,
-}
