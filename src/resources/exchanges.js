@@ -1,7 +1,6 @@
 import * as anchor from '@project-serum/anchor'
 import {
   NINA_CLIENT_IDS,
-  TOKEN_PROGRAM_ID,
   findOrCreateAssociatedTokenAccount,
   isSol,
   wrapSol,
@@ -147,7 +146,7 @@ export default class Exchange {
         exchange: exchange.publicKey,
         release,
         systemProgram: anchor.web3.SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       }
 
@@ -300,7 +299,7 @@ export default class Exchange {
         exchangeHistory: exchangeHistory.publicKey,
         release: releasePublicKey,
         royaltyTokenAccount: release.royaltyTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       }
@@ -417,7 +416,7 @@ export default class Exchange {
             exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
             exchangeSigner: exchange.exchangeSigner,
             exchange: exchangePublicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
+            tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
           })
           .preInstructions(instructions || [])
           .signers([])
@@ -431,7 +430,7 @@ export default class Exchange {
             exchangeEscrowTokenAccount: exchange.exchangeEscrowTokenAccount,
             exchangeSigner: exchange.exchangeSigner,
             exchange: exchangePublicKey,
-            tokenProgram: TOKEN_PROGRAM_ID,
+            tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
           })
           .preInstructions(instructions || [])
           .signers([])

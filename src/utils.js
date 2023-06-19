@@ -9,16 +9,6 @@ const SOL_DECIMAL_AMOUNT = 9
 
 export const MAX_U64 = '18446744073709551615'
 
-export const MAX_AUDIO_FILE_UPLOAD_SIZE = 500
-
-export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
-  anchor.utils.token.TOKEN_PROGRAM_ID.toString(),
-)
-
-const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(
-  anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString(),
-)
-
 export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
   HUB_ADD_RELEASE: 'HUB_ADD_RELEASE',
@@ -107,10 +97,10 @@ export const findAssociatedTokenAddress = async (
     await anchor.web3.PublicKey.findProgramAddress(
       [
         ownerAddress.toBuffer(),
-        TOKEN_PROGRAM_ID.toBuffer(),
+        anchor.utils.token.TOKEN_PROGRAM_ID.toBuffer(),
         tokenMintAddress.toBuffer(),
       ],
-      ASSOCIATED_TOKEN_PROGRAM_ID,
+      anchor.utils.token.ASSOCIATED_PROGRAM_ID,
     )
   )[0]
 
@@ -164,7 +154,7 @@ export const findOrCreateAssociatedTokenAccount = async (
         isWritable: false,
       },
       {
-        pubkey: TOKEN_PROGRAM_ID,
+        pubkey: anchor.utils.token.TOKEN_PROGRAM_ID,
         isSigner: false,
         isWritable: false,
       },
@@ -177,7 +167,7 @@ export const findOrCreateAssociatedTokenAccount = async (
 
     const ix = new anchor.web3.TransactionInstruction({
       keys,
-      programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+      programId: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
       data: Buffer.from([]),
     })
 
@@ -321,6 +311,46 @@ export const wrapSol = async (provider, amount, mint, publicKey) => {
   wrappedSolInstructions.push(wrappedSolTransferIx, syncNativeIx)
 
   return [wrappedSolAccount, wrappedSolInstructions]
+}
+
+export const readFileChunked = (file, chunkCallback, endCallback) => {
+  const chunkSize = 1024 * 1024 * 10 // 10MB
+  const fileSize = file.size
+  let offset = 0
+
+  const reader = new FileReader()
+
+  const readNext = () => {
+    const slice = file.slice(offset, offset + chunkSize)
+    reader.readAsBinaryString(slice)
+  }
+
+  reader.onload = () => {
+    if (reader.error) {
+      console.warn(reader.error)
+      endCallback(reader.error || {})
+
+      return
+    }
+
+    offset += reader.result.length
+    chunkCallback(reader.result, offset, fileSize)
+
+    if (offset >= fileSize) {
+      endCallback()
+
+      return
+    }
+
+    readNext()
+  }
+
+  reader.onerror = (err) => {
+    console.warn(err)
+    endCallback(err || {})
+  }
+
+  readNext()
 }
 
 export default {

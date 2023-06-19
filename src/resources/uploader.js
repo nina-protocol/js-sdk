@@ -2,17 +2,31 @@ import Bundlr from '@bundlr-network/client/build/web'
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 
-export default class Uploader {
-  constructor({ provider, endpoint, cluster }) {
+export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
+
+export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
+  MAX_AUDIO_FILE_UPLOAD_SIZE_MB * 1024 * 1024
+
+export const MAX_IMAGE_FILE_UPLOAD_SIZE_MB = 25
+
+export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
+  MAX_IMAGE_FILE_UPLOAD_SIZE_MB * 1024 * 1024
+
+class Uploader {
+  constructor() {
     this.bundlrEndpoint = 'https://node1.bundlr.network'
-    this.provider = provider
-    this.endpoint = endpoint
+    this.provider = null
+    this.endpoint = null
     this.bundlr = null
-    this.cluster = cluster
+    this.cluster = null
   }
 
-  async init() {
+  async init({ provider, endpoint, cluster }) {
     try {
+      this.provider = provider
+      this.endpoint = endpoint
+      this.cluster = cluster
+
       const bundlrInstance = new Bundlr.WebBundlr(
         this.bundlrEndpoint,
         'solana',
@@ -132,4 +146,64 @@ export default class Uploader {
       return error
     }
   }
+
+  async hasBalanceForFiles(files) {
+    try {
+      const pricePerMb = await this.getPricePerMb()
+      const totalSize = files.reduce((acc, file) => acc + file.size, 0)
+      const totalCost = totalSize * pricePerMb
+
+      const balance = await this.getBalanceForPublicKey(
+        this.provider.wallet.publicKey.toString(),
+      )
+
+      return balance >= totalCost
+    } catch (error) {
+      console.warn('Bundlr hasBalanceForFiles error: ', error)
+
+      return error
+    }
+  }
+
+  isValidAudioFile(file) {
+    return (
+      file.type === 'audio/mpeg' &&
+      file.size <= MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES
+    )
+  }
+
+  isValidArtworkFile(file) {
+    return (
+      (file.type === 'image/jpeg' ||
+        file.type === 'image/png' ||
+        file.type === 'image/gif') &&
+      file.size <= MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES
+    )
+  }
+
+  isValidAudioFiles(files) {
+    return files.every((file) => this.isValidAudioFile(file))
+  }
+
+  async isValidMd5Digest(hash) {
+    try {
+      if (this.cluster === 'devnet') {
+        return true
+      }
+
+      const path = `${this.endpoint}/hash/${hash}`
+      const response = await fetch(path)
+      const { release } = await response.json()
+
+      if (release) {
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.warn(error)
+    }
+  }
 }
+
+export default new Uploader()
