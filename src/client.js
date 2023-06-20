@@ -6,9 +6,16 @@ import Hub from './resources/hubs'
 import Post from './resources/posts'
 import Release from './resources/releases'
 import Subscription from './resources/subscriptions'
-import Uploader from './resources/uploader'
+// import Uploader from './resources/uploader'
 import Wallet from './resources/wallet'
-import utils from './utils'
+import {
+  isSol,
+  isUsdc,
+  nativeToUiString,
+  decimalsForMint,
+  nativeToUi,
+  uiToNative,
+} from './utils'
 
 /** Class Representing the Nina Client */
 class NinaClient {
@@ -28,7 +35,7 @@ class NinaClient {
     this.Post = null
     this.Release = null
     this.Subscription = null
-    this.Uploader = null
+    // this.Uploader = null
     this.Wallet = null
   }
 
@@ -55,8 +62,8 @@ class NinaClient {
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
     this.cluster = cluster || 'mainnet'
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4'
-    this.connection = connection || new anchor.web3.Connection(this.cluster)
-    this.provider = new anchor.AnchorProvider(connection, wallet, {
+    this.connection = connection || new anchor.web3.Connection(this.rpcEndpoint)
+    this.provider = new anchor.AnchorProvider(this.connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
@@ -81,16 +88,16 @@ class NinaClient {
     this.Post = new Post(config)
     this.Release = new Release(config)
     this.Subscription = new Subscription(config)
-    this.Uploader = new Uploader(config)
+    // this.Uploader = new Uploader(config)
     this.Wallet = new Wallet(config)
   }
 
   static isSol(mint) {
-    return utils.isSol(mint, this.cluster)
+    return isSol(mint, this.cluster)
   }
 
   static isUsdc(mint) {
-    return utils.isUsdc(mint, this.cluster)
+    return isUsdc(mint, this.cluster)
   }
 
   static nativeToUiString(
@@ -99,7 +106,7 @@ class NinaClient {
     decimalOverride = false,
     showCurrency = true,
   ) {
-    return utils.nativeToUiString(
+    return nativeToUiString(
       amount,
       mint,
       this.cluster,
@@ -109,15 +116,15 @@ class NinaClient {
   }
 
   static decimalsForMint(mint) {
-    return utils.decimalsForMint(mint, this.cluster)
+    return decimalsForMint(mint, this.cluster)
   }
 
   static nativeToUi(amount, mint) {
-    return utils.nativeToUi(amount, mint, this.cluster)
+    return nativeToUi(amount, mint, this.cluster)
   }
 
   static uiToNative(amount, mint) {
-    return utils.uiToNative(amount, mint, this.cluster)
+    return uiToNative(amount, mint, this.cluster)
   }
 }
 

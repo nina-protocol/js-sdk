@@ -12,7 +12,7 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_MB = 25
 export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
   MAX_IMAGE_FILE_UPLOAD_SIZE_MB * 1024 * 1024
 
-class Uploader {
+export default class Uploader {
   constructor() {
     this.bundlrEndpoint = 'https://node1.bundlr.network'
     this.provider = null
@@ -205,5 +205,3 @@ class Uploader {
     }
   }
 }
-
-export default new Uploader()
