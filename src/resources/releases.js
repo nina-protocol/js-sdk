@@ -247,7 +247,7 @@ export default class Release {
           this.http.endpoint
         }/accounts/${this.provider.wallet.publicKey.toBase58()}/collected?txId=${txid}`,
       )
-      const newRelease = await fetch(releasePublicKey.toBase58(), true)
+      const newRelease = await this.fetch(releasePublicKey.toBase58(), true)
 
       return {
         release: newRelease,
@@ -271,7 +271,7 @@ export default class Release {
    * @returns {String} the Release that was Purchased.
    */
 
-  async releasePurchase(releasePublicKey) {
+  async purchase(releasePublicKey, hubPublicKey = undefined) {
     try {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
@@ -316,21 +316,79 @@ export default class Release {
         payerTokenAccount = wrappedSolAccount
       }
 
-      const tx = await this.program.methods
-        .releasePurchase(release.price)
-        .accounts({
-          payer: this.provider.wallet.publicKey,
-          receiver: this.provider.wallet.publicKey,
-          release: releasePublicKey,
-          releaseSigner: release.releaseSigner,
-          payerTokenAccount,
-          receiverReleaseTokenAccount,
-          royaltyTokenAccount: release.royaltyTokenAccount,
-          releaseMint: release.releaseMint,
-          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
-        })
-        .preInstructions(instructions || [])
-        .transaction()
+      const accounts = {
+        payer: this.provider.wallet.publicKey,
+        receiver: this.provider.wallet.publicKey,
+        release: releasePublicKey,
+        releaseSigner: release.releaseSigner,
+        payerTokenAccount,
+        receiverReleaseTokenAccount,
+        royaltyTokenAccount: release.royaltyTokenAccount,
+        releaseMint: release.releaseMint,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      }
+
+      let tx
+
+      if (hubPublicKey) {
+        const hub = await this.program.account.hub.fetch(hubPublicKey)
+
+        const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+            hubPublicKey.toBuffer(),
+            releasePublicKey.toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+            hubPublicKey.toBuffer(),
+            releasePublicKey.toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
+            hubPublicKey.toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubWallet] = await findOrCreateAssociatedTokenAccount(
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          hubSigner,
+          anchor.web3.SystemProgram.programId,
+          anchor.web3.SYSVAR_RENT_PUBKEY,
+          release.paymentMint,
+        )
+
+        accounts.hub = new anchor.web3.PublicKey(hubPublicKey)
+        accounts.hubRelease = hubRelease
+        accounts.hubContent = hubContent
+        accounts.hubSigner = hubSigner
+        accounts.hubWallet = hubWallet
+
+        tx = await this.program.methods
+          .releasePurchaseViaHub(
+            release.price,
+            decodeNonEncryptedByteArray(hub.handle),
+          )
+          .accounts(accounts)
+          .preInstructions(instructions)
+          .transaction()
+      } else {
+        tx = await this.program.methods
+          .releasePurchase(release.price)
+          .accounts(accounts)
+          .preInstructions(instructions || [])
+          .transaction()
+      }
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
@@ -348,7 +406,7 @@ export default class Release {
           this.http.endpoint
         }/accounts/${this.provider.wallet.publicKey.toBase58()}/collected?txId=${txid}`,
       )
-      const newRelease = await fetch(releasePublicKey.toBase58(), true)
+      const newRelease = await this.fetch(releasePublicKey.toBase58(), true)
 
       return {
         release: newRelease,
@@ -687,7 +745,7 @@ export default class Release {
 
       await getConfirmTransaction(txid, this.provider.connection)
 
-      const createdRelease = await fetch(release.toBase58())
+      const createdRelease = await this.fetch(release.toBase58())
 
       return {
         release: createdRelease,
@@ -736,7 +794,7 @@ export default class Release {
       )
 
       await getConfirmTransaction(txid, this.provider.connection)
-      const closedRelease = await fetch(releasePublicKey)
+      const closedRelease = await this.fetch(releasePublicKey)
 
       return {
         release: closedRelease,
@@ -812,7 +870,7 @@ export default class Release {
       )
 
       await getConfirmTransaction(txid, this.provider.connection)
-      const collectedRelease = await fetch(releasePublicKey, true)
+      const collectedRelease = await this.fetch(releasePublicKey, true)
 
       return {
         release: collectedRelease,
@@ -843,7 +901,7 @@ export default class Release {
 
       const hub = await this.program.account.hub.fetch(hubPublicKey)
       const release = await this.program.account.release.fetch(releasePublicKey)
-      const hubMetadata = await fetch(hubPublicKey)
+      const hubMetadata = await this.fetch(hubPublicKey)
 
       const [hubWallet] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
@@ -891,7 +949,7 @@ export default class Release {
 
       await getConfirmTransaction(txid, this.provider.connection)
       // fetchHubRelease not returning account data so using Release.fetch for now
-      const releaseAccount = await fetch(releasePublicKey.toBase58(), true)
+      const releaseAccount = await this.fetch(releasePublicKey.toBase58(), true)
 
       return {
         release: releaseAccount,
@@ -982,7 +1040,7 @@ export default class Release {
       )
 
       await getConfirmTransaction(txid, this.provider.connection)
-      const updatedRelease = await fetch(releasePublicKey, true)
+      const updatedRelease = await this.fetch(releasePublicKey, true)
 
       return {
         release: updatedRelease,

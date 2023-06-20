@@ -18,6 +18,7 @@ class NinaClient {
     this.endpoint = null
     this.cluster = null
     this.programId = null
+    this.connection = null
     this.apiKey = null
     this.cluster = 'mainnet'
 
@@ -54,7 +55,7 @@ class NinaClient {
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
     this.cluster = cluster || 'mainnet'
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4'
-    connection = connection || new anchor.web3.Connection(this.cluster)
+    this.connection = connection || new anchor.web3.Connection(this.cluster)
     this.provider = new anchor.AnchorProvider(connection, wallet, {
       commitment: 'confirmed',
       preflightCommitment: 'processed',

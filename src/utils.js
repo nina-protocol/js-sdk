@@ -291,14 +291,19 @@ export const nativeToUiString = (
 export const wrapSol = async (provider, amount, mint, publicKey) => {
   const wrappedSolInstructions = []
 
-  const [wrappedSolAccount] = await findOrCreateAssociatedTokenAccount(
-    provider.connection,
-    new anchor.web3.PublicKey(publicKey),
-    new anchor.web3.PublicKey(publicKey),
-    anchor.web3.SystemProgram.programId,
-    anchor.web3.SYSVAR_RENT_PUBKEY,
-    mint,
-  )
+  const [wrappedSolAccount, wrappedSolAccountIx] =
+    await findOrCreateAssociatedTokenAccount(
+      provider.connection,
+      new anchor.web3.PublicKey(publicKey),
+      new anchor.web3.PublicKey(publicKey),
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      mint,
+    )
+
+  if (wrappedSolAccountIx) {
+    wrappedSolInstructions.push(wrappedSolAccountIx)
+  }
 
   const wrappedSolTransferIx = anchor.web3.SystemProgram.transfer({
     fromPubkey: new anchor.web3.PublicKey(publicKey),
