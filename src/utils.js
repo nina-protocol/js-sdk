@@ -1,8 +1,7 @@
 import * as anchor from '@project-serum/anchor'
 import { createSyncNativeInstruction } from '@solana/spl-token'
-import { Buffer, Uint8Array } from 'buffer'
+import { Buffer } from 'buffer'
 import promiseRetry from 'promise-retry'
-import { TextDecoder } from 'util'
 
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9

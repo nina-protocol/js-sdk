@@ -55,7 +55,6 @@ export default class Hub {
   async fetch(publicKeyOrHandle, withAccountData = false) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}`,
-      undefined,
       withAccountData,
     )
   }
@@ -71,7 +70,7 @@ export default class Hub {
    */
 
   async fetchCollaborators(publicKeyOrHandle) {
-    return this.http.get(`/hubs/${publicKeyOrHandle}/collaborators`)
+    return this.http.get(`/hubs/${publicKeyOrHandle}/collaborators`, pagination)
   }
 
   /**
@@ -87,6 +86,7 @@ export default class Hub {
     //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`,
+      pagination
     )
   }
 
@@ -100,10 +100,10 @@ export default class Hub {
    * @returns {Array} an array of all of the Releases that belong to a Hub.
    */
 
-  async fetchReleases(publicKeyOrHandle, withAccountData = false) {
+  async fetchReleases(publicKeyOrHandle, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/releases`,
-      undefined,
+      pagination,
       withAccountData,
     )
   }
@@ -118,10 +118,10 @@ export default class Hub {
    * @returns {Array} an array of all of the Posts that belong to a Hub.
    */
 
-  async fetchPosts(publicKeyOrHandle, withAccountData = false) {
+  async fetchPosts(publicKeyOrHandle, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/posts`,
-      undefined,
+      pagination,
       withAccountData,
     )
   }
@@ -139,11 +139,12 @@ export default class Hub {
   async fetchHubRelease(
     publicKeyOrHandle,
     hubReleasePublicKey,
+    pagination = {},
     withAccountData = false,
   ) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/hubReleases/${hubReleasePublicKey}`,
-      undefined,
+      pagination,
       withAccountData,
     )
   }
@@ -161,11 +162,12 @@ export default class Hub {
   async fetchHubPost(
     publicKeyOrHandle,
     hubPostPublicKey,
+    pagination = {},
     withAccountData = false,
   ) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/hubPosts/${hubPostPublicKey}`,
-      undefined,
+      pagination,
       withAccountData,
     )
   }
@@ -179,10 +181,10 @@ export default class Hub {
    * @returns {Array} an array of all of the Subscriptions that belong to a Hub.
    */
 
-  async fetchSubscriptions(publicKeyOrHandle, withAccountData = false) {
+  async fetchSubscriptions(publicKeyOrHandle, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/subscriptions`,
-      undefined,
+      pagination,
       withAccountData,
     )
   }

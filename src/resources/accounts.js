@@ -45,7 +45,7 @@ export default class Account {
    * @example const hubs = await NinaClient.Account.fetchHubs("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ";
    * @returns {Array} an array of Hubs that an Account is a collaborator or authority on.
    */
-  async fetchHubs(publicKey, withAccountData = false, pagination = undefined) {
+  async fetchHubs(publicKey, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/accounts/${publicKey}/hubs`,
       pagination,
@@ -64,8 +64,8 @@ export default class Account {
    */
   async fetchCollected(
     publicKey,
+    pagination = {},
     withAccountData = false,
-    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/collected`,
@@ -85,8 +85,8 @@ export default class Account {
    * */
   async fetchPublished(
     publicKey,
+    pagination = {},
     withAccountData = false,
-    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/published`,
@@ -104,7 +104,7 @@ export default class Account {
    * @example const posts = await NinaClient.Account.fetchPosts("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Array} an array of all of the Posts published by an Account.
    * */
-  async fetchPosts(publicKey, withAccountData = false, pagination = undefined) {
+  async fetchPosts(publicKey, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/accounts/${publicKey}/posts`,
       pagination,
@@ -123,8 +123,8 @@ export default class Account {
    * */
   async fetchExchanges(
     publicKey,
+    pagination = {},
     withAccountData = false,
-    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/exchanges`,
@@ -144,8 +144,8 @@ export default class Account {
    * */
   async fetchRevenueShares(
     publicKey,
+    pagination = {},
     withAccountData = false,
-    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/revenueShares`,
@@ -165,8 +165,8 @@ export default class Account {
    *  */
   async fetchSubscriptions(
     publicKey,
+    pagination = {},
     withAccountData = false,
-    pagination = undefined,
   ) {
     return this.http.get(
       `/accounts/${publicKey}/subscriptions`,
@@ -183,7 +183,7 @@ export default class Account {
    * @example const verifications = await NinaClient.Account.fetchVerifications("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Array} an array of all of the Verifications for an Account.
    * */
-  async fetchVerifications(publicKey, pagination = undefined) {
+  async fetchVerifications(publicKey, pagination = {}) {
     return this.http.get(`/accounts/${publicKey}/verifications`, pagination)
   }
 }
