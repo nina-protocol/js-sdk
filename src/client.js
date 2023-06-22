@@ -6,14 +6,13 @@ import Hub from './resources/hubs'
 import Post from './resources/posts'
 import Release from './resources/releases'
 import Subscription from './resources/subscriptions'
-import Uploader from './resources/uploader'
 import Wallet from './resources/wallet'
 import {
+  decimalsForMint,
   isSol,
   isUsdc,
-  nativeToUiString,
-  decimalsForMint,
   nativeToUi,
+  nativeToUiString,
   uiToNative,
 } from './utils'
 
@@ -56,7 +55,6 @@ class NinaClient {
     apiKey = undefined,
     wallet = {},
   ) {
-    console.log('init-ing client\n\n\n\n')
     this.apiKey = apiKey
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/' //NOTE: trailing slash should be removed
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
@@ -68,7 +66,7 @@ class NinaClient {
       preflightCommitment: 'processed',
     })
     this.program = await anchor.Program.at(this.programId, this.provider)
-    console.log('this.program', this.program)
+
     const http = new Http({
       endpoint: this.endpoint,
       program: this.program,
@@ -88,7 +86,6 @@ class NinaClient {
     this.Post = new Post(config)
     this.Release = new Release(config)
     this.Subscription = new Subscription(config)
-    this.Uploader = new Uploader(config)
     this.Wallet = new Wallet(config)
   }
 
@@ -143,17 +140,20 @@ class NinaClient {
     const hours = Math.floor(duration / 3600)
     const minutes = Math.floor((duration - hours * 3600) / 60)
     const seconds = duration - hours * 3600 - minutes * 60
-
     let formattedDuration = ''
+
     if (hours > 0) {
       formattedDuration += `${hours}h`
     }
+
     if (minutes > 0) {
       formattedDuration += `${minutes}m`
     }
+
     if (seconds > 0) {
       formattedDuration += `${seconds}s`
     }
+
     return formattedDuration
   }
 }

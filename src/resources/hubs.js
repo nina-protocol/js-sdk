@@ -53,10 +53,7 @@ export default class Hub {
    */
 
   async fetch(publicKeyOrHandle, withAccountData = false) {
-    return this.http.get(
-      `/hubs/${publicKeyOrHandle}`,
-      withAccountData,
-    )
+    return this.http.get(`/hubs/${publicKeyOrHandle}`, withAccountData)
   }
 
   /**
@@ -69,8 +66,16 @@ export default class Hub {
    * @returns {Array} an array of all of the Collaborators that belong to a Hub.
    */
 
-  async fetchCollaborators(publicKeyOrHandle) {
-    return this.http.get(`/hubs/${publicKeyOrHandle}/collaborators`, pagination)
+  async fetchCollaborators(
+    publicKeyOrHandle,
+    pagination = {},
+    withAccountData = false,
+  ) {
+    return this.http.get(
+      `/hubs/${publicKeyOrHandle}/collaborators`,
+      pagination,
+      withAccountData,
+    )
   }
 
   /**
@@ -86,7 +91,6 @@ export default class Hub {
     //TODO:  endpoint needs to be uodated, currently retrurns {success: true}
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/collaborators/${collaboratorPubkey}`,
-      pagination
     )
   }
 
@@ -100,7 +104,11 @@ export default class Hub {
    * @returns {Array} an array of all of the Releases that belong to a Hub.
    */
 
-  async fetchReleases(publicKeyOrHandle, pagination = {}, withAccountData = false) {
+  async fetchReleases(
+    publicKeyOrHandle,
+    pagination = {},
+    withAccountData = false,
+  ) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/releases`,
       pagination,
@@ -118,7 +126,11 @@ export default class Hub {
    * @returns {Array} an array of all of the Posts that belong to a Hub.
    */
 
-  async fetchPosts(publicKeyOrHandle, pagination = {}, withAccountData = false) {
+  async fetchPosts(
+    publicKeyOrHandle,
+    pagination = {},
+    withAccountData = false,
+  ) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/posts`,
       pagination,
@@ -181,7 +193,11 @@ export default class Hub {
    * @returns {Array} an array of all of the Subscriptions that belong to a Hub.
    */
 
-  async fetchSubscriptions(publicKeyOrHandle, pagination = {}, withAccountData = false) {
+  async fetchSubscriptions(
+    publicKeyOrHandle,
+    pagination = {},
+    withAccountData = false,
+  ) {
     return this.http.get(
       `/hubs/${publicKeyOrHandle}/subscriptions`,
       pagination,

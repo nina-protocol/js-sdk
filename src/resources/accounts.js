@@ -62,11 +62,7 @@ export default class Account {
    * @example const collection = await NinaClient.Account.fetchCollected("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Array} an array of all of the Releases collected by an Account.
    */
-  async fetchCollected(
-    publicKey,
-    pagination = {},
-    withAccountData = false,
-  ) {
+  async fetchCollected(publicKey, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/accounts/${publicKey}/collected`,
       pagination,
@@ -83,11 +79,7 @@ export default class Account {
    * @example const published = await NinaClient.Account.fetchPublished("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Array} an array of all of the Releases published by an Account.
    * */
-  async fetchPublished(
-    publicKey,
-    pagination = {},
-    withAccountData = false,
-  ) {
+  async fetchPublished(publicKey, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/accounts/${publicKey}/published`,
       pagination,
@@ -121,11 +113,7 @@ export default class Account {
    * @example const exchanges = await NinaClient.Account.fetchExchanges("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Array} an array of all of the Exchanges belonging to an Account.
    * */
-  async fetchExchanges(
-    publicKey,
-    pagination = {},
-    withAccountData = false,
-  ) {
+  async fetchExchanges(publicKey, pagination = {}, withAccountData = false) {
     return this.http.get(
       `/accounts/${publicKey}/exchanges`,
       pagination,

@@ -1,13 +1,13 @@
 {
-  "name": "@nina-protocol/js-sdk",
-  "version": "0.0.19",
+  "name": "@nina-protocol/js-sdk-dev",
+  "version": "0.0.3",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
-  "main": "src/index.js",
-  "umd:main": "src/index.js",
-  "module": "src/index.js",
-  "require": "./src/index.js",
-  "default": "./src/index.js",
+  "main": "dist/index.cjs",
+  "umd:main": "dist/index.umd.js",
+  "module": "dist/index.mjs",
+  "require": "./dist/index.js",
+  "default": "./dist/index.modern.mjs",
   "type": "module",
   "repository": {
     "type": "git",
@@ -66,5 +66,9 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
+  },
+  "types": "./dist/index.d.ts",
+  "directories": {
+    "doc": "docs"
   }
 }

@@ -1,4 +1,4 @@
-import Bundlr from '@bundlr-network/client/build/web'
+import { WebBundlr } from '@bundlr-network/client'
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 
@@ -27,7 +27,7 @@ export default class Uploader {
       this.endpoint = endpoint
       this.cluster = cluster
 
-      const bundlrInstance = new Bundlr.WebBundlr(
+      const bundlrInstance = new WebBundlr(
         this.bundlrEndpoint,
         'solana',
         this.provider.wallet,

@@ -14,7 +14,7 @@ import {
   uiToNative,
   wrapSol,
 } from '../utils'
-// import Uploader from './uploader'
+import Uploader from './uploader'
 
 /**
  * @module Release
@@ -121,7 +121,11 @@ export default class Release {
    * @returns {Array} an array of all of the Revenue Share Recipients that belong to a Release.
    */
 
-  async fetchRevenueShareRecipients(publicKey, pagination = {}, withAccountData = false) {
+  async fetchRevenueShareRecipients(
+    publicKey,
+    pagination = {},
+    withAccountData = false,
+  ) {
     return this.http.get(
       `/releases/${publicKey}/revenueShareRecipients`,
       pagination,
@@ -376,7 +380,7 @@ export default class Release {
     try {
       const uploader = new Uploader().init({
         provider: this.provider,
-        endpoint: this.endpoint,
+        endpoint: this.http.endpoint,
         cluster: this.cluster,
       })
 
