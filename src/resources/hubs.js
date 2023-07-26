@@ -53,7 +53,7 @@ export default class Hub {
    */
 
   async fetch(publicKeyOrHandle, withAccountData = false) {
-    return this.http.get(`/hubs/${publicKeyOrHandle}`, withAccountData)
+    return this.http.get(`/hubs/${publicKeyOrHandle}`, undefined, withAccountData)
   }
 
   /**
