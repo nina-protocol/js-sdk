@@ -372,42 +372,52 @@ export default class Release {
     catalogNumber,
     isOpen,
     artworkFile,
-    audioFile,
-    md5Digest,
+    audioFiles,
     isUsdc = true,
     hubPublicKey = undefined,
   ) {
     try {
-      const uploader = new Uploader().init({
+      const uploader = new Uploader()
+      await uploader.init({
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
       })
 
-      if (!uploader.hasBalanceForFiles([artworkFile, audioFile])) {
+      if (!uploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
         throw new Error('Insufficient upload balance for files')
       }
-
       if (!uploader.isValidArtworkFile(artworkFile)) {
         throw new Error('Invalid artwork file')
       }
-
-      if (!uploader.isValidAudioFile(audioFile)) {
-        throw new Error('Invalid audio files')
+      console.log('audioFiles', audioFiles)
+      for (let audioFile of audioFiles) {
+        console.log('audioFile', audioFile)
+        if (!uploader.isValidAudioFile(audioFile)) {
+          throw new Error('Invalid audio files')
+        }
       }
 
-      const isValidMd5Digest = await uploader.isValidMd5Digest(md5Digest)
+      // const isValidMd5Digest = await uploader.isValidMd5Digest(md5Digest)
 
-      if (!isValidMd5Digest) {
-        throw new Error('Invalid md5 digest')
-      }
-
+      // if (!isValidMd5Digest) {
+      //   throw new Error('Invalid md5 digest')
+      // }
       const artworkTx = await uploader.uploadFile(artworkFile)
-      const trackTx = await uploader.uploadFile(audioFile)
 
+      const files = []
+      for await (let audioFile of audioFiles) {
+        const trackTx = await uploader.uploadFile(audioFile)
+        files.push({
+          uri: `https://www.arweave.net/${trackTx}`,
+          track: files.length + 1,
+          track_title: audioFile.name,
+          type: 'audio/mpeg',
+        })
+      }
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
-
+      
       const metadataJson = this.createReleaseMetadataJson({
         releasePublicKey: release.toBase58(),
         artist,
@@ -415,16 +425,18 @@ export default class Release {
         sellerFeeBasisPoints: resalePercentage,
         catalogNumber,
         description,
-        trackTx,
+        files,
         artworkTx,
-        duration: audioFile.meta.duration,
-        md5Digest,
+        // duration,
+        // md5Digest,
       })
 
-      const metadataTx = await uploader.uploadFile(metadataJson)
+      const metadataTx = await uploader.uploadFile(new Blob([JSON.stringify(metadataJson)], {
+        type: 'application/json',
+      }))
 
       const paymentMint = new anchor.web3.PublicKey(
-        isUsdc ? this.ids.mints.usdc : this.ids.mints.wsol,
+        isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
       )
 
       const [releaseSigner, releaseSignerBump] =
@@ -475,7 +487,7 @@ export default class Release {
         amountToArtistTokenAccount: new anchor.BN(0),
         amountToVaultTokenAccount: new anchor.BN(0),
         resalePercentage: new anchor.BN(resalePercentage * 10000),
-        price: new anchor.BN(uiToNative(retailPrice, paymentMint)),
+        price: new anchor.BN(uiToNative(retailPrice, paymentMint, this.cluster)),
         releaseDatetime: new anchor.BN(now.getTime() / 1000),
       }
 
@@ -933,10 +945,8 @@ export default class Release {
     sellerFeeBasisPoints,
     catalogNumber,
     description,
-    trackTx,
+    files,
     artworkTx,
-    duration,
-    md5Digest,
   }) {
     const name = `${artist} - ${title}`
 
@@ -946,7 +956,7 @@ export default class Release {
       description,
       seller_fee_basis_points: sellerFeeBasisPoints,
       image: `https://www.arweave.net/${artworkTx}`,
-      animation_url: `https://www.arweave.net/${trackTx}?ext=mp3`,
+      animation_url: `${files[0].uri}?ext=mp3`,
       external_url: `https://ninaprotocol.com/${releasePublicKey}`,
       attributes: [],
       collection: {
@@ -957,16 +967,7 @@ export default class Release {
         artist,
         title,
         date: new Date(),
-        md5Digest,
-        files: [
-          {
-            uri: `https://www.arweave.net/${trackTx}`,
-            track: 1,
-            track_title: title,
-            duration,
-            type: 'audio/mpeg',
-          },
-        ],
+        files,
         category: 'audio',
       },
     }
