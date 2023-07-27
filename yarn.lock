@@ -3772,11 +3772,6 @@ get-intrinsic@^1.0.2, get-intrinsic@^1.1.0, get-intrinsic@^1.1.1, get-intrinsic@
     has "^1.0.3"
     has-symbols "^1.0.3"
 
-get-mp3-duration@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/get-mp3-duration/-/get-mp3-duration-1.0.0.tgz#471efca0f9e4930e7866016f6078582f4ce934cb"
-  integrity sha512-SiTppS0shvqCJ8rky8E1Yi9thLoTTGq3Tjc4n4pmjo8BMuiQFN3cCfiaWmRFk/8TjhOQhPwrpJZJDvOcbPVwrw==
-
 get-stream@^5.0.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/get-stream/-/get-stream-5.2.0.tgz#4966a1795ee5ace65e706c4b7beb71257d6e22d3"
