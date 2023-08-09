@@ -206,6 +206,22 @@ export default class Hub {
   }
 
   /**
+   * @function fetchAllContentNodes
+   * @description Fetches the Releases and Posts for an Account.
+   * @param {String} publicKey - The public key of the Account.
+   * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+   * @example const contentNodes = await NinaClient.Hub.fetchAllContentNodes("ninas-picks");
+   * @returns {Object} an object containing the Releases and Posts for a Hub.
+   * 
+   * */
+  async fetchAllContentNodes(publicKey, pagination = {}) {
+    return this.http.get(
+      `/hubs/${publicKey}/all`,
+      pagination,
+    )
+  }
+  
+  /**
    * @function hubInit
    * @description Initializes a Hub account with Hub Credit.
    * @param {String} handle - The handle of the Hub.

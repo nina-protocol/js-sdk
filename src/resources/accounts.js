@@ -174,4 +174,55 @@ export default class Account {
   async fetchVerifications(publicKey, pagination = {}) {
     return this.http.get(`/accounts/${publicKey}/verifications`, pagination)
   }
+
+  /**
+   * @function fetchFollowers
+   * @description Fetches the Accounts that follow an Account.
+   * @param {String} publicKey - The public key of the Account.
+   * @param {Boolean} [withAccountData = false] Include full on-chain Account accounts.
+   * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+   * @example const followers = await NinaClient.Account.fetchFollowers("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+   * @returns {Array} an array of all of the Accounts that follow an Account.
+   */
+  async fetchFollowers(publicKey, pagination = {}, withAccountData = false) {
+    return this.http.get(
+      `/accounts/${publicKey}/followers`,
+      pagination,
+      withAccountData,
+    )
+  }
+
+  /**
+   * @function fetchFollowing
+   * @description Fetches the Accounts that an Account follows.
+   * @param {String} publicKey - The public key of the Account.
+   * @param {Boolean} [withAccountData = false] Include full on-chain Account accounts.
+   * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+   * @example const following = await NinaClient.Account.fetchFollowing("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+   * @returns {Array} an array of all of the Accounts that an Account follows.
+   * */
+  async fetchFollowing(publicKey, pagination = {}, withAccountData = false) {
+    return this.http.get(
+      `/accounts/${publicKey}/following`,
+      pagination,
+      withAccountData,
+    )
+  }
+
+  /**
+   * @function fetchAllContentNodes
+   * @description Fetches the Releases, Posts, Hubs, and Collection for an Account.
+   * @param {String} publicKey - The public key of the Account.
+   * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+   * @example const contentNodes = await NinaClient.Account.fetchAllContentNodes("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+   * @returns {Object} an object containing the Releases, Posts, Hubs, and Collection for an Account.
+   * 
+   * */
+  async fetchAllContentNodes(publicKey, pagination = {}) {
+    return this.http.get(
+      `/accounts/${publicKey}/all`,
+      pagination,
+    )
+  }
 }
+
