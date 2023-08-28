@@ -327,6 +327,23 @@ export default class Hub {
   }
 
   /**
+   * @function fetchFollowers
+   * @description Fetches the Accounts that follow a Hub.
+   * @param {String} publicKeyOrHandle - The public key of the Hub.
+   * @param {Boolean} [withAccountData = false] Include full on-chain Account accounts.
+   * @param {Object} [pagination = {limit, offset, sort}] Pagination options.
+   * @example const followers = await NinaClient.Account.fetchFollowers("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
+   * @returns {Array} an array of all of the Accounts that follow an Account.
+   */
+    async fetchFollowers(publicKeyOrHandle, pagination = {}, withAccountData = false) {
+      return this.http.get(
+        `/accounts/${publicKeyOrHandle}/followers`,
+        pagination,
+        withAccountData,
+      )
+    }
+
+  /**
    * @function hubUpdateConfig
    * @description Updates the configuration of a Hub.
    * @param {String} hubPublicKey - The public key of the Hub account.
