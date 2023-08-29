@@ -337,7 +337,7 @@ export default class Hub {
    */
     async fetchFollowers(publicKeyOrHandle, pagination = {}, withAccountData = false) {
       return this.http.get(
-        `/accounts/${publicKeyOrHandle}/followers`,
+        `/hubs/${publicKeyOrHandle}/followers`,
         pagination,
         withAccountData,
       )
