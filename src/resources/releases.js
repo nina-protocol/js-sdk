@@ -14,17 +14,18 @@ import {
   wrapSol,
 } from '../utils'
 import Uploader from './uploader'
-import { createInitializeMintInstruction } from '@solana/spl-token'
+import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 /**
  * @module Release
  */
 
 export default class Release {
-  constructor({ program, provider, http, cluster }) {
+  constructor({ program, provider, http, cluster, eventEmitter }) {
     this.program = program
     this.provider = provider
     this.http = http
     this.cluster = cluster
+    this.eventEmitter = eventEmitter
   }
   /**
    * @function fetchAll
@@ -376,14 +377,13 @@ export default class Release {
     hubPublicKey = undefined,
   ) {
     try {
-      console.log('create release')
-      const uploader = new Uploader()
-      await uploader.init({
+      let uploader = new Uploader()
+      uploader = await uploader.init({
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
+        eventEmitter: this.eventEmitter,
       })
-
       if (!uploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
         throw new Error('Insufficient upload balance for files')
       }
@@ -392,24 +392,23 @@ export default class Release {
         throw new Error('Invalid artwork file')
       }
 
-      console.log('audioFiles', audioFiles)
       for (const audioFile of audioFiles) {
-        console.log('audioFile', audioFile)
-
         if (!uploader.isValidAudioFile(audioFile)) {
           throw new Error('Invalid audio files')
         }
       }
-
       // const isValidMd5Digest = await uploader.isValidMd5Digest(md5Digest)
 
       // if (!isValidMd5Digest) {
       //   throw new Error('Invalid md5 digest')
       // }
-      const artworkTx = await uploader.uploadFile(artworkFile)
+
+      // Audio Files + Artwork + Metadata
+      const totalFiles = audioFiles.length + 2
+      const artworkTx = await uploader.uploadFile(artworkFile, 0, totalFiles)
       const files = []
       for await (const audioFile of audioFiles) {
-        const trackTx = await uploader.uploadFile(audioFile)
+        const trackTx = await uploader.uploadFile(audioFile, files.length + 1, totalFiles)
         files.push({
           uri: `https://www.arweave.net/${trackTx}`,
           track: files.length + 1,
@@ -436,7 +435,7 @@ export default class Release {
 
       const metadataTx = await uploader.uploadFile(new Blob([JSON.stringify(metadataJson)], {
         type: 'application/json',
-      }))
+      }), totalFiles - 1, totalFiles, 'metadata.json')
 
       const paymentMint = new anchor.web3.PublicKey(
         isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
@@ -448,11 +447,23 @@ export default class Release {
           this.program.programId,
         )
 
-      const releaseMintIx = createInitializeMintInstruction(
+      const lamports = await getMinimumBalanceForRentExemptMint(this.provider.connection);
+
+      const releaseMintCreateIx = anchor.web3.SystemProgram.createAccount({
+        fromPubkey: this.provider.wallet.publicKey,
+        newAccountPubkey: releaseMint.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      })
+
+
+      const releaseMintInitializeIx = createInitializeMint2Instruction(
         releaseMint.publicKey,
         0,
         this.provider.wallet.publicKey,
         this.provider.wallet.publicKey,
+        TOKEN_PROGRAM_ID,
       )
 
       const [authorityTokenAccount, authorityTokenAccountIx] =
@@ -476,7 +487,7 @@ export default class Release {
           true,
         )
 
-      const instructions = [...releaseMintIx, royaltyTokenAccountIx]
+      const instructions = [releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
 
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
@@ -618,7 +629,6 @@ export default class Release {
           .preInstructions(instructions)
           .transaction()
       }
-
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
@@ -633,7 +643,7 @@ export default class Release {
       await getConfirmTransaction(txid, this.provider.connection)
 
       const createdRelease = await this.fetch(release.toBase58())
-
+      console.log('createdRelease', createdRelease)
       return {
         release: createdRelease,
       }

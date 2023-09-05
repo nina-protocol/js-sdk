@@ -45,6 +45,7 @@
     "babel-preset-es2015": "^6.24.1",
     "crypto-js": "^4.1.1",
     "encoding": "^0.1.13",
+    "events": "^3.3.0",
     "md5": "^2.3.0",
     "promise": "^8.3.0",
     "promise-retry": "^2.0.1"

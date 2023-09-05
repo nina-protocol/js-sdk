@@ -15,6 +15,7 @@ import {
   nativeToUiString,
   uiToNative,
 } from './utils'
+import EventEmitter from 'events';
 
 /** Class Representing the Nina Client */
 class NinaClient {
@@ -26,6 +27,7 @@ class NinaClient {
     this.programId = null
     this.connection = null
     this.apiKey = null
+    this.eventEmitter = null
     this.cluster = 'mainnet'
 
     this.Account = null
@@ -66,6 +68,7 @@ class NinaClient {
       preflightCommitment: 'processed',
     })
     this.program = await anchor.Program.at(this.programId, this.provider)
+    this.eventEmitter = new EventEmitter()
 
     const http = new Http({
       endpoint: this.endpoint,
@@ -78,6 +81,7 @@ class NinaClient {
       program: this.program,
       provider: this.provider,
       cluster: this.cluster,
+      eventEmitter: this.eventEmitter,
     }
 
     this.Account = new Account(config)
