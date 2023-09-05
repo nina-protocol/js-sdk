@@ -1,7 +1,8 @@
-import * as anchor from '@project-serum/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import { createSyncNativeInstruction } from '@solana/spl-token'
 import { Buffer } from 'buffer'
 import promiseRetry from 'promise-retry'
+import spl from '@solana/spl-token'
 
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
@@ -227,45 +228,6 @@ export const uiToNative = (amount, mint, cluster) =>
 
 export const decodeNonEncryptedByteArray = (byteArray) =>
   new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\\u0000/g, '')
-
-export const createMintInstructions = async (
-  provider,
-  authority,
-  mint,
-  decimals,
-) => {
-  const tokenProgram = anchor.Spl.token(provider)
-  const systemProgram = anchor.Native.system(provider)
-
-  const mintSize = tokenProgram.coder.accounts.size(
-    tokenProgram.idl.accounts[0],
-  )
-
-  const mintRentExemption =
-    await provider.connection.getMinimumBalanceForRentExemption(mintSize)
-
-  const instructions = [
-    await systemProgram.methods
-      .createAccount(
-        new anchor.BN(mintRentExemption),
-        new anchor.BN(mintSize),
-        tokenProgram.programId,
-      )
-      .accounts({
-        from: authority,
-        to: mint,
-      })
-      .instruction(),
-    await tokenProgram.methods
-      .initializeMint(decimals, authority, null)
-      .accounts({
-        mint,
-      })
-      .instruction(),
-  ]
-
-  return instructions
-}
 
 export const nativeToUiString = (
   amount,

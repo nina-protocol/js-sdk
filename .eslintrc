@@ -1,5 +1,5 @@
 {
-  "parserOptions": { "sourceType": "module", "ecmaVersion": 2018 },
+  "parserOptions": { "sourceType": "module", "ecmaVersion": 11 },
   "plugins": ["eslint-plugin-zero-config"],
   "extends": ["plugin:zero-config/recommended"],
   "rules": {

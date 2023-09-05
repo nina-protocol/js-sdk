@@ -1,11 +1,10 @@
-import * as anchor from '@project-serum/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import axios from 'axios'
 import CryptoJS from 'crypto-js'
 import Promise from 'promise'
 import {
   MAX_U64,
   NINA_CLIENT_IDS,
-  createMintInstructions,
   decodeNonEncryptedByteArray,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
@@ -15,7 +14,7 @@ import {
   wrapSol,
 } from '../utils'
 import Uploader from './uploader'
-
+import { createInitializeMintInstruction } from '@solana/spl-token'
 /**
  * @module Release
  */
@@ -377,6 +376,7 @@ export default class Release {
     hubPublicKey = undefined,
   ) {
     try {
+      console.log('create release')
       const uploader = new Uploader()
       await uploader.init({
         provider: this.provider,
@@ -387,12 +387,15 @@ export default class Release {
       if (!uploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
         throw new Error('Insufficient upload balance for files')
       }
+
       if (!uploader.isValidArtworkFile(artworkFile)) {
         throw new Error('Invalid artwork file')
       }
+
       console.log('audioFiles', audioFiles)
-      for (let audioFile of audioFiles) {
+      for (const audioFile of audioFiles) {
         console.log('audioFile', audioFile)
+
         if (!uploader.isValidAudioFile(audioFile)) {
           throw new Error('Invalid audio files')
         }
@@ -404,9 +407,8 @@ export default class Release {
       //   throw new Error('Invalid md5 digest')
       // }
       const artworkTx = await uploader.uploadFile(artworkFile)
-
       const files = []
-      for await (let audioFile of audioFiles) {
+      for await (const audioFile of audioFiles) {
         const trackTx = await uploader.uploadFile(audioFile)
         files.push({
           uri: `https://www.arweave.net/${trackTx}`,
@@ -415,6 +417,7 @@ export default class Release {
           type: 'audio/mpeg',
         })
       }
+
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
       
@@ -445,11 +448,11 @@ export default class Release {
           this.program.programId,
         )
 
-      const releaseMintIx = await createMintInstructions(
-        this.provider,
-        this.provider.wallet.publicKey,
+      const releaseMintIx = createInitializeMintInstruction(
         releaseMint.publicKey,
         0,
+        this.provider.wallet.publicKey,
+        this.provider.wallet.publicKey,
       )
 
       const [authorityTokenAccount, authorityTokenAccountIx] =

@@ -1,4 +1,4 @@
-import * as anchor from '@project-serum/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import axios from 'axios'
 import _ from 'lodash'
 import Formatter from './formatter'

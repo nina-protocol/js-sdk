@@ -1,4 +1,3 @@
-import { WebBundlr } from '@bundlr-network/client'
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 
@@ -26,19 +25,20 @@ export default class Uploader {
       this.provider = provider
       this.endpoint = endpoint
       this.cluster = cluster
+      import('@bundlr-network/client/build/web').then(async (module) => {
+        const bundlrInstance = new module.WebBundlr(
+          this.bundlrEndpoint,
+          'solana',
+          this.provider.wallet,
+          {
+            providerUrl: this.endpoint,
+            timeout: 1000000000000000,
+          },
+        )
 
-      const bundlrInstance = new WebBundlr(
-        this.bundlrEndpoint,
-        'solana',
-        this.provider.wallet,
-        {
-          providerUrl: this.endpoint,
-          timeout: 1000000000000000,
-        },
-      )
-
-      await bundlrInstance.ready()
-      this.bundlr = bundlrInstance
+        await bundlrInstance.ready()
+        this.bundlr = bundlrInstance
+      });
     } catch (error) {
       console.warn('bundlr error: ', error)
     }

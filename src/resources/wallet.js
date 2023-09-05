@@ -1,4 +1,4 @@
-import * as anchor from '@project-serum/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import { getAccount } from '@solana/spl-token'
 import axios from 'axios'
 import {
@@ -7,6 +7,7 @@ import {
   getConfirmTransaction,
   uiToNative,
 } from '../utils'
+import { createTransferInstruction } from '@solana/spl-token'
 
 export default class Wallet {
   constructor({ provider, cluster }) {
@@ -139,10 +140,6 @@ export default class Wallet {
         toUsdcTokenAccount = new anchor.web3.PublicKey(destination)
       }
 
-      const tokenProgram = anchor.Spl.token({
-        provider: this.provider,
-      })
-
       const instructions = []
 
       if (fromUsdcTokenAccountIx) {
@@ -152,21 +149,21 @@ export default class Wallet {
       if (toUsdcTokenAccountIx) {
         instructions.push(toUsdcTokenAccountIx)
       }
-
-      const tx = await tokenProgram.methods
-        .transfer(
-          new anchor.BN(
-            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc),
-          ),
+      const transferInstruction = createTransferInstruction(
+        fromUsdcTokenAccount,
+        toUsdcTokenAccount,
+        this.provider.wallet.publicKey,
+        new anchor.BN(
+          uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc),
         )
-        .accounts({
-          source: fromUsdcTokenAccount,
-          destination: toUsdcTokenAccount,
-          authority: this.provider.wallet.publicKey,
-        })
-        .preInstructions(instructions)
-        .transaction()
+      )
 
+      const tx = new anchor.web3.Transaction()
+      for (const instruction of instructions) {
+        tx.add(instruction)
+      }
+      tx.add(transferInstruction)
+      
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash

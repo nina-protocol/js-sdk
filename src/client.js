@@ -1,4 +1,4 @@
-import * as anchor from '@project-serum/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import Http from './http'
 import Account from './resources/accounts'
 import Exchange from './resources/exchanges'
