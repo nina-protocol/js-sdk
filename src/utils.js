@@ -2,7 +2,6 @@ import * as anchor from '@coral-xyz/anchor';
 import { createSyncNativeInstruction } from '@solana/spl-token'
 import { Buffer } from 'buffer'
 import promiseRetry from 'promise-retry'
-import spl from '@solana/spl-token'
 
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
@@ -78,15 +77,15 @@ export const isSol = (mint, cluster) => {
     return mint.toBase58() === NINA_CLIENT_IDS[cluster].mints.wsol
   }
 
-  return mint === NINA_CLIENT_IDS[cluster].mints.wsol
+  return mint === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.wsol
 }
 
 export const isUsdc = (mint, cluster) => {
   if (typeof mint !== 'string') {
-    return mint.toBase58() === NINA_CLIENT_IDS[cluster].mints.usdc
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster  || 'mainnet'].mints.usdc
   }
 
-  return mint === NINA_CLIENT_IDS[cluster].mints.usdc
+  return mint === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc
 }
 
 export const findAssociatedTokenAddress = async (
@@ -211,9 +210,9 @@ export const getConfirmTransaction = async (txid, connection) => {
 
 export const decimalsForMint = (mint, cluster) => {
   switch (typeof mint === 'string' ? mint : mint.toBase58()) {
-    case NINA_CLIENT_IDS[cluster].mints.usdc:
+    case NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc:
       return USDC_DECIMAL_AMOUNT
-    case NINA_CLIENT_IDS[cluster].mints.wsol:
+    case NINA_CLIENT_IDS[cluster || 'mainnet'].mints.wsol:
       return SOL_DECIMAL_AMOUNT
     default:
       return undefined
