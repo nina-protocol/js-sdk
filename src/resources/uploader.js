@@ -28,7 +28,7 @@ export default class Uploader {
         this.endpoint = endpoint
         this.cluster = cluster
         this.eventEmitter = eventEmitter
-        import('@bundlr-network/client/build/web').then(async (module) => {
+        import('@bundlr-network/client').then(async (module) => {
           const bundlrInstance = new module.WebBundlr(
             this.bundlrEndpoint,
             'solana',

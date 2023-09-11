@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk-dev",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -35,7 +35,7 @@
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
   "dependencies": {
-    "@bundlr-network/client": "^0.11.13",
+    "@bundlr-network/client": "^0.11.17",
     "@coral-xyz/anchor": "0.28.1-beta.2",
     "@solana/buffer-layout-utils": "^0.2.0",
     "@solana/spl-token": "^0.3.8",
