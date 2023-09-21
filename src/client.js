@@ -56,6 +56,7 @@ class NinaClient {
     programId,
     apiKey = undefined,
     wallet = {},
+    isNode = false,
   ) {
     this.apiKey = apiKey
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/' //NOTE: trailing slash should be removed
@@ -69,6 +70,7 @@ class NinaClient {
     })
     this.program = await anchor.Program.at(this.programId, this.provider)
     this.eventEmitter = new EventEmitter()
+    this.isNode = isNode
 
     const http = new Http({
       endpoint: this.endpoint,
@@ -82,6 +84,7 @@ class NinaClient {
       provider: this.provider,
       cluster: this.cluster,
       eventEmitter: this.eventEmitter,
+      isNode: this.isNode,
     }
 
     this.Account = new Account(config)

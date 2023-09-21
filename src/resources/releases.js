@@ -13,19 +13,21 @@ import {
   uiToNative,
   wrapSol,
 } from '../utils'
-import Uploader from './uploader'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import UploaderNode from './uploaderNode';
+import Uploader from './uploader';
 /**
  * @module Release
  */
 
 export default class Release {
-  constructor({ program, provider, http, cluster, eventEmitter }) {
+  constructor({ program, provider, http, cluster, eventEmitter, isNode }) {
     this.program = program
     this.provider = provider
     this.http = http
     this.cluster = cluster
     this.eventEmitter = eventEmitter
+    this.isNode = isNode
   }
   /**
    * @function fetchAll
@@ -377,23 +379,29 @@ export default class Release {
     hubPublicKey = undefined,
   ) {
     try {
-      let uploader = new Uploader()
-      uploader = await uploader.init({
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
         eventEmitter: this.eventEmitter,
-      })
-      if (!uploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
+      });
+      if (!ninaUploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
         throw new Error('Insufficient upload balance for files')
       }
 
-      if (!uploader.isValidArtworkFile(artworkFile)) {
+      if (!ninaUploader.isValidArtworkFile(artworkFile)) {
         throw new Error('Invalid artwork file')
       }
 
       for (const audioFile of audioFiles) {
-        if (!uploader.isValidAudioFile(audioFile)) {
+        if (!ninaUploader.isValidAudioFile(audioFile)) {
           throw new Error('Invalid audio files')
         }
       }
@@ -405,10 +413,10 @@ export default class Release {
 
       // Audio Files + Artwork + Metadata
       const totalFiles = audioFiles.length + 2
-      const artworkTx = await uploader.uploadFile(artworkFile, 0, totalFiles)
+      const artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
       const files = []
       for await (const audioFile of audioFiles) {
-        const trackTx = await uploader.uploadFile(audioFile, files.length + 1, totalFiles)
+        const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
         files.push({
           uri: `https://www.arweave.net/${trackTx}`,
           track: files.length + 1,
@@ -432,10 +440,8 @@ export default class Release {
         // duration,
         // md5Digest,
       })
-
-      const metadataTx = await uploader.uploadFile(new Blob([JSON.stringify(metadataJson)], {
-        type: 'application/json',
-      }), totalFiles - 1, totalFiles, 'metadata.json')
+      const mertadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(metadataJson)
+      const metadataTx = await ninaUploader.uploadFile(mertadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
 
       const paymentMint = new anchor.web3.PublicKey(
         isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
@@ -634,19 +640,15 @@ export default class Release {
       ).blockhash
       tx.feePayer = this.provider.wallet.publicKey
       tx.partialSign(releaseMint)
-
-      const txid = await this.provider.wallet.sendTransaction(
-        tx,
-        this.provider.connection,
-      )
-
+      
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
+  
       await getConfirmTransaction(txid, this.provider.connection)
 
       const createdRelease = await this.fetch(release.toBase58())
       console.log('createdRelease', createdRelease)
-      return {
-        release: createdRelease,
-      }
+      return createdRelease
     } catch (error) {
       console.warn(error)
 

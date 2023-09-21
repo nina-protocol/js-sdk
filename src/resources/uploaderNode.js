@@ -1,6 +1,6 @@
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
-
+import fs from 'fs'
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
@@ -11,7 +11,7 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_MB = 25
 export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
   MAX_IMAGE_FILE_UPLOAD_SIZE_MB * 1024 * 1024
 
-export default class Uploader {
+export default class UploaderNode {
   constructor() {
     this.bundlrEndpoint = 'https://node1.bundlr.network'
     this.provider = null
@@ -20,25 +20,26 @@ export default class Uploader {
     this.cluster = null
     this.eventEmitter = null
   }
-
+  
   async init({ provider, endpoint, cluster, eventEmitter }) {
     return new Promise((resolve, reject) => {
       try {
+        console.log('hello', endpoint)
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
         this.eventEmitter = eventEmitter
         import('@bundlr-network/client').then(async (module) => {
-          const bundlrInstance = new module.WebBundlr(
+          const bundlrInstance = new module.NodeBundlr(
             this.bundlrEndpoint,
             'solana',
-            this.provider.wallet,
+            this.provider.wallet.payer.secretKey,
             {
-              providerUrl: this.endpoint,
+              providerUrl: this.endpoint.replace('.devnet', ''),
               timeout: 2147483647,
             },
           )
-
+          console.log('bro')
           await bundlrInstance.ready()
           this.bundlr = bundlrInstance
           resolve(this)
@@ -52,12 +53,13 @@ export default class Uploader {
 
   async uploadFile(file, index, totalFiles, nameOverride=null) {
     try {
-      return new Promise((resolve, reject) => {
+      console.log('file', file)
+      return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
           this.eventEmitter.emit('ninaUploadProgress',  {
             detail: chunkInfo,
-            name: file.name || nameOverride,
+            name: file.name || file.originalname || nameOverride,
             fileNumber: index + 1,
             totalFiles,
           })
@@ -68,59 +70,45 @@ export default class Uploader {
         uploader.on('chunkError', (e) => {
           this.eventEmitter.emit('ninaUploadError', {
             detail: e,
-            name: file.name || nameOverride,
+            name: file.name || file.originalname || nameOverride,
             fileNumber: index + 1,
             totalFiles,
           })
           console.error(
             `Error uploading chunk number ${e.id} - ${e.res.statusText}`,
           )
+          reject(e)
         })
         uploader.on('done', (finishRes) => {
           this.eventEmitter.emit('ninaUploadDone', {
             detail: finishRes,
-            name: file.name || nameOverride,
+            name: file.name || file.originalname || nameOverride,
             fileNumber: index + 1,
             totalFiles,
           })
-          console.warn(`Upload completed with ID ${JSON.stringify(finishRes)}`)
         })
-        const reader = new FileReader()
-        reader.onload = async () => {
-          const data = reader.result
-          let txId
-          try {
-            const tx = this.bundlr.createTransaction(data, {
-              tags: [{ name: 'Content-Type', value: file.type }],
-            })
-
-            await tx.sign()
-            txId = (await uploader.uploadTransaction(tx)).data.id
-            resolve(txId)
-          } catch (error) {
-            reject(error)
-          }
-        }
-        reader.onerror = (error) => {
-          reject(error)
-        }
-        reader.readAsArrayBuffer(file)
+        
+        console.log('file', file)
+        const transactionOptions = {tags: [{ name: 'Content-Type', value: file.mimetype || 'application/json' }] }
+        console.log('file.buffer', file.buffer)
+        const response = await uploader.uploadData(nameOverride ? file : file.buffer, transactionOptions)
+        console.warn(`Upload completed with ID ${JSON.stringify(response.data.id)}`)
+        resolve(response.data.id)
       })
     } catch (error) {
-      return error
+      return reject(error)
     }
   }
 
   async convertMetadataJSONToBuffer(metadataJSON) {
     try {
-      return new Blob([JSON.stringify(metadataJSON)], {
-        type: 'application/json',
-      })
-
+      const metadataJSONString = JSON.stringify(metadataJSON)
+      return Buffer.from(metadataJSONString)
     } catch (error) {
       console.warn('Unable to convert metadata JSON to buffer: ', error)
     }
   }
+
   async getBalanceForPublicKey(publicKey) {
     try {
       const bundlrBalanceRequest = await this.bundlr.getBalance(publicKey)
