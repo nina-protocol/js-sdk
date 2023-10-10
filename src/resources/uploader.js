@@ -55,7 +55,7 @@ export default class Uploader {
       return new Promise((resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          this.eventEmitter.emit('ninaUploadProgress',  {
+          this.eventEmitter.emit('ninaUploadProgress', {
             detail: chunkInfo,
             name: file.name || nameOverride,
             fileNumber: index + 1,

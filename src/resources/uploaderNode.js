@@ -1,6 +1,7 @@
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 import fs from 'fs'
+
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
@@ -24,7 +25,6 @@ export default class UploaderNode {
   async init({ provider, endpoint, cluster, eventEmitter }) {
     return new Promise((resolve, reject) => {
       try {
-        console.log('hello', endpoint)
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
@@ -39,7 +39,7 @@ export default class UploaderNode {
               timeout: 2147483647,
             },
           )
-          console.log('bro')
+
           await bundlrInstance.ready()
           this.bundlr = bundlrInstance
           resolve(this)
@@ -54,10 +54,11 @@ export default class UploaderNode {
   async uploadFile(file, index, totalFiles, nameOverride=null) {
     try {
       console.log('file', file)
+
       return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          this.eventEmitter.emit('ninaUploadProgress',  {
+          this.eventEmitter.emit('ninaUploadProgress', {
             detail: chunkInfo,
             name: file.name || file.originalname || nameOverride,
             fileNumber: index + 1,
@@ -103,6 +104,7 @@ export default class UploaderNode {
   async convertMetadataJSONToBuffer(metadataJSON) {
     try {
       const metadataJSONString = JSON.stringify(metadataJSON)
+
       return Buffer.from(metadataJSONString)
     } catch (error) {
       console.warn('Unable to convert metadata JSON to buffer: ', error)

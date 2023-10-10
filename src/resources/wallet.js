@@ -149,6 +149,7 @@ export default class Wallet {
       if (toUsdcTokenAccountIx) {
         instructions.push(toUsdcTokenAccountIx)
       }
+
       const transferInstruction = createTransferInstruction(
         fromUsdcTokenAccount,
         toUsdcTokenAccount,

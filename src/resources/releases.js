@@ -148,7 +148,6 @@ export default class Release {
   async purchase(releasePublicKey, hubPublicKey = undefined) {
     try {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
-
       const release = await this.program.account.release.fetch(releasePublicKey)
       let [payerTokenAccount] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
@@ -158,7 +157,6 @@ export default class Release {
         anchor.web3.SYSVAR_RENT_PUBKEY,
         release.paymentMint,
       )
-
       const [receiverReleaseTokenAccount, receiverReleaseTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
@@ -241,7 +239,6 @@ export default class Release {
           anchor.web3.SYSVAR_RENT_PUBKEY,
           release.paymentMint,
         )
-
         accounts.hub = new anchor.web3.PublicKey(hubPublicKey)
         accounts.hubRelease = hubRelease
         accounts.hubContent = hubContent
@@ -268,12 +265,10 @@ export default class Release {
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
       tx.feePayer = this.provider.wallet.publicKey
-
       const txid = await this.provider.wallet.sendTransaction(
         tx,
         this.provider.connection,
       )
-
       await getConfirmTransaction(txid, this.provider.connection)
       await axios.get(
         `${
@@ -365,6 +360,7 @@ export default class Release {
    */
 
   async releaseInit(
+    authority,
     retailPrice,
     amount,
     resalePercentage,
@@ -375,7 +371,8 @@ export default class Release {
     isOpen,
     artworkFile,
     audioFiles,
-    isUsdc = true,
+    isUsdc,
+    trackMap,
     hubPublicKey = undefined,
   ) {
     try {
@@ -419,12 +416,13 @@ export default class Release {
         const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
         files.push({
           uri: `https://www.arweave.net/${trackTx}`,
-          track: files.length + 1,
-          track_title: audioFile.name,
+          track: trackMap[audioFile.originalname].trackNumber,
+          track_title: trackMap[audioFile.originalname].title,
+          duration: trackMap[audioFile.originalname].duration,
           type: 'audio/mpeg',
         })
       }
-
+      console.log('files', files)
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
       
@@ -476,7 +474,7 @@ export default class Release {
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
           this.provider.wallet.publicKey,
-          this.provider.wallet.publicKey,
+          new anchor.web3.PublicKey(authority),
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
           paymentMint,
@@ -546,7 +544,7 @@ export default class Release {
         releaseSigner,
         releaseMint: releaseMint.publicKey,
         payer: this.provider.wallet.publicKey,
-        authority: this.provider.wallet.publicKey,
+        authority: new anchor.web3.PublicKey(authority),
         authorityTokenAccount,
         paymentMint,
         royaltyTokenAccount,
@@ -560,7 +558,7 @@ export default class Release {
       let tx
 
       if (hubPublicKey) {
-        const hub = await this.program.hub.fetch(
+        const hub = await this.program.account['hub'].fetch(
           new anchor.web3.PublicKey(hubPublicKey),
         )
 
@@ -647,7 +645,6 @@ export default class Release {
       await getConfirmTransaction(txid, this.provider.connection)
 
       const createdRelease = await this.fetch(release.toBase58())
-      console.log('createdRelease', createdRelease)
       return createdRelease
     } catch (error) {
       console.warn(error)
@@ -732,7 +729,7 @@ export default class Release {
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
           this.provider.wallet.publicKey,
-          this.provider.wallet.publicKey,
+          new anchor.web3.PublicKey(authority),
           anchor.web3.SystemProgram.programId,
           anchor.web3.SYSVAR_RENT_PUBKEY,
           release.paymentMint,
@@ -962,8 +959,9 @@ export default class Release {
     description,
     files,
     artworkTx,
+    trackMap
   }) {
-    const name = `${artist} - ${title}`
+    const name = `${artist && `${artist} - `}${title}`
 
     const metadata = {
       name,
@@ -975,7 +973,7 @@ export default class Release {
       external_url: `https://ninaprotocol.com/${releasePublicKey}`,
       attributes: [],
       collection: {
-        name: `${artist} - ${title} (Nina)`,
+        name: `${name} (Nina)`,
         family: 'Nina',
       },
       properties: {

@@ -82,7 +82,7 @@ export const isSol = (mint, cluster) => {
 
 export const isUsdc = (mint, cluster) => {
   if (typeof mint !== 'string') {
-    return mint.toBase58() === NINA_CLIENT_IDS[cluster  || 'mainnet'].mints.usdc
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc
   }
 
   return mint === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc
