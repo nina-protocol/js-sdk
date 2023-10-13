@@ -108,7 +108,6 @@ export const findOrCreateAssociatedTokenAccount = async (
   payer,
   owner,
   systemProgramId,
-  clockSysvarId,
   splTokenMintAddress,
   skipLookup = false,
 ) => {
@@ -248,12 +247,12 @@ export const nativeToUiString = (
   return amountString
 }
 
-export const wrapSol = async (provider, amount, mint, publicKey) => {
+export const wrapSol = async (connection, publicKey, amount, mint) => {
   const wrappedSolInstructions = []
 
   const [wrappedSolAccount, wrappedSolAccountIx] =
     await findOrCreateAssociatedTokenAccount(
-      provider.connection,
+      connection,
       new anchor.web3.PublicKey(publicKey),
       new anchor.web3.PublicKey(publicKey),
       anchor.web3.SystemProgram.programId,

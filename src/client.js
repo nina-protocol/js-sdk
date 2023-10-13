@@ -14,6 +14,9 @@ import {
   nativeToUi,
   nativeToUiString,
   uiToNative,
+  findOrCreateAssociatedTokenAccount,
+  decodeNonEncryptedByteArray,
+  wrapSol,
 } from './utils'
 import EventEmitter from 'events';
 
@@ -96,35 +99,60 @@ class NinaClient {
     this.Wallet = new Wallet(config)
   }
 
-  static isSol(mint) {
-    return isSol(mint, this.cluster)
+  static isSol(mint, cluster) {
+    return isSol(mint, cluster || this.cluster)
   }
 
-  static isUsdc(mint) {
-    return isUsdc(mint, this.cluster)
+  static isUsdc(mint, cluster) {
+    return isUsdc(mint, cluster || this.cluster)
+  }
+
+  static wrapSol(connection, publicKey, amount, mint) {
+    return wrapSol(connection, publicKey, amount, mint)
+  }
+
+  static decodeNonEncryptedByteArray(byteArray) {
+    return decodeNonEncryptedByteArray(byteArray)
+  }
+
+  static findOrCreateAssociatedTokenAccount(
+    connection,
+    payer,
+    owner,
+    systemProgramId,
+    mint,
+  ) {
+    return findOrCreateAssociatedTokenAccount(
+      connection,
+      payer,
+      owner,
+      systemProgramId,
+      mint,
+    )
   }
 
   static nativeToUiString(
     amount,
     mint,
+    cluster,
     decimalOverride = false,
     showCurrency = true,
   ) {
     return nativeToUiString(
       amount,
       mint,
-      this.cluster,
+      cluster || this.cluster,
       decimalOverride,
       showCurrency,
     )
   }
 
-  static decimalsForMint(mint) {
-    return decimalsForMint(mint, this.cluster)
+  static decimalsForMint(mint, cluster) {
+    return decimalsForMint(mint, cluster || this.cluster)
   }
 
-  static nativeToUi(amount, mint) {
-    return nativeToUi(amount, mint, this.cluster)
+  static nativeToUi(amount, mint, cluster) {
+    return nativeToUi(amount, mint,cluster || this.cluster)
   }
 
   static uiToNative(amount, mint) {
