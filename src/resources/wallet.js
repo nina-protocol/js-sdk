@@ -6,6 +6,7 @@ import {
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
   uiToNative,
+  nativeToUi,
 } from '../utils'
 import { createTransferInstruction } from '@solana/spl-token'
 
@@ -27,8 +28,8 @@ export default class Wallet {
     }
   }
 
-  async getUsdcBalanceForPublicKey(publicKey) {
-    const usdc = 0
+  async getUsdcBalanceForPublicKey(publicKey, isNative=false) {
+    let usdc = 0
 
     if (publicKey) {
       try {
@@ -38,36 +39,39 @@ export default class Wallet {
             new anchor.web3.PublicKey(publicKey),
             new anchor.web3.PublicKey(publicKey),
             anchor.web3.SystemProgram.programId,
-            anchor.web3.SYSVAR_RENT_PUBKEY,
             new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
           )
-
         if (usdcTokenAccountPubkey) {
           const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
               usdcTokenAccountPubkey,
             )
-
-          return usdcTokenAccount.value.uiAmount.toFixed(4)
+            
+          if (isNative) {
+            usdc = Number(usdcTokenAccount.value.amount)
+          } else {
+            usdc = usdcTokenAccount.value.uiAmount
+          }
         }
-
-        return 0
       } catch (error) {
         console.warn('error getting usdc balance')
+        console.warn(error)
       }
-    } else {
-      return 0
     }
 
     return usdc
   }
 
-  async getSolBalanceForPublicKey(publicKey) {
-    const solUsdcBalanceResult = await this.provider.connection.getBalance(
+  async getSolBalanceForPublicKey(publicKey, isNative=false) {
+    const solBalanceResult = await this.provider.connection.getBalance(
       new anchor.web3.PublicKey(publicKey),
     )
 
-    return solUsdcBalanceResult
+    if (isNative) {
+      return solBalanceResult
+    } else {
+      return nativeToUi(solBalanceResult, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+    }
   }
 
   async sendUsdc(amount, destination) {

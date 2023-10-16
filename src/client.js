@@ -115,6 +115,10 @@ class NinaClient {
     return decodeNonEncryptedByteArray(byteArray)
   }
 
+  static getConfirmTransaction = async (txid, connection) => {
+    return getConfirmTransaction(txid, connection)
+  }
+
   static findOrCreateAssociatedTokenAccount(
     connection,
     payer,
@@ -152,7 +156,7 @@ class NinaClient {
   }
 
   static nativeToUi(amount, mint, cluster) {
-    return nativeToUi(amount, mint,cluster || this.cluster)
+    return nativeToUi(amount, mint, cluster || this.cluster)
   }
 
   static uiToNative(amount, mint) {
