@@ -44,7 +44,7 @@ export default class Wallet {
         if (usdcTokenAccountPubkey) {
           const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
-              usdcTokenAccountPubkey, 'finalized'
+              usdcTokenAccountPubkey, 'processed'
             )
             
           if (isNative) {
@@ -64,10 +64,7 @@ export default class Wallet {
 
   async getSolBalanceForPublicKey(publicKey, isNative=false) {
     const solBalanceResult = await this.provider.connection.getBalance(
-      new anchor.web3.PublicKey(publicKey), {
-        commitment: 'finalized'
-      }
-
+      new anchor.web3.PublicKey(publicKey), 'processed'
     )
 
     if (isNative) {
@@ -77,15 +74,41 @@ export default class Wallet {
     }
   }
 
+  async sendSol(amount, destination) {
+    try {
+      const tx = new anchor.web3.Transaction().add(
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: this.provider.wallet.publicKey,
+          toPubkey: new anchor.web3.PublicKey(destination),
+          lamports: new anchor.BN(
+            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+          ),
+        })
+      );
+      const txid = await this.provider.wallet.sendTransaction(
+        tx,
+        this.provider.connection,
+      )
+
+      await getConfirmTransaction(txid, this.provider.connection)
+
+      return {
+        success: true,
+        txid,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error,
+      }
+    }
+  }
+
   async sendUsdc(amount, destination) {
     try {
-      console.log('destination', destination)
-      console.log('amount', amount)
       const destinationInfo = await this.provider.connection.getAccountInfo(
         new anchor.web3.PublicKey(destination),
       )
-      console.log('this.provider.connection', this.provider.connection)
-      console.log('destinationInfo', destinationInfo)
       let isSystemAccount = false
       let isUsdcTokenAccount = false
       let toUsdcTokenAccount = null
