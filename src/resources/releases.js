@@ -476,7 +476,6 @@ export default class Release {
           this.provider.wallet.publicKey,
           new anchor.web3.PublicKey(authority),
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           paymentMint,
         )
 
@@ -486,7 +485,6 @@ export default class Release {
           this.provider.wallet.publicKey,
           releaseSigner,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           paymentMint,
           true,
         )
@@ -568,8 +566,8 @@ export default class Release {
               Buffer.from(
                 anchor.utils.bytes.utf8.encode('nina-hub-collaborator'),
               ),
-              hubPublicKey.toBuffer(),
-              this.provider.wallet.publicKey.toBuffer(),
+              new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+              new anchor.web3.PublicKey(authority).toBuffer(),
             ],
             this.program.programId,
           )
@@ -577,7 +575,7 @@ export default class Release {
         const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
           [
             Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
-            hubPublicKey.toBuffer(),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
           ],
           this.program.programId,
         )
@@ -585,7 +583,7 @@ export default class Release {
         const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
           [
             Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
-            hubPublicKey.toBuffer(),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
             release.toBuffer(),
           ],
           this.program.programId,
@@ -594,7 +592,7 @@ export default class Release {
         const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
           [
             Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
-            hubPublicKey.toBuffer(),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
             release.toBuffer(),
           ],
           this.program.programId,
@@ -605,44 +603,68 @@ export default class Release {
           this.provider.wallet.publicKey,
           hubSigner,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           paymentMint,
         )
 
         accounts.hub = new anchor.web3.PublicKey(hubPublicKey)
-        accounts.hubCollaborator = hubCollaborator
         accounts.hubSigner = hubSigner
+        accounts.hubCollaborator = hubCollaborator
         accounts.hubRelease = hubRelease
         accounts.hubContent = hubContent
         accounts.hubWallet = hubWallet
-
-        tx = await this.program.methods
+          
+        const releaseInitIx = await this.program.methods
           .releaseInitViaHub(
             config,
             bumps,
             metadataData,
-            decodeNonEncryptedByteArray(hub.handle),
+            hub.handle,
           )
           .accounts(accounts)
-          .preInstructions(instructions)
-          .transaction()
+          .instruction()
+
+          instructions.push(releaseInitIx)
+          const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+          console.log('latestBlockhash', latestBlockhash)
+          const lookupTableAccount = await this.provider.connection.getAddressLookupTable(new anchor.web3.PublicKey('Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'));
+          console.log('lookupTableAccount', lookupTableAccount)
+          const messageV0 = new anchor.web3.TransactionMessage({
+            payerKey: this.provider.wallet.publicKey,
+            recentBlockhash: latestBlockhash.blockhash,
+            instructions: instructions,
+          }).compileToV0Message([lookupTableAccount.value]);
+          console.log('messageV0', messageV0)
+          tx = new anchor.web3.VersionedTransaction(messageV0)
+          console.log('tx', tx)
+          tx.sign([releaseMint])
+          console.log('tx post sign', tx)
+          const signedTx = await this.provider.wallet.signTransaction(tx);
+          const txid = await this.provider.connection.sendTransaction(signedTx, {
+            maxRetries: 5,
+          });
+      
+          // const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
+          await getConfirmTransaction(txid, this.provider.connection)
+
       } else {
         tx = await this.program.methods
           .releaseInit(config, bumps, metadataData)
           .accounts(accounts)
           .preInstructions(instructions)
           .transaction()
+
+          tx.recentBlockhash = (
+            await this.provider.connection.getRecentBlockhash()
+          ).blockhash
+          tx.feePayer = this.provider.wallet.publicKey
+          tx.partialSign(releaseMint)
+          
+          const signedTx = await this.provider.wallet.signTransaction(tx);
+          const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
+          await getConfirmTransaction(txid, this.provider.connection)
+    
       }
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
-      tx.partialSign(releaseMint)
-      
-      const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
   
-      await getConfirmTransaction(txid, this.provider.connection)
 
       const createdRelease = await this.fetch(release.toBase58())
       return createdRelease

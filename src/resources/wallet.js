@@ -44,7 +44,7 @@ export default class Wallet {
         if (usdcTokenAccountPubkey) {
           const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
-              usdcTokenAccountPubkey,
+              usdcTokenAccountPubkey, 'finalized'
             )
             
           if (isNative) {
@@ -64,7 +64,10 @@ export default class Wallet {
 
   async getSolBalanceForPublicKey(publicKey, isNative=false) {
     const solBalanceResult = await this.provider.connection.getBalance(
-      new anchor.web3.PublicKey(publicKey),
+      new anchor.web3.PublicKey(publicKey), {
+        commitment: 'finalized'
+      }
+
     )
 
     if (isNative) {
@@ -76,16 +79,20 @@ export default class Wallet {
 
   async sendUsdc(amount, destination) {
     try {
+      console.log('destination', destination)
+      console.log('amount', amount)
       const destinationInfo = await this.provider.connection.getAccountInfo(
         new anchor.web3.PublicKey(destination),
       )
-
+      console.log('this.provider.connection', this.provider.connection)
+      console.log('destinationInfo', destinationInfo)
       let isSystemAccount = false
       let isUsdcTokenAccount = false
       let toUsdcTokenAccount = null
       let toUsdcTokenAccountIx = null
 
       if (
+        destinationInfo &&
         destinationInfo.owner.toBase58() ===
         anchor.web3.SystemProgram.programId.toBase58()
       ) {
@@ -94,6 +101,7 @@ export default class Wallet {
 
       if (!isSystemAccount) {
         if (
+          destinationInfo &&
           destinationInfo.owner.toBase58() ===
           anchor.utils.token.TOKEN_PROGRAM_ID.toBase58()
         ) {
@@ -116,16 +124,17 @@ export default class Wallet {
           'Destination is not a valid Solana address or USDC account',
         )
       }
-
+      console.log('we here')
+      console.log('NINA_CLIENT_IDS[this.cluster].mints.usdc', NINA_CLIENT_IDS[this.cluster].mints.usdc)
       const [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
         )
+        console.log('we here 2')
 
       if (isSystemAccount) {
         const [_toUsdcTokenAccount, _toUsdcTokenAccountIx] =
@@ -134,7 +143,6 @@ export default class Wallet {
             this.provider.wallet.publicKey,
             new anchor.web3.PublicKey(destination),
             anchor.web3.SystemProgram.programId,
-            anchor.web3.SYSVAR_RENT_PUBKEY,
             new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
           )
 
@@ -143,6 +151,7 @@ export default class Wallet {
       } else {
         toUsdcTokenAccount = new anchor.web3.PublicKey(destination)
       }
+      console.log('we here 3')
 
       const instructions = []
 
