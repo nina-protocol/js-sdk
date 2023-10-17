@@ -614,30 +614,24 @@ export default class Release {
         accounts.hubWallet = hubWallet
           
         const releaseInitIx = await this.program.methods
-          .releaseInitViaHub(
+          .releaseInitViaHubV0(
             config,
             bumps,
             metadataData,
-            hub.handle,
           )
           .accounts(accounts)
           .instruction()
 
           instructions.push(releaseInitIx)
           const latestBlockhash = await this.provider.connection.getRecentBlockhash()
-          console.log('latestBlockhash', latestBlockhash)
           const lookupTableAccount = await this.provider.connection.getAddressLookupTable(new anchor.web3.PublicKey('Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'));
-          console.log('lookupTableAccount', lookupTableAccount)
           const messageV0 = new anchor.web3.TransactionMessage({
             payerKey: this.provider.wallet.publicKey,
             recentBlockhash: latestBlockhash.blockhash,
             instructions: instructions,
           }).compileToV0Message([lookupTableAccount.value]);
-          console.log('messageV0', messageV0)
           tx = new anchor.web3.VersionedTransaction(messageV0)
-          console.log('tx', tx)
           tx.sign([releaseMint])
-          console.log('tx post sign', tx)
           const signedTx = await this.provider.wallet.signTransaction(tx);
           const txid = await this.provider.connection.sendTransaction(signedTx, {
             maxRetries: 5,
