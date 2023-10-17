@@ -18,16 +18,14 @@ export default class Uploader {
     this.endpoint = null
     this.bundlr = null
     this.cluster = null
-    this.eventEmitter = null
   }
 
-  async init({ provider, endpoint, cluster, eventEmitter }) {
+  async init({ provider, endpoint, cluster }) {
     return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
-        this.eventEmitter = eventEmitter
         import('@bundlr-network/client').then(async (module) => {
           const bundlrInstance = new module.WebBundlr(
             this.bundlrEndpoint,
@@ -55,34 +53,16 @@ export default class Uploader {
       return new Promise((resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          this.eventEmitter.emit('ninaUploadProgress', {
-            detail: chunkInfo,
-            name: file.name || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
           console.warn(
             `Uploaded Chunk number ${chunkInfo.id}, offset of ${chunkInfo.offset}, size ${chunkInfo.size} Bytes, with a total of ${chunkInfo.totalUploaded} bytes uploaded.`,
           )
         })
         uploader.on('chunkError', (e) => {
-          this.eventEmitter.emit('ninaUploadError', {
-            detail: e,
-            name: file.name || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
           console.error(
             `Error uploading chunk number ${e.id} - ${e.res.statusText}`,
           )
         })
         uploader.on('done', (finishRes) => {
-          this.eventEmitter.emit('ninaUploadDone', {
-            detail: finishRes,
-            name: file.name || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
           console.warn(`Upload completed with ID ${JSON.stringify(finishRes)}`)
         })
         const reader = new FileReader()

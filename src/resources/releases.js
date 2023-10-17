@@ -21,12 +21,11 @@ import Uploader from './uploader';
  */
 
 export default class Release {
-  constructor({ program, provider, http, cluster, eventEmitter, isNode }) {
+  constructor({ program, provider, http, cluster, isNode }) {
     this.program = program
     this.provider = provider
     this.http = http
     this.cluster = cluster
-    this.eventEmitter = eventEmitter
     this.isNode = isNode
   }
   /**
@@ -387,7 +386,6 @@ export default class Release {
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
-        eventEmitter: this.eventEmitter,
       });
       if (!ninaUploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
         throw new Error('Insufficient upload balance for files')
@@ -438,8 +436,8 @@ export default class Release {
         // duration,
         // md5Digest,
       })
-      const mertadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(metadataJson)
-      const metadataTx = await ninaUploader.uploadFile(mertadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(metadataJson)
+      const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
 
       const paymentMint = new anchor.web3.PublicKey(
         isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
@@ -745,9 +743,8 @@ export default class Release {
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
           this.provider.wallet.publicKey,
-          new anchor.web3.PublicKey(authority),
+          new anchor.web3.PublicKey(recipient),
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           release.paymentMint,
         )
 
@@ -760,7 +757,7 @@ export default class Release {
       const tx = await this.program.methods
         .releaseRevenueShareCollect()
         .accounts({
-          authority: this.provider.wallet.publicKey,
+          authority: new anchor.web3.PublicKey(recipient),
           authorityTokenAccount,
           release: new anchor.web3.PublicKey(releasePublicKey),
           releaseMint: release.releaseMint,

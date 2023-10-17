@@ -111,14 +111,6 @@ export const findOrCreateAssociatedTokenAccount = async (
   splTokenMintAddress,
   skipLookup = false,
 ) => {
-  console.log('findOrCreateAssociatedTokenAccount', {
-    connection,
-    payer,
-    owner,
-    systemProgramId,
-    splTokenMintAddress,
-    skipLookup,
-  })
   const associatedTokenAddress = await findAssociatedTokenAddress(
     owner,
     splTokenMintAddress,

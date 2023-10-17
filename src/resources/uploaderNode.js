@@ -19,16 +19,14 @@ export default class UploaderNode {
     this.endpoint = null
     this.bundlr = null
     this.cluster = null
-    this.eventEmitter = null
   }
   
-  async init({ provider, endpoint, cluster, eventEmitter }) {
+  async init({ provider, endpoint, cluster }) {
     return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
-        this.eventEmitter = eventEmitter
         import('@bundlr-network/client').then(async (module) => {
           const bundlrInstance = new module.NodeBundlr(
             this.bundlrEndpoint,
@@ -58,40 +56,21 @@ export default class UploaderNode {
       return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          this.eventEmitter.emit('ninaUploadProgress', {
-            detail: chunkInfo,
-            name: file.name || file.originalname || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
           console.warn(
             `Uploaded Chunk number ${chunkInfo.id}, offset of ${chunkInfo.offset}, size ${chunkInfo.size} Bytes, with a total of ${chunkInfo.totalUploaded} bytes uploaded.`,
           )
         })
         uploader.on('chunkError', (e) => {
-          this.eventEmitter.emit('ninaUploadError', {
-            detail: e,
-            name: file.name || file.originalname || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
           console.error(
             `Error uploading chunk number ${e.id} - ${e.res.statusText}`,
           )
           reject(e)
         })
         uploader.on('done', (finishRes) => {
-          this.eventEmitter.emit('ninaUploadDone', {
-            detail: finishRes,
-            name: file.name || file.originalname || nameOverride,
-            fileNumber: index + 1,
-            totalFiles,
-          })
+          console.warn(`Upload completed with ID ${JSON.stringify(finishRes)} ${index + 1}/${totalFiles}`)
         })
         
-        console.log('file', file)
         const transactionOptions = {tags: [{ name: 'Content-Type', value: file.mimetype || 'application/json' }] }
-        console.log('file.buffer', file.buffer)
         const response = await uploader.uploadData(nameOverride ? file : file.buffer, transactionOptions)
         console.warn(`Upload completed with ID ${JSON.stringify(response.data.id)}`)
         resolve(response.data.id)
