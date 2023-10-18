@@ -6,6 +6,7 @@ import Hub from './resources/hubs'
 import Post from './resources/posts'
 import Release from './resources/releases'
 import Subscription from './resources/subscriptions'
+import Search from './resources/search'
 import Wallet from './resources/wallet'
 import {
   decimalsForMint,
@@ -36,6 +37,7 @@ class NinaClient {
     this.Hub = null
     this.Post = null
     this.Release = null
+    this.Search = null
     this.Subscription = null
     this.Uploader = null
     this.Wallet = null
@@ -92,6 +94,7 @@ class NinaClient {
     this.Post = new Post(config)
     this.Release = new Release(config)
     this.Subscription = new Subscription(config)
+    this.Search = new Search(config)
     this.Wallet = new Wallet(config)
   }
 

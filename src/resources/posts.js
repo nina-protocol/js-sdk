@@ -1,8 +1,11 @@
-import { publicKey } from "@solana/buffer-layout-utils"
 import {
   decodeNonEncryptedByteArray,
   getConfirmTransaction,
 } from '../utils'
+import UploaderNode from './uploaderNode';
+import Uploader from './uploader';
+import * as anchor from '@project-serum/anchor'
+import MD5 from 'crypto-js/md5'
 
 /**
  * @module Post
@@ -77,21 +80,22 @@ export default class Post {
         cluster: this.cluster,
       });
       
-      if (!ninaUploader.hasBalanceForFiles([heroImage, ...images])) {
+      if (!ninaUploader.hasBalanceForFiles([...images])) {
         throw new Error('Insufficient upload balance for files')
       }
 
-      for (const image of [heroImage, ...images]) {
+      for (const image of [...images]) {
+        console.log('image', image.file)
         if (!ninaUploader.isValidArtworkFile(image)) {
           throw new Error('Invalid image file')
         }
       }
 
-      const totalFiles = images.length + 2
-      const heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
+      const totalFiles = images.length + 1
+      // const heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
       const imageBlocks = []
       for await (const image of images) {
-        const imageTx = await ninaUploader.uploadFile(image, files.length + 1, totalFiles)
+        const imageTx = await ninaUploader.uploadFile(image, images.length + 1, totalFiles)
         imageBlocks.push({
           index: imageMap[image.name].index,
           type: 'image',
@@ -119,7 +123,7 @@ export default class Post {
         
       const data = {
         title,
-        heroImage: `https://www.arweave.net/${heroImageTx}`,
+        heroImage: `https://www.arweave.net/heroImageTx`,
         subhead,
         hub: hubPublicKeyString,
         description,
@@ -128,7 +132,7 @@ export default class Post {
         blocks: formattedBlocks,
       }
 
-      const dataBuffer = await ninaUploader.convertMetadataToBuffer(data)
+      const dataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
       const dataTx = await ninaUploader.uploadFile(dataBuffer, totalFiles - 1, totalFiles, 'data.json')
 
       const hubPublicKey = new anchor.web3.PublicKey(hubPublicKeyString)
@@ -169,7 +173,6 @@ export default class Post {
         this.program.programId
       )
 
-      let tx
       const handle = decodeNonEncryptedByteArray(hub.handle)
       const params = [handle, slugHash, `https://arweave.net/${dataTx}}`]
       const request = {
@@ -185,15 +188,26 @@ export default class Post {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
       }
-      tx = await this.program.transaction.postInitViaHub(...params, request)
+      console.log('params', params)
+      console.log('request', request)
+      let tx = await this.program.methods.postInitViaHub(
+          handle,
+          slugHash,
+          `https://arweave.net/${dataTx}}`
+        )
+        .accounts(request.accounts)
+        .transaction()
+
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
       tx.feePayer = this.provider.wallet.publicKey
-      const txid = await this.provider.wallet.sendTransaction(
-        tx,
-        provider.connection
-      )
+      console.log('tx', tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: true,
+      });
+      console.log('txid', txid)
       await getConfirmTransaction(txid, this.provider.connection)
       return {
         success: true,

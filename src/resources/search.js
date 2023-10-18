@@ -1,5 +1,3 @@
-import NinaClient from '../client'
-
 /**
  * @module Search
  * */
@@ -13,15 +11,12 @@ import NinaClient from '../client'
  * @returns {Object} an object containing the fetched search results.
  */
 
-const withQuery = async (query, withAccountData = false) =>
-  NinaClient.post(
-    '/search',
-    {
-      query,
-    },
-    withAccountData,
-  )
+export default class Search {
+  constructor({ http }) {
+    this.http = http
+  }
 
-export default {
-  withQuery,
+  async withQuery(query, withAccountData = false) {
+    return this.http.post('/search', { query }, withAccountData)
+  }
 }
