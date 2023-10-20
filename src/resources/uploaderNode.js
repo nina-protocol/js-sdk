@@ -51,8 +51,6 @@ export default class UploaderNode {
 
   async uploadFile(file, index, totalFiles, nameOverride=null) {
     try {
-      console.log('file', file)
-
       return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
@@ -66,10 +64,7 @@ export default class UploaderNode {
           )
           reject(e)
         })
-        uploader.on('done', (finishRes) => {
-          console.warn(`Upload completed with ID ${JSON.stringify(finishRes)} ${index + 1}/${totalFiles}`)
-        })
-        
+
         const transactionOptions = {tags: [{ name: 'Content-Type', value: file.mimetype || 'application/json' }] }
         const response = await uploader.uploadData(nameOverride ? file : file.buffer, transactionOptions)
         console.warn(`Upload completed with ID ${JSON.stringify(response.data.id)}`)

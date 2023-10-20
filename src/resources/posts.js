@@ -11,10 +11,11 @@ import MD5 from 'crypto-js/md5'
  * @module Post
  */
 export default class Post {
-  constructor({ http, provider, program }) {
+  constructor({ http, provider, program, isNode }) {
     this.http = http
     this.provider = provider
     this.program = program
+    this.isNode = isNode
   }
 
   /**
@@ -73,38 +74,45 @@ export default class Post {
       } else {
         ninaUploader = new Uploader()
       }
-  
       ninaUploader = await ninaUploader.init({
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
       });
       
-      if (!ninaUploader.hasBalanceForFiles([...images])) {
-        throw new Error('Insufficient upload balance for files')
-      }
+      if (images?.length > 0) {
+        if (!ninaUploader.hasBalanceForFiles([...images])) {
+          throw new Error('Insufficient upload balance for files')
+        }
 
-      for (const image of [...images]) {
-        console.log('image', image.file)
-        if (!ninaUploader.isValidArtworkFile(image)) {
-          throw new Error('Invalid image file')
+        for (const image of [...images]) {
+          if (!ninaUploader.isValidArtworkFile(image)) {
+            throw new Error('Invalid image file')
+          }
         }
       }
 
-      const totalFiles = images.length + 1
-      // const heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
+      let totalFiles = (images?.length || 0) + 1
+      let heroImageTx = null
+      if (heroImage) {
+        totalFiles += 1
+        heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
+      }
+      console.log('imageMap', imageMap, images)
       const imageBlocks = []
-      for await (const image of images) {
-        const imageTx = await ninaUploader.uploadFile(image, images.length + 1, totalFiles)
-        imageBlocks.push({
-          index: imageMap[image.name].index,
-          type: 'image',
-          data: {
-            caption: imageMap[image.name].caption,
-            altText: imageMap[image.name].altText,
-            image: `https://www.arweave.net/${imageTx}`
-          }
-        })
+      if (images?.length > 0) {
+        for await (const image of images) {
+          const imageTx = await ninaUploader.uploadFile(image, images?.length + 1, totalFiles)
+          imageBlocks.push({
+            index: imageMap[image.originalname].blockIndex,
+            type: 'image',
+            data: {
+              caption: imageMap[image.originalname].caption,
+              altText: imageMap[image.originalname].altText,
+              image: `https://www.arweave.net/${imageTx}`
+            }
+          })
+        }
       }
 
       const formattedBlocks = []
@@ -119,11 +127,10 @@ export default class Post {
           formattedBlocks.push(block)
         }
       })
-
-        
       const data = {
         title,
-        heroImage: `https://www.arweave.net/heroImageTx`,
+        heroImage: `https://www.arweave.net/${heroImageTx}`,
+        slug,
         subhead,
         hub: hubPublicKeyString,
         description,
@@ -174,7 +181,6 @@ export default class Post {
       )
 
       const handle = decodeNonEncryptedByteArray(hub.handle)
-      const params = [handle, slugHash, `https://arweave.net/${dataTx}}`]
       const request = {
         accounts: {
           author: new anchor.web3.PublicKey(authority),
@@ -188,12 +194,10 @@ export default class Post {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
       }
-      console.log('params', params)
-      console.log('request', request)
       let tx = await this.program.methods.postInitViaHub(
           handle,
           slugHash,
-          `https://arweave.net/${dataTx}}`
+          `https://arweave.net/${dataTx}`
         )
         .accounts(request.accounts)
         .transaction()
@@ -202,19 +206,20 @@ export default class Post {
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
       tx.feePayer = this.provider.wallet.publicKey
-      console.log('tx', tx)
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
         skipPreflight: true,
       });
-      console.log('txid', txid)
       await getConfirmTransaction(txid, this.provider.connection)
+      const createdPost = await this.fetch(post.toBase58())
+
       return {
         success: true,
-        post: post.toBase58(),
+        post: createdPost,
         msg: 'Post created.',
       }
     } catch (error) {
+      console.warn('Post postInit error: ', error)
       return {
         success: false,
         error,
