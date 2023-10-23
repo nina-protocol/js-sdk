@@ -49,8 +49,8 @@ export default class Post {
    * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV")
    * @returns {Object} an object containing the Post's data.
    */
-  async fetch(publicKey, withAccountData = false) {
-    return this.http.get(`/posts/${publicKey}`, undefined, withAccountData)
+  async fetch(publicKey, withAccountData = false, params = {}, ) {
+    return this.http.get(`/posts/${publicKey}`, params, withAccountData)
   }
 
   async postInit(
@@ -127,6 +127,36 @@ export default class Post {
           formattedBlocks.push(block)
         }
       })
+
+      slug = slug
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036F]/g, '') // remove accents and convert to closest ascii equivalent
+        .toLowerCase() // convert to lowercase
+        .replace('-', '') // remove hyphens
+        .replace(/  +/g, ' ') // remove spaces
+        .replace(/ /g, '-') // replace spaces with hyphens
+        .replace(/[^a-zA-Z0-9-]/g, '') // remove non-alphanumeric characters
+        .replace(/--+/g, '') // remove spaces
+
+      const checkIfSlugIsValid = async (slug) => {
+        try {
+          const postForSlug = await this.http.get(`/posts/${slug}`)
+          if (postForSlug) {
+            slug = `${slug}-${Math.floor(Math.random() * 1000000)}`
+          }
+          const postForNewSlug = await this.http.get(`/posts/${slug}`)
+          if (postForNewSlug) {
+            await checkIfSlugIsValid(slug)
+          }
+          return slug
+        } catch (error) {
+          console.log('error', error)
+          return slug
+        }
+      } 
+      
+      slug = await checkIfSlugIsValid(slug)
+
       const data = {
         title,
         heroImage: `https://www.arweave.net/${heroImageTx}`,
@@ -207,11 +237,11 @@ export default class Post {
       ).blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
+      const txId = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
         skipPreflight: true,
       });
-      await getConfirmTransaction(txid, this.provider.connection)
-      const createdPost = await this.fetch(post.toBase58())
+      await getConfirmTransaction(txId, this.provider.connection)
+      const createdPost = await this.fetch(post.toBase58(), true, { txId })
 
       return {
         success: true,
