@@ -44,6 +44,7 @@ export default class Release {
         limit: limit || 20,
         offset: offset || 0,
         sort: sort || 'desc',
+        ...pagination,
       },
       withAccountData,
     )
@@ -153,7 +154,6 @@ export default class Release {
         this.provider.wallet.publicKey,
         this.provider.wallet.publicKey,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         release.paymentMint,
       )
       const [receiverReleaseTokenAccount, receiverReleaseTokenAccountIx] =
@@ -162,7 +162,6 @@ export default class Release {
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           release.releaseMint,
         )
 
@@ -235,7 +234,6 @@ export default class Release {
           this.provider.wallet.publicKey,
           hubSigner,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           release.paymentMint,
         )
         accounts.hub = new anchor.web3.PublicKey(hubPublicKey)
@@ -420,7 +418,7 @@ export default class Release {
           type: 'audio/mpeg',
         })
       }
-      console.log('files', files)
+
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
       
@@ -518,7 +516,7 @@ export default class Release {
         metadataProgram,
       )
 
-      const nameBuf = Buffer.from(`${artist} - ${title}`.substring(0, 32))
+      const nameBuf = Buffer.from(`${title}`.substring(0, 32))
       const nameBufString = nameBuf.slice(0, 32).toString()
       const symbolBuf = Buffer.from(catalogNumber.substring(0, 10))
       const symbolBufString = symbolBuf.slice(0, 10).toString()
@@ -817,7 +815,6 @@ export default class Release {
         this.provider.wallet.publicKey,
         new anchor.web3.PublicKey(hub.hubSigner),
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         release.paymentMint,
       )
 
@@ -890,7 +887,6 @@ export default class Release {
       const recipientPublicKey = new anchor.web3.PublicKey(recipientAddress)
       const updateAmount = percentShare * 10000
       const instructions = []
-
       const [
         newRoyaltyRecipientTokenAccount,
         newRoyaltyRecipientTokenAccountIx,
@@ -899,36 +895,30 @@ export default class Release {
         this.provider.wallet.publicKey,
         recipientPublicKey,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
-        new anchor.web3.PublicKey(release.paymentMint),
+        release.paymentMint,
       )
-
       const [authorityTokenAccount, authorityTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
-          new anchor.web3.PublicKey(release.paymentMint),
+          release.paymentMint,
         )
-
       if (newRoyaltyRecipientTokenAccountIx) {
         instructions.push(newRoyaltyRecipientTokenAccountIx)
       }
-
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
       }
-
       const tx = await this.program.methods
         .releaseRevenueShareTransfer(new anchor.BN(updateAmount))
         .accounts({
           authority: this.provider.wallet.publicKey,
           authorityTokenAccount,
           release: releasePublicKey,
-          releaseMint: new anchor.web3.PublicKey(release.releaseMint),
-          releaseSigner: new anchor.web3.PublicKey(release.releaseSigner),
+          releaseMint: release.releaseMint,
+          releaseSigner: release.releaseSigner,
           royaltyTokenAccount: release.royaltyTokenAccount,
           newRoyaltyRecipient: recipientPublicKey,
           newRoyaltyRecipientTokenAccount,
@@ -965,19 +955,15 @@ export default class Release {
 
   createReleaseMetadataJson({
     releasePublicKey,
-    artist,
     title,
     sellerFeeBasisPoints,
     catalogNumber,
     description,
     files,
     artworkTx,
-    trackMap
   }) {
-    const name = `${artist && `${artist} - `}${title}`
-
     const metadata = {
-      name,
+      name: title,
       symbol: catalogNumber,
       description,
       seller_fee_basis_points: sellerFeeBasisPoints,
@@ -986,11 +972,10 @@ export default class Release {
       external_url: `https://ninaprotocol.com/${releasePublicKey}`,
       attributes: [],
       collection: {
-        name: `${name} (Nina)`,
+        name: `${title} (Nina)`,
         family: 'Nina',
       },
       properties: {
-        artist,
         title,
         date: new Date(),
         files,

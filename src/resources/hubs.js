@@ -38,6 +38,7 @@ export default class Hub {
         limit: limit || 20,
         offset: offset || 0,
         sort: sort || 'desc',
+        ...pagination,
       },
       withAccountData,
     )
@@ -268,7 +269,6 @@ export default class Hub {
         this.provider.wallet.publicKey,
         hubSigner,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
       )
 
@@ -277,7 +277,6 @@ export default class Hub {
         this.provider.wallet.publicKey,
         hubSigner,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
 
@@ -875,7 +874,6 @@ export default class Hub {
         this.provider.wallet.publicKey,
         hubSigner,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         USDC_MINT,
       )
 
@@ -884,7 +882,6 @@ export default class Hub {
         this.provider.wallet.publicKey,
         this.provider.wallet.publicKey,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         USDC_MINT,
       )
 

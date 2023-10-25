@@ -20,6 +20,7 @@ export default class Account {
       limit: limit || 20,
       offset: offset || 0,
       sort: sort || 'desc',
+      ...pagination,
     })
   }
 

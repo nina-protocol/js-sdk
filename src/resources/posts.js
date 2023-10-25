@@ -35,6 +35,7 @@ export default class Post {
         limit: limit || 20,
         offset: offset || 0,
         sort: sort || 'desc',
+        ...pagination,
       },
       withAccountData,
     )
@@ -150,7 +151,7 @@ export default class Post {
           }
           return slug
         } catch (error) {
-          console.log('error', error)
+          // console.log('error', error)
           return slug
         }
       } 

@@ -105,7 +105,6 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           initializerSendingMint,
         )
 
@@ -115,7 +114,6 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           exchangeSigner,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           initializerSendingMint,
         )
 
@@ -127,7 +125,6 @@ export default class Exchange {
         this.provider.wallet.publicKey,
         this.provider.wallet.publicKey,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         initializerExpectedMint,
       )
 
@@ -252,7 +249,6 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           exchangeAccount.initializerExpectedMint,
         )
 
@@ -262,7 +258,6 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           exchangeAccount.initializerSendingMint,
         )
 
@@ -274,7 +269,6 @@ export default class Exchange {
         this.provider.wallet.publicKey,
         exchangeAccount.initializer,
         anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
         exchangeAccount.initializerExpectedMint,
       )
 
@@ -391,7 +385,6 @@ export default class Exchange {
           this.provider.wallet.publicKey,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
-          anchor.web3.SYSVAR_RENT_PUBKEY,
           exchange.initializerSendingMint,
         )
 
