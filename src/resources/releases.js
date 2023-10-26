@@ -21,12 +21,13 @@ import Uploader from './uploader';
  */
 
 export default class Release {
-  constructor({ program, provider, http, cluster, isNode }) {
+  constructor({ program, provider, http, cluster, isNode, fileServicePublicKey }) {
     this.program = program
     this.provider = provider
     this.http = http
     this.cluster = cluster
     this.isNode = isNode
+    this.fileServicePublicKey = fileServicePublicKey
   }
   /**
    * @function fetchAll
@@ -356,12 +357,12 @@ export default class Release {
    * @returns {Object} the created Release.
    */
 
+  // TODO: this doesn't follow asTx pattern
   async releaseInit(
     authority,
     retailPrice,
     amount,
     resalePercentage,
-    artist,
     title,
     description,
     catalogNumber,
@@ -371,6 +372,7 @@ export default class Release {
     isUsdc,
     trackMap,
     hubPublicKey = undefined,
+    tags = [],
   ) {
     try {
       let ninaUploader
@@ -424,13 +426,13 @@ export default class Release {
       
       const metadataJson = this.createReleaseMetadataJson({
         releasePublicKey: release.toBase58(),
-        artist,
         title,
         sellerFeeBasisPoints: resalePercentage,
         catalogNumber,
         description,
         files,
         artworkTx,
+        tags,
         // duration,
         // md5Digest,
       })
@@ -650,6 +652,10 @@ export default class Release {
           tx.partialSign(releaseMint)
           
           const signedTx = await this.provider.wallet.signTransaction(tx);
+          if (asTx) {
+            console.log('asTx', signedTx)
+            return signedTx
+          }
           const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
           await getConfirmTransaction(txid, this.provider.connection)
     
@@ -675,15 +681,17 @@ export default class Release {
    * @returns {Object} The data of the closed Release.
    */
 
-  async closeRelease(releasePublicKey) {
+  async closeRelease(releasePublicKey, asTx=false) {
     try {
       const release = await this.program.account.release.fetch(
         new anchor.web3.PublicKey(releasePublicKey),
       )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .releaseCloseEdition()
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           release: new anchor.web3.PublicKey(releasePublicKey),
           releaseSigner: release.releaseSigner,
@@ -694,10 +702,16 @@ export default class Release {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -725,7 +739,7 @@ export default class Release {
    * @returns {Object} the Release with Account data.
    */
 
-  async collectRoyaltyForRelease(recipient, releasePublicKey) {
+  async collectRoyaltyForRelease(recipient, releasePublicKey, asTx=false) {
     if (!releasePublicKey || !recipient) {
       return
     }
@@ -752,9 +766,11 @@ export default class Release {
         instructions = [authorityTokenAccountIx]
       }
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .releaseRevenueShareCollect()
         .accounts({
+          payer,
           authority: new anchor.web3.PublicKey(recipient),
           authorityTokenAccount,
           release: new anchor.web3.PublicKey(releasePublicKey),
@@ -769,10 +785,16 @@ export default class Release {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -801,7 +823,7 @@ export default class Release {
    * @returns { Object } the Hub Release.
    */
 
-  async collectRoyaltyForReleaseViaHub(releasePublicKey, hubPublicKey) {
+  async collectRoyaltyForReleaseViaHub(releasePublicKey, hubPublicKey, asTx=false) {
     try {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
@@ -827,9 +849,11 @@ export default class Release {
         this.program.programId,
       )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .releaseRevenueShareCollectViaHub(hubMetadata.hub.handle)
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           royaltyTokenAccount: release.royaltyTokenAccount,
           release: releasePublicKey,
@@ -846,10 +870,16 @@ export default class Release {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -879,7 +909,7 @@ export default class Release {
    * @returns {Object} the Release with Account data.
    */
 
-  async addRoyaltyRecipient(recipientAddress, percentShare, releasePublicKey) {
+  async addRoyaltyRecipient(recipientAddress, percentShare, releasePublicKey, asTx=false) {
     try {
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
@@ -911,9 +941,12 @@ export default class Release {
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
       }
+
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .releaseRevenueShareTransfer(new anchor.BN(updateAmount))
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           authorityTokenAccount,
           release: releasePublicKey,
@@ -931,10 +964,16 @@ export default class Release {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -961,6 +1000,7 @@ export default class Release {
     description,
     files,
     artworkTx,
+    tags,
   }) {
     const metadata = {
       name: title,
@@ -976,6 +1016,7 @@ export default class Release {
         family: 'Nina',
       },
       properties: {
+        tags,
         title,
         date: new Date(),
         files,

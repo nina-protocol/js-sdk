@@ -46,7 +46,7 @@ export default class Http {
   async fetchAccountData(publicKey, accountType) {
     const account = await this.program.account[accountType].fetch(
       new anchor.web3.PublicKey(publicKey),
-      'confirmed',
+      'processed',
     )
 
     return account
@@ -55,7 +55,7 @@ export default class Http {
   async fetchAccountDataMultiple(publicKeys, accountType) {
     const accounts = await this.program.account[accountType].fetchMultiple(
       publicKeys.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
-      'confirmed',
+      'processed',
     )
 
     return accounts

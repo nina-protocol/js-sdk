@@ -13,11 +13,12 @@ import {
  */
 
 export default class Hub {
-  constructor({ http, program, provider, cluster }) {
+  constructor({ http, program, provider, cluster, fileServicePublicKey }) {
     this.http = http
     this.program = program
     this.provider = provider
     this.cluster = cluster
+    this.fileServicePublicKey = fileServicePublicKey
   }
 
   /**
@@ -353,11 +354,12 @@ export default class Hub {
    * @returns {Object} The updated Hub account.
    */
 
-  async hubUpdateConfig(hubPublicKey, uri, publishFee, referralFee) {
+  async hubUpdateConfig(hubPublicKey, uri, publishFee, referralFee, asTx = false) {
     try {
       const { hub } = await fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubUpdateConfig(
           uri,
@@ -366,6 +368,7 @@ export default class Hub {
           new anchor.BN(referralFee * 10000),
         )
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
         })
@@ -374,10 +377,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -417,6 +426,7 @@ export default class Hub {
     canAddContent,
     canAddCollaborator,
     allowance,
+    asTx=false,
   ) {
     try {
       const { hub } = await fetch(hubPublicKey)
@@ -444,6 +454,7 @@ export default class Hub {
           this.program.programId,
         )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubAddCollaborator(
           canAddContent,
@@ -452,6 +463,7 @@ export default class Hub {
           hub.handle,
         )
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           authorityHubCollaborator,
           hub: hubPublicKey,
@@ -465,10 +477,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -511,6 +529,7 @@ export default class Hub {
     canAddContent,
     canAddCollaborator,
     allowance,
+    asTx=false,
   ) {
     try {
       const { hub } = await fetch(hubPublicKey)
@@ -538,6 +557,7 @@ export default class Hub {
           this.program.programId,
         )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubUpdateCollaboratorPermissions(
           canAddContent,
@@ -546,6 +566,7 @@ export default class Hub {
           hub.handle,
         )
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           authorityHubCollaborator,
           hub: hubPublicKey,
@@ -557,21 +578,26 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
-
+      
+      await getConfirmTransaction(txid, this.provider.connection)
+      
       await axios.get(
         `${this.http.endpoint}/hubs/${
           hub.handle
         }/collaborators/${hubCollaborator.toBase58()}`,
       )
-
-      await getConfirmTransaction(txid, this.provider.connection)
-
       // endpoint needs to be updated to return collaborator
       return {
         collaboratorPublicKey: collaboratorPubkey.toBase58(),
@@ -595,7 +621,7 @@ export default class Hub {
    * @returns {Object} the account of the removed collaborator from the Hub.
    */
 
-  async hubRemoveCollaborator(hubPublicKey, collaboratorPubkey) {
+  async hubRemoveCollaborator(hubPublicKey, collaboratorPubkey, asTx=false) {
     try {
       const { hub } = await fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
@@ -611,9 +637,11 @@ export default class Hub {
         this.program.programId,
       )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubRemoveCollaborator(hub.handle)
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           hubCollaborator,
@@ -625,10 +653,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -667,6 +701,7 @@ export default class Hub {
     hubPublicKey,
     contentAccountPublicKey,
     type,
+    asTx=false
   ) {
     try {
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
@@ -696,9 +731,11 @@ export default class Hub {
           this.program.programId,
         )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubContentToggleVisibility(hub.handle)
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           hubContent,
@@ -710,10 +747,17 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -755,7 +799,7 @@ export default class Hub {
    * @returns {Object} the Hub Release data.
    */
 
-  async hubAddRelease(hubPublicKey, releasePublicKey, fromHub) {
+  async hubAddRelease(hubPublicKey, releasePublicKey, fromHub, asTx=false) {
     try {
       const { hub } = await fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
@@ -800,9 +844,11 @@ export default class Hub {
         ]
       }
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubAddRelease(hub.handle)
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           hubRelease,
@@ -818,10 +864,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -852,7 +904,7 @@ export default class Hub {
    * @returns { Object } the Hub account that made the withdrawal.
    */
 
-  async hubWithdraw(hubPublicKey) {
+  async hubWithdraw(hubPublicKey, asTx=false) {
     try {
       const { hub } = await fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
@@ -896,12 +948,14 @@ export default class Hub {
       const withdrawAmount =
         tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubWithdraw(
           new anchor.BN(uiToNative(withdrawAmount, USDC_MINT)),
           hub.handle,
         )
         .accounts({
+          payer,
           authority: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           hubSigner,
@@ -915,10 +969,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -955,6 +1015,7 @@ export default class Hub {
     uri,
     fromHub,
     referenceRelease = undefined,
+    asTx=false,
   ) {
     try {
       const { hub } = await fetch(hubPublicKey)
@@ -1005,8 +1066,11 @@ export default class Hub {
       let tx
       const params = [hub.handle, slugHash, uri]
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
+
       const request = {
         accounts: {
+          payer,
           author: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           post,
@@ -1069,10 +1133,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 
@@ -1107,7 +1177,7 @@ export default class Hub {
    * @returns {Object} The updated Post.
    */
 
-  async postUpdateViaHub(hubPublicKey, slug, uri) {
+  async postUpdateViaHub(hubPublicKey, slug, uri, asTx=false) {
     try {
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       const hub = await this.program.account.Hub.fetch(hubPublicKey)
@@ -1139,9 +1209,11 @@ export default class Hub {
         this.program.programId,
       )
 
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .postUpdateViaHubPost(hub.handle, slug, uri)
         .accounts({
+          payer,
           author: this.provider.wallet.publicKey,
           hub: hubPublicKey,
           post,
@@ -1153,10 +1225,16 @@ export default class Hub {
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      tx.feePayer = payer
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      if (asTx) {
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
+        return serializedTx
+      }
 
       const txid = await this.provider.wallet.sendTransaction(
-        tx,
+        signedTx,
         this.provider.connection,
       )
 

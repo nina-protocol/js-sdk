@@ -54,6 +54,8 @@ export default class Post {
     return this.http.get(`/posts/${publicKey}`, params, withAccountData)
   }
 
+
+  // TODO: this method does not use the asTx pattern yet
   async postInit(
     authority,
     title,
@@ -214,8 +216,8 @@ export default class Post {
       const handle = decodeNonEncryptedByteArray(hub.handle)
       const request = {
         accounts: {
-          author: new anchor.web3.PublicKey(authority),
           payer: this.provider.wallet.publicKey,
+          author: new anchor.web3.PublicKey(authority),
           hub: hubPublicKey,
           post,
           hubPost,

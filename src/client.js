@@ -86,6 +86,7 @@ class NinaClient {
       provider: this.provider,
       cluster: this.cluster,
       isNode: this.isNode,
+      fileServicePublicKey: new anchor.web3.PublicKey('3skAZNf7EjUus6VNNgHog44JZFsp8BBaso9pBRgYntSd')
     }
 
     this.Account = new Account(config)
