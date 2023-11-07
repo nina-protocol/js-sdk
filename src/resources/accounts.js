@@ -33,8 +33,8 @@ export default class Account {
    * @example const account = await NinaClient.Account.fetch("52xYtQzDaxeTGcz3WD37mAJgqVFAzR72EnGYaSHab5DQ");
    * @returns {Object} an object containing the Account's data.
    */
-  async fetch(publicKey, withAccountData = false) {
-    return this.http.get(`/accounts/${publicKey}`, undefined, withAccountData)
+  async fetch(publicKey, params = {}, withAccountData = false) {
+    return this.http.get(`/accounts/${publicKey}`, params, withAccountData)
   }
 
   /**

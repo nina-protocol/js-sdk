@@ -27,14 +27,16 @@ export const NinaProgramAction = {
   SUBSCRIPTION_SUBSCRIBE_ACCOUNT: 'SUBSCRIPTION_SUBSCRIBE_ACCOUNT',
 }
 
-const NinaProgramActionCost = {
+export const NinaProgramActionCost = {
   HUB_ADD_COLLABORATOR: 0.001919,
   HUB_ADD_RELEASE: 0.00368684,
+  HUB_INIT: 0.00923396,
   HUB_INIT_WITH_CREDIT: 0.00923396,
   HUB_UPDATE: 0.000005,
   POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE: 0.01140548,
   POST_INIT_VIA_HUB: 0.00772364,
   RELEASE_INIT_VIA_HUB: 0.03212192,
+  RELEASE_INIT: 0.03047936,
   RELEASE_INIT_WITH_CREDIT: 0.03047936,
   RELEASE_PURCHASE: 0.00204428,
   RELEASE_PURCHASE_VIA_HUB: 0.00204428,
@@ -195,7 +197,7 @@ export const getConfirmTransaction = async (txid, connection) => {
       return txResult
     },
     {
-      retries: 5,
+      retries: 10,
       minTimeout: 500,
       maxTimeout: 1000,
     },

@@ -71,6 +71,16 @@ export default class Post {
     hubPublicKeyString,
   ) {
     try {
+      const simulationResponse = await this.simulatePostInit({
+        authority,
+        slug,
+        hubPublicKeyString,
+      })
+      
+      if (simulationResponse.value.err) {
+        throw new Error('Error while simulating Post Init')
+      }
+      
       let ninaUploader
       if (this.isNode) {
         ninaUploader = new UploaderNode()
@@ -101,7 +111,7 @@ export default class Post {
         totalFiles += 1
         heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
       }
-      console.log('imageMap', imageMap, images)
+
       const imageBlocks = []
       if (images?.length > 0) {
         for await (const image of images) {
@@ -130,16 +140,6 @@ export default class Post {
           formattedBlocks.push(block)
         }
       })
-
-      slug = slug
-        .normalize('NFKD')
-        .replace(/[\u0300-\u036F]/g, '') // remove accents and convert to closest ascii equivalent
-        .toLowerCase() // convert to lowercase
-        .replace('-', '') // remove hyphens
-        .replace(/  +/g, ' ') // remove spaces
-        .replace(/ /g, '-') // replace spaces with hyphens
-        .replace(/[^a-zA-Z0-9-]/g, '') // remove non-alphanumeric characters
-        .replace(/--+/g, '') // remove spaces
 
       const checkIfSlugIsValid = async (slug) => {
         try {
@@ -248,13 +248,126 @@ export default class Post {
 
       return {
         success: true,
-        post: createdPost,
+        postPublicKey: post.toBase58(),
         msg: 'Post created.',
       }
     } catch (error) {
       console.warn('Post postInit error: ', error)
       return {
         success: false,
+        error,
+      }
+    }
+  }
+
+  async simulatePostInit({
+    authority,
+    slug,
+    hubPublicKeyString,
+  }) {
+    try {
+      slug = slug
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036F]/g, '') // remove accents and convert to closest ascii equivalent
+        .toLowerCase() // convert to lowercase
+        .replace('-', '') // remove hyphens
+        .replace(/  +/g, ' ') // remove spaces
+        .replace(/ /g, '-') // replace spaces with hyphens
+        .replace(/[^a-zA-Z0-9-]/g, '') // remove non-alphanumeric characters
+        .replace(/--+/g, '') // remove spaces
+        .replace(/-$/, '') // remove trailing hyphens
+
+      const checkIfSlugIsValid = async (slug) => {
+        try {
+          const postForSlug = await this.http.get(`/posts/${slug}`)
+          if (postForSlug) {
+            slug = `${slug}-${Math.floor(Math.random() * 1000000)}`
+          }
+          const postForNewSlug = await this.http.get(`/posts/${slug}`)
+          if (postForNewSlug) {
+            await checkIfSlugIsValid(slug)
+          }
+          return slug
+        } catch (error) {
+          // console.log('error', error)
+          return slug
+        }
+      } 
+      
+      slug = await checkIfSlugIsValid(slug)
+
+      const hubPublicKey = new anchor.web3.PublicKey(hubPublicKeyString)
+
+      const hub = await this.program.account.hub.fetch(hubPublicKey)
+      const slugHash = MD5(slug).toString().slice(0, 32)
+
+      const [post] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-post')),
+          hubPublicKey.toBuffer(),
+          Buffer.from(anchor.utils.bytes.utf8.encode(slugHash)),
+        ],
+        this.program.programId
+      )
+      const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-post')),
+          hubPublicKey.toBuffer(),
+          post.toBuffer(),
+        ],
+        this.program.programId
+      )
+      const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+          hubPublicKey.toBuffer(),
+          post.toBuffer(),
+        ],
+        this.program.programId
+      )
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          hubPublicKey.toBuffer(),
+          new anchor.web3.PublicKey(authority).toBuffer(),
+        ],
+        this.program.programId
+      )
+
+      const handle = decodeNonEncryptedByteArray(hub.handle)
+      const request = {
+        accounts: {
+          payer: this.provider.wallet.publicKey,
+          author: new anchor.web3.PublicKey(authority),
+          hub: hubPublicKey,
+          post,
+          hubPost,
+          hubContent,
+          hubCollaborator,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        },
+      }
+      let tx = await this.program.methods.postInitViaHub(
+          handle,
+          slugHash,
+          `https://arweave.net/simulated-data-tx`
+        )
+        .accounts(request.accounts)
+        .transaction()
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
+
+      return simulationResponse
+    } catch (error) {
+      console.warn(error)
+
+      return {
         error,
       }
     }

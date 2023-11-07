@@ -2,7 +2,7 @@ import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
-
+export const MEGABYTE = 1024 * 1024
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
   MAX_AUDIO_FILE_UPLOAD_SIZE_MB * 1024 * 1024
 
@@ -32,7 +32,7 @@ export default class Uploader {
             'solana',
             this.provider.wallet,
             {
-              providerUrl: this.endpoint,
+              providerUrl: this.provider.connection.rpcEndpoint,
               timeout: 2147483647,
             },
           )
@@ -113,11 +113,11 @@ export default class Uploader {
     }
   }
 
-  async getPricePerMb() {
+  async getPricePerMb(native=false) {
     try {
       const price = await this.bundlr.getPrice(1000000)
 
-      return nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+      return native ? price : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
     } catch (error) {
       return error
     }
@@ -161,11 +161,15 @@ export default class Uploader {
     }
   }
 
+  async costForFiles(files, native=false) {
+    const totalSizeWithoutMB = files.reduce((acc, file) => acc + file?.size || 0, 0)
+    const priceWithoutMB = await this.bundlr.getPrice(totalSizeWithoutMB)
+    return native ? priceWithoutMB.toNumber() : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+  }
+
   async hasBalanceForFiles(files) {
     try {
-      const pricePerMb = await this.getPricePerMb()
-      const totalSize = files.reduce((acc, file) => acc + file.size, 0)
-      const totalCost = totalSize * pricePerMb
+      const totalCost = await this.costForFiles(files)
 
       const balance = await this.getBalanceForPublicKey(
         this.provider.wallet.publicKey.toString(),

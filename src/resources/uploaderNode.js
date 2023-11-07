@@ -3,7 +3,7 @@ import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 import fs from 'fs'
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
-
+export const MEGABYTE = 1024 * 1024
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
   MAX_AUDIO_FILE_UPLOAD_SIZE_MB * 1024 * 1024
 
@@ -19,6 +19,7 @@ export default class UploaderNode {
     this.endpoint = null
     this.bundlr = null
     this.cluster = null
+    this.rpcEndpoint = null
   }
   
   async init({ provider, endpoint, cluster }) {
@@ -33,7 +34,7 @@ export default class UploaderNode {
             'solana',
             this.provider.wallet.payer.secretKey,
             {
-              providerUrl: this.endpoint.replace('.devnet', ''),
+              providerUrl: this.provider.connection.rpcEndpoint.replace('.devnet', ''),
               timeout: 2147483647,
             },
           )
@@ -97,20 +98,18 @@ export default class UploaderNode {
     }
   }
 
-  async getPricePerMb() {
+  async getPricePerMb(native=false) {
     try {
       const price = await this.bundlr.getPrice(1000000)
-
-      return nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+      return native ? price : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
     } catch (error) {
       return error
     }
   }
 
-  async fund(amount) {
+  async fund(amount, native=false) {
     try {
-      const value = uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
-
+      const value = native ? amount : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
       if (!value) return
 
       await this.bundlr.fund(value)
@@ -145,11 +144,15 @@ export default class UploaderNode {
     }
   }
 
+  async costForFiles(files, native=false) {
+    const totalSizeWithoutMB = files.reduce((acc, file) => acc + file?.size || 0, 0)
+    const priceWithoutMB = await this.bundlr.getPrice(totalSizeWithoutMB)
+    return native ? priceWithoutMB.toNumber() : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+  }
+
   async hasBalanceForFiles(files) {
     try {
-      const pricePerMb = await this.getPricePerMb()
-      const totalSize = files.reduce((acc, file) => acc + file.size, 0)
-      const totalCost = totalSize * pricePerMb
+      const totalCost = await this.costForFiles(files)
 
       const balance = await this.getBalanceForPublicKey(
         this.provider.wallet.publicKey.toString(),

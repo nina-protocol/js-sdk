@@ -375,6 +375,27 @@ export default class Release {
     tags = [],
   ) {
     try {
+      const { release, releaseBump, releaseMint } =
+        await this.initializeReleaseAndMint()
+
+      const simulationResponse = await this.simulateReleaseInit({
+        release,
+        releaseBump,
+        releaseMint,
+        authority,
+        retailPrice,
+        amount,
+        resalePercentage,
+        title,
+        description,
+        catalogNumber,
+        isOpen,
+        isUsdc,
+        hubPublicKey,
+      })
+      if (simulationResponse.value.err) {
+        throw new Error('Error while simulating Release Init')
+      }
       let ninaUploader
       if (this.isNode) {
         ninaUploader = new UploaderNode()
@@ -400,13 +421,7 @@ export default class Release {
           throw new Error('Invalid audio files')
         }
       }
-      // const isValidMd5Digest = await uploader.isValidMd5Digest(md5Digest)
-
-      // if (!isValidMd5Digest) {
-      //   throw new Error('Invalid md5 digest')
-      // }
-
-      // Audio Files + Artwork + Metadata
+      
       const totalFiles = audioFiles.length + 2
       const artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
       const files = []
@@ -420,9 +435,6 @@ export default class Release {
           type: 'audio/mpeg',
         })
       }
-
-      const { release, releaseBump, releaseMint } =
-        await this.initializeReleaseAndMint()
       
       const metadataJson = this.createReleaseMetadataJson({
         releasePublicKey: release.toBase58(),
@@ -433,8 +445,6 @@ export default class Release {
         files,
         artworkTx,
         tags,
-        // duration,
-        // md5Digest,
       })
       const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(metadataJson)
       const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
@@ -611,7 +621,243 @@ export default class Release {
         accounts.hubContent = hubContent
         accounts.hubWallet = hubWallet
           
-        const releaseInitIx = await this.program.methods
+        releaseInitIx = await this.program.methods
+          .releaseInitViaHubV0(
+            config,
+            bumps,
+            metadataData,
+          )
+          .accounts(accounts)
+          .instruction()
+      } else {
+        releaseInitIx = await this.program.methods
+          .releaseInit(config, bumps, metadataData)
+          .accounts(accounts)
+          .instruction()
+
+      }
+      instructions.push(releaseInitIx)
+
+      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+      tx.sign([releaseMint])
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const txid = await this.provider.connection.sendTransaction(signedTx, {
+        maxRetries: 5,
+      });
+      console.log('txid', txid)
+      await getConfirmTransaction(txid, this.provider.connection)
+
+      const createdRelease = await this.fetch(release.toBase58())
+      return {
+        release: createdRelease,
+        releasePublicKey: release.toBase58(),
+      }
+    } catch (error) {
+      console.warn(error)
+
+      return {
+        error,
+      }
+    }
+  }
+
+  async simulateReleaseInit({
+    release,
+    releaseBump,
+    releaseMint,
+    authority,
+    retailPrice,
+    amount,
+    resalePercentage,
+    title,
+    catalogNumber,
+    isOpen,
+    isUsdc,
+    hubPublicKey = undefined,
+  }) {
+    try {
+      const paymentMint = new anchor.web3.PublicKey(
+        isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
+      )
+
+      const [releaseSigner, releaseSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [release.toBuffer()],
+          this.program.programId,
+        )
+
+      const lamports = await getMinimumBalanceForRentExemptMint(this.provider.connection);
+
+      const releaseMintCreateIx = anchor.web3.SystemProgram.createAccount({
+        fromPubkey: this.provider.wallet.publicKey,
+        newAccountPubkey: releaseMint.publicKey,
+        space: MINT_SIZE,
+        lamports,
+        programId: TOKEN_PROGRAM_ID,
+      })
+
+
+      const releaseMintInitializeIx = createInitializeMint2Instruction(
+        releaseMint.publicKey,
+        0,
+        this.provider.wallet.publicKey,
+        this.provider.wallet.publicKey,
+        TOKEN_PROGRAM_ID,
+      )
+
+      const [authorityTokenAccount, authorityTokenAccountIx] =
+        await findOrCreateAssociatedTokenAccount(
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          new anchor.web3.PublicKey(authority),
+          anchor.web3.SystemProgram.programId,
+          paymentMint,
+        )
+
+      const [royaltyTokenAccount, royaltyTokenAccountIx] =
+        await findOrCreateAssociatedTokenAccount(
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          releaseSigner,
+          anchor.web3.SystemProgram.programId,
+          paymentMint,
+          true,
+        )
+
+      const instructions = [releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
+
+      if (authorityTokenAccountIx) {
+        instructions.push(authorityTokenAccountIx)
+      }
+
+      const now = new Date()
+      const editionAmount = isOpen ? MAX_U64 : amount
+
+      const config = {
+        amountTotalSupply: new anchor.BN(editionAmount),
+        amountToArtistTokenAccount: new anchor.BN(0),
+        amountToVaultTokenAccount: new anchor.BN(0),
+        resalePercentage: new anchor.BN(resalePercentage * 10000),
+        price: new anchor.BN(uiToNative(retailPrice, paymentMint, this.cluster)),
+        releaseDatetime: new anchor.BN(now.getTime() / 1000),
+      }
+
+      const metadataProgram = new anchor.web3.PublicKey(
+        NINA_CLIENT_IDS[this.cluster].programs.metaplex,
+      )
+
+      const [metadata] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from('metadata'),
+          metadataProgram.toBuffer(),
+          releaseMint.publicKey.toBuffer(),
+        ],
+        metadataProgram,
+      )
+
+      const nameBuf = Buffer.from(`${title}`.substring(0, 32))
+      const nameBufString = nameBuf.slice(0, 32).toString()
+      const symbolBuf = Buffer.from(catalogNumber.substring(0, 10))
+      const symbolBufString = symbolBuf.slice(0, 10).toString()
+
+      const metadataData = {
+        name: nameBufString,
+        symbol: symbolBufString,
+        uri: `https://arweave.net/simulation`,
+        sellerFeeBasisPoints: resalePercentage * 100,
+      }
+
+      const bumps = {
+        release: releaseBump,
+        signer: releaseSignerBump,
+      }
+
+      const accounts = {
+        release,
+        releaseSigner,
+        releaseMint: releaseMint.publicKey,
+        payer: this.provider.wallet.publicKey,
+        authority: new anchor.web3.PublicKey(authority),
+        authorityTokenAccount,
+        paymentMint,
+        royaltyTokenAccount,
+        metadata,
+        metadataProgram,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      }
+
+      let tx
+      let releaseInitIx
+      if (hubPublicKey) {
+        const hub = await this.program.account['hub'].fetch(
+          new anchor.web3.PublicKey(hubPublicKey),
+        )
+
+        const [hubCollaborator] =
+          await anchor.web3.PublicKey.findProgramAddress(
+            [
+              Buffer.from(
+                anchor.utils.bytes.utf8.encode('nina-hub-collaborator'),
+              ),
+              new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+              new anchor.web3.PublicKey(authority).toBuffer(),
+            ],
+            this.program.programId,
+          )
+
+        const [hubSigner] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubRelease] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-release')),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+            release.toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
+            new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
+            release.toBuffer(),
+          ],
+          this.program.programId,
+        )
+
+        const [hubWallet] = await findOrCreateAssociatedTokenAccount(
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          hubSigner,
+          anchor.web3.SystemProgram.programId,
+          paymentMint,
+        )
+
+        accounts.hub = new anchor.web3.PublicKey(hubPublicKey)
+        accounts.hubSigner = hubSigner
+        accounts.hubCollaborator = hubCollaborator
+        accounts.hubRelease = hubRelease
+        accounts.hubContent = hubContent
+        accounts.hubWallet = hubWallet
+          
+        releaseInitIx = await this.program.methods
           .releaseInitViaHubV0(
             config,
             bumps,
@@ -620,50 +866,32 @@ export default class Release {
           .accounts(accounts)
           .instruction()
 
-          instructions.push(releaseInitIx)
-          const latestBlockhash = await this.provider.connection.getRecentBlockhash()
-          const lookupTableAccount = await this.provider.connection.getAddressLookupTable(new anchor.web3.PublicKey('Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'));
-          const messageV0 = new anchor.web3.TransactionMessage({
-            payerKey: this.provider.wallet.publicKey,
-            recentBlockhash: latestBlockhash.blockhash,
-            instructions: instructions,
-          }).compileToV0Message([lookupTableAccount.value]);
-          tx = new anchor.web3.VersionedTransaction(messageV0)
-          tx.sign([releaseMint])
-          const signedTx = await this.provider.wallet.signTransaction(tx);
-          const txid = await this.provider.connection.sendTransaction(signedTx, {
-            maxRetries: 5,
-          });
-      
-          // const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
-          await getConfirmTransaction(txid, this.provider.connection)
-
       } else {
-        tx = await this.program.methods
-          .releaseInit(config, bumps, metadataData)
+        releaseInitIx = await this.program.methods
+          .releaseInit(
+            config,
+            bumps,
+            metadataData,
+          )
           .accounts(accounts)
-          .preInstructions(instructions)
-          .transaction()
-
-          tx.recentBlockhash = (
-            await this.provider.connection.getRecentBlockhash()
-          ).blockhash
-          tx.feePayer = this.provider.wallet.publicKey
-          tx.partialSign(releaseMint)
-          
-          const signedTx = await this.provider.wallet.signTransaction(tx);
-          if (asTx) {
-            console.log('asTx', signedTx)
-            return signedTx
-          }
-          const txid = await this.provider.connection.sendRawTransaction(signedTx.serialize());
-          await getConfirmTransaction(txid, this.provider.connection)
-    
+          .instruction()
       }
-  
+      instructions.push(releaseInitIx)
 
-      const createdRelease = await this.fetch(release.toBase58())
-      return createdRelease
+      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+      tx.sign([releaseMint])
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
+      return simulationResponse
     } catch (error) {
       console.warn(error)
 

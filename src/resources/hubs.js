@@ -1,8 +1,11 @@
 import * as anchor from '@coral-xyz/anchor';
 import axios from 'axios'
 import MD5 from 'crypto-js/md5'
+import UploaderNode from './uploaderNode';
+import Uploader from './uploader';
 import {
   NINA_CLIENT_IDS,
+  NinaProgramAction,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
   uiToNative,
@@ -13,12 +16,13 @@ import {
  */
 
 export default class Hub {
-  constructor({ http, program, provider, cluster, fileServicePublicKey }) {
+  constructor({ http, program, provider, cluster, fileServicePublicKey, isNode }) {
     this.http = http
     this.program = program
     this.provider = provider
     this.cluster = cluster
     this.fileServicePublicKey = fileServicePublicKey
+    this.isNode = isNode
   }
 
   /**
@@ -223,21 +227,22 @@ export default class Hub {
     )
   }
   
-  /**
-   * @function hubInit
-   * @description Initializes a Hub account with Hub Credit.
-   * @param {String} handle - The handle of the Hub.
-   * @param {Number} publishFee - The fee to publish a Release or Post on a Hub
-   * @param {Number} referralFee - The percentage of the publish fee that goes to the referrer
-   * @param {Number} hubSignerBump - The bump seed for the Hub Signer.
-   * @example const hub = await NinaClient.Hub.hubInit({})
-   * @returns {Object} The created Hub account.
-   */
-
-  async hubInit(handle, publishFee, referralFee) {
+  async simulateHubInit({
+    handle,
+    authority,
+    publishFee,
+    referralFee,
+  }) {
     try {
       publishFee = new anchor.BN(publishFee * 10000)
       referralFee = new anchor.BN(referralFee * 10000)
+
+      const hubParams = {
+        handle,
+        publishFee,
+        referralFee,
+        uri: `https://arweave.net/simulationTx`,
+      }
 
       const [hub] = await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -255,12 +260,180 @@ export default class Hub {
           ],
           this.program.programId,
         )
+      hubParams.hubSignerBump = hubSignerBump
 
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
           hub.toBuffer(),
-          this.provider.wallet.publicKey.toBuffer(),
+          new anchor.web3.PublicKey(authority).toBuffer(),
+        ],
+        this.program.programId,
+      )
+
+      const [, usdcVaultIx] = await findOrCreateAssociatedTokenAccount(
+        this.provider.connection,
+        this.provider.wallet.publicKey,
+        hubSigner,
+        anchor.web3.SystemProgram.programId,
+        new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
+      )
+
+      const [, wrappedSolVaultIx] = await findOrCreateAssociatedTokenAccount(
+        this.provider.connection,
+        this.provider.wallet.publicKey,
+        hubSigner,
+        anchor.web3.SystemProgram.programId,
+        new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
+      )
+      const instructions = []
+      if (usdcVaultIx) {
+        instructions.push(usdcVaultIx)
+      }
+      if (wrappedSolVaultIx) {
+        instructions.push(wrappedSolVaultIx)
+      }
+      const hubInitIx = await this.program.methods
+        .hubInit(hubParams)
+        .accounts({
+          payer: this.provider.wallet.publicKey,
+          authority: new anchor.web3.PublicKey(authority),
+          hub,
+          hubSigner,
+          hubCollaborator,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        })
+        .instruction()
+      
+      instructions.push(hubInitIx)
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+
+      tx.recentBlockhash = (
+        await this.provider.connection.getRecentBlockhash()
+      ).blockhash
+      tx.feePayer = this.provider.wallet.publicKey
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
+      return simulationResponse
+    } catch (error) {
+      console.warn(error)
+
+      return {
+        error
+      }
+    }
+  } 
+
+  /**
+   * @function hubInit
+   * @description Initializes a Hub account with Hub Credit.
+   * @param {String} handle - The handle of the Hub.
+   * @param {Number} publishFee - The fee to publish a Release or Post on a Hub
+   * @param {Number} referralFee - The percentage of the publish fee that goes to the referrer
+   * @param {Number} hubSignerBump - The bump seed for the Hub Signer.
+   * @example const hub = await NinaClient.Hub.hubInit({})
+   * @returns {Object} The created Hub account.
+   */
+
+  async hubInit(
+    authority,
+    handle,
+    displayName,
+    description,
+    image,
+    publishFee=2.5,
+    referralFee=2.5,
+  ) {
+    try {
+      const simulationResponse = await this.simulateHubInit({
+        handle,
+        authority,
+        publishFee,
+        referralFee,
+      })
+      if (simulationResponse.value.err) {
+        console.warn('simulationResponse', simulationResponse)
+        throw new Error('Error while simulating Release Init')
+      }
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+      if (image && !ninaUploader.hasBalanceForFiles([image])) {
+        throw new Error('Insufficient upload balance for files')
+      }
+
+      if (image && !ninaUploader.isValidArtworkFile(image)) {
+        throw new Error('Invalid artwork file')
+      }
+
+      const totalFiles = 2
+      let artworkTx = ''
+      if (image) {
+        artworkTx = await ninaUploader.uploadFile(image, 0, totalFiles)
+      }
+
+      const data = {
+        displayName,
+        description,
+        externalurl: '',
+        image: `https://arweave.net/${artworkTx}`
+      }
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
+      const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+
+      publishFee = new anchor.BN(publishFee * 10000)
+      referralFee = new anchor.BN(referralFee * 10000)
+
+      const hubParams = {
+        handle,
+        publishFee,
+        referralFee,
+        uri: `https://arweave.net/${dataTx}`,
+      }
+
+      const [hub] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub')),
+          Buffer.from(anchor.utils.bytes.utf8.encode(handle)),
+        ],
+        this.program.programId,
+      )
+
+      const [hubSigner, hubSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-signer')),
+            hub.toBuffer(),
+          ],
+          this.program.programId,
+        )
+      hubParams.hubSignerBump = hubSignerBump
+      const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
+          hub.toBuffer(),
+          new anchor.web3.PublicKey(authority).toBuffer(),
         ],
         this.program.programId,
       )
@@ -281,16 +454,18 @@ export default class Hub {
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
 
-      //add IX for create
-      const tx = await this.program.methods
-        .hubInit({
-          publishFee,
-          referralFee,
-          handle,
-          hubSignerBump,
-        })
+      const instructions = []
+      if (usdcVaultIx) {
+        instructions.push(usdcVaultIx)
+      }
+      if (wrappedSolVaultIx) {
+        instructions.push(wrappedSolVaultIx)
+      }
+      const hubInitIx = await this.program.methods
+        .hubInit(hubParams)
         .accounts({
-          authority: this.provider.wallet.publicKey,
+          payer: this.provider.wallet.publicKey,
+          authority: new anchor.web3.PublicKey(authority),
           hub,
           hubSigner,
           hubCollaborator,
@@ -298,24 +473,34 @@ export default class Hub {
           tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
-        .preInstructions([usdcVaultIx, wrappedSolVaultIx])
-        .transaction()
+        .instruction()
+      
+      instructions.push(hubInitIx)
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      tx = new anchor.web3.VersionedTransaction(messageV0)
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
-
-      const txid = await this.provider.wallet.sendTransaction(
-        tx,
-        this.provider.connection,
-      )
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const txid = await this.provider.connection.sendTransaction(signedTx, {
+        maxRetries: 5,
+      });
 
       await getConfirmTransaction(txid, this.provider.connection)
-      const createdHub = await fetch(hub.toBase58())
+      const createdHub = await this.fetch(hub.toBase58())
 
       return {
-        createdHub,
+        ...createdHub,
       }
     } catch (error) {
       console.warn(error)
@@ -801,7 +986,8 @@ export default class Hub {
 
   async hubAddRelease(hubPublicKey, releasePublicKey, fromHub, asTx=false) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey, false)
+      console.log('hub', hub)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
@@ -858,18 +1044,22 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
-        .remainingAccounts(remainingAccounts)
+        // .remainingAccounts(remainingAccounts)
         .transaction()
 
       tx.recentBlockhash = (
         await this.provider.connection.getRecentBlockhash()
       ).blockhash
       tx.feePayer = payer
-
       const signedTx = await this.provider.wallet.signTransaction(tx);
       if (asTx) {
         const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
-        return serializedTx
+        return {
+          tx: serializedTx,
+          type: NinaProgramAction.HUB_ADD_RELEASE,
+          hubPublicKey: hubPublicKey.toBase58(),
+          hubReleasePublicKey: hubRelease.toBase58(),
+        }
       }
 
       const txid = await this.provider.wallet.sendTransaction(

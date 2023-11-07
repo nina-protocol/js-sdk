@@ -8,6 +8,8 @@ import Release from './resources/releases'
 import Subscription from './resources/subscriptions'
 import Search from './resources/search'
 import Wallet from './resources/wallet'
+import Uploader from './resources/uploader'
+import UploaderNode from './resources/uploaderNode'
 import {
   decimalsForMint,
   isSol,
@@ -18,6 +20,9 @@ import {
   findOrCreateAssociatedTokenAccount,
   decodeNonEncryptedByteArray,
   wrapSol,
+  getConfirmTransaction,
+  NinaProgramAction,
+  NinaProgramActionCost,
 } from './utils'
 
 /** Class Representing the Nina Client */
@@ -31,6 +36,8 @@ class NinaClient {
     this.connection = null
     this.apiKey = null
     this.cluster = 'mainnet'
+    this.NinaProgramAction = NinaProgramAction
+    this.NinaProgramActionCost = NinaProgramActionCost
 
     this.Account = null
     this.Exchange = null
@@ -73,6 +80,27 @@ class NinaClient {
     })
     this.program = await anchor.Program.at(this.programId, this.provider)
     this.isNode = isNode
+    this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
+
+    if (this.isNode) {
+      this.Uploader = new UploaderNode()
+
+      await this.Uploader.init({
+        provider: this.provider,
+        endpoint: this.endpoint,
+        cluster: this.cluster,
+      })  
+    } else {
+      if (wallet && wallet.publicKey) {
+        this.Uploader = new Uploader()
+
+        await this.Uploader.init({
+          provider: this.provider,
+          endpoint: this.endpoint,
+          cluster: this.cluster,
+        })    
+      }
+    }
 
     const http = new Http({
       endpoint: this.endpoint,

@@ -16,12 +16,14 @@ export default class Wallet {
     this.provider = provider
   }
 
-  async getSolPrice() {
+  async getSolPrice(native=false) {
     try {
       const priceResult = await axios.get(
         `https://price.jup.ag/v4/price?ids=SOL`,
       )
-
+      if (native) {
+        return Math.trunc(uiToNative(priceResult.data.data.SOL.price, priceResult.data.data.SOL.id))
+      }
       return priceResult.data.data.SOL.price
     } catch (error) {
       return error
@@ -74,21 +76,28 @@ export default class Wallet {
     }
   }
 
-  async sendSol(amount, destination) {
+  async sendSol(amount, destination, isNative=false) {
     try {
-      const tx = new anchor.web3.Transaction().add(
-        anchor.web3.SystemProgram.transfer({
-          fromPubkey: this.provider.wallet.publicKey,
-          toPubkey: new anchor.web3.PublicKey(destination),
-          lamports: new anchor.BN(
-            uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
-          ),
-        })
-      );
-      const txid = await this.provider.wallet.sendTransaction(
-        tx,
-        this.provider.connection,
-      )
+      const instructions = [anchor.web3.SystemProgram.transfer({
+        fromPubkey: this.provider.wallet.publicKey,
+        toPubkey: new anchor.web3.PublicKey(destination),
+        lamports: new anchor.BN(
+          isNative ? amount : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+        ),
+      })]
+
+      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: instructions,
+      }).compileToV0Message();
+      const tx = new anchor.web3.VersionedTransaction(messageV0)
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const txid = await this.provider.connection.sendTransaction(signedTx, {
+        maxRetries: 5,
+      });
 
       await getConfirmTransaction(txid, this.provider.connection)
 
@@ -147,8 +156,6 @@ export default class Wallet {
           'Destination is not a valid Solana address or USDC account',
         )
       }
-      console.log('we here')
-      console.log('NINA_CLIENT_IDS[this.cluster].mints.usdc', NINA_CLIENT_IDS[this.cluster].mints.usdc)
       const [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
@@ -157,7 +164,6 @@ export default class Wallet {
           anchor.web3.SystemProgram.programId,
           new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.usdc),
         )
-        console.log('we here 2')
 
       if (isSystemAccount) {
         const [_toUsdcTokenAccount, _toUsdcTokenAccountIx] =
@@ -174,7 +180,6 @@ export default class Wallet {
       } else {
         toUsdcTokenAccount = new anchor.web3.PublicKey(destination)
       }
-      console.log('we here 3')
 
       const instructions = []
 
