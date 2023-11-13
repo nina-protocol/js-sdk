@@ -353,8 +353,8 @@ export default class Hub {
     displayName,
     description,
     image,
-    publishFee=2.5,
-    referralFee=2.5,
+    publishFee=0,
+    referralFee=0,
   ) {
     try {
       const simulationResponse = await this.simulateHubInit({
@@ -365,7 +365,7 @@ export default class Hub {
       })
       if (simulationResponse.value.err) {
         console.warn('simulationResponse', simulationResponse)
-        throw new Error('Error while simulating Release Init')
+        throw new Error('Error while simulating Hub Init')
       }
       let ninaUploader
       if (this.isNode) {
@@ -388,16 +388,16 @@ export default class Hub {
       }
 
       const totalFiles = 2
-      let artworkTx = ''
+      let artworkTx
       if (image) {
         artworkTx = await ninaUploader.uploadFile(image, 0, totalFiles)
       }
 
       const data = {
         displayName,
-        description,
+        description: description || '',
         externalurl: '',
-        image: `https://arweave.net/${artworkTx}`
+        image: artworkTx ? `https://arweave.net/${artworkTx}` : ''
       }
       const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
       const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
