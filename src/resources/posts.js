@@ -1,6 +1,7 @@
 import {
   decodeNonEncryptedByteArray,
   getConfirmTransaction,
+  getLatestBlockhashWithRetry,
 } from '../utils'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
@@ -235,9 +236,8 @@ export default class Post {
         .accounts(request.accounts)
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const txId = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
@@ -356,9 +356,8 @@ export default class Post {
         .accounts(request.accounts)
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);

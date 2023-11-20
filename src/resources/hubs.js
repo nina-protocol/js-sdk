@@ -8,7 +8,11 @@ import {
   NinaProgramAction,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
+  getLatestBlockhashWithRetry,
   uiToNative,
+  addPriorityFeeIx,
+  fetchWithRetry,
+  simulateWithRetry,
 } from '../utils'
 
 /**
@@ -286,7 +290,7 @@ export default class Hub {
         anchor.web3.SystemProgram.programId,
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
-      const instructions = []
+      const instructions = [addPriorityFeeIx]
       if (usdcVaultIx) {
         instructions.push(usdcVaultIx)
       }
@@ -312,7 +316,7 @@ export default class Hub {
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.blockhash,
@@ -320,9 +324,7 @@ export default class Hub {
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
@@ -357,12 +359,12 @@ export default class Hub {
     referralFee=0,
   ) {
     try {
-      const simulationResponse = await this.simulateHubInit({
+      const simulationResponse = await simulateWithRetry(this.simulateHubInit({
         handle,
         authority,
         publishFee,
         referralFee,
-      })
+      }))
       if (simulationResponse.value.err) {
         console.warn('simulationResponse', simulationResponse)
         throw new Error('Error while simulating Hub Init')
@@ -454,7 +456,7 @@ export default class Hub {
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
 
-      const instructions = []
+      const instructions = [addPriorityFeeIx]
       if (usdcVaultIx) {
         instructions.push(usdcVaultIx)
       }
@@ -480,7 +482,7 @@ export default class Hub {
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.blockhash,
@@ -488,16 +490,14 @@ export default class Hub {
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      tx.recentBlockhash = latestBlockhash.blockhash
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const txid = await this.provider.connection.sendTransaction(signedTx, {
         maxRetries: 5,
       });
 
       await getConfirmTransaction(txid, this.provider.connection)
-      const createdHub = await this.fetch(hub.toBase58())
+      const createdHub = await fetchWithRetry(this.fetch(hub.toBase58()))
 
       return {
         ...createdHub,
@@ -558,10 +558,9 @@ export default class Hub {
           hub: hubPublicKey,
         })
         .transaction()
-
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -614,10 +613,10 @@ export default class Hub {
     asTx=false,
   ) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const response = await this.fetch(hubPublicKey, false)
+      const { hub } = response
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
-
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -638,7 +637,7 @@ export default class Hub {
           ],
           this.program.programId,
         )
-
+      
       const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .hubAddCollaborator(
@@ -658,16 +657,19 @@ export default class Hub {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .transaction()
-
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
       if (asTx) {
         const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
-        return serializedTx
+        return {
+          tx: serializedTx,
+          type: NinaProgramAction.HUB_ADD_COLLABORATOR,
+          hubPublicKey: hubPublicKey.toBase58(),
+          hubCollaboratorPublicKey: hubCollaborator.toBase58(),
+        }
       }
 
       const txid = await this.provider.wallet.sendTransaction(
@@ -759,10 +761,8 @@ export default class Hub {
           collaborator: collaboratorPubkey,
         })
         .transaction()
-
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -834,10 +834,8 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .transaction()
-
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -929,10 +927,9 @@ export default class Hub {
         })
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
-
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
+  
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1047,9 +1044,8 @@ export default class Hub {
         // .remainingAccounts(remainingAccounts)
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
       const signedTx = await this.provider.wallet.signTransaction(tx);
       if (asTx) {
@@ -1156,10 +1152,9 @@ export default class Hub {
         })
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
-      tx.feePayer = payer
+        const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+        tx.recentBlockhash = latestBlockhash.blockhash
+        tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
       if (asTx) {
@@ -1320,9 +1315,8 @@ export default class Hub {
           .transaction()
       }
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1412,9 +1406,8 @@ export default class Hub {
         })
         .transaction()
 
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);

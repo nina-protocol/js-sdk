@@ -7,6 +7,7 @@ const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
 export const MAX_U64 = '18446744073709551615'
+const PRIORITY_SWAP_FEE = 7500
 
 export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
@@ -177,6 +178,90 @@ export const findOrCreateAssociatedTokenAccount = async (
   return [associatedTokenAddress, undefined]
 }
 
+export const getLatestBlockhashWithRetry = async (connection) => {
+  const res = await promiseRetry(
+    async (retry) => {
+      const latestBlockhash = await connection.getLatestBlockhashAndContext('finalized')
+      if (!latestBlockhash) {
+        const error = new Error('Failed to get recent blockhash')
+
+        retry(error)
+
+        return
+      }
+
+      return latestBlockhash
+    },
+    {
+      retries: 10,
+      minTimeout: 500,
+      maxTimeout: 1000,
+    },
+  )
+  if (!res?.value?.blockhash) {
+    throw new Error('Failed to get recent blockhash')
+  }
+
+  return res.value
+}
+
+export const simulateWithRetry = async (simulateFunction) => {
+  let attempts = 0
+  const res = await promiseRetry(
+    async (retry) => {
+      attempts += 1
+      const result = await simulateFunction
+      if (!result || result.value?.err) {
+        const error = new Error('Failed to simulate')
+
+        retry(error)
+
+        return
+      }
+
+      return result
+    }, {
+      retries: 10,
+      minTimeout: 500,
+      maxTimeout: 1000,
+    }
+  )
+  if (!res) {
+    throw new Error('Failed to simulate')
+  }
+
+  return res
+}
+
+export const fetchWithRetry = async (fetchFunction) => {
+  let attempts = 0
+  const res = await promiseRetry(
+    async (retry) => {
+      attempts += 1
+      const result = await fetchFunction
+      if (!result || result.message?.includes('not found')) {
+        const error = new Error('Failed to fetch')
+
+        retry(error)
+
+        return
+      }
+
+      return result
+    }, {
+      retries: 10,
+      minTimeout: 500,
+      maxTimeout: 1000,
+    }
+  )
+  if (!res) {
+    throw new Error('Failed to fetch')
+  }
+
+  return res
+}
+
+
 export const getConfirmTransaction = async (txid, connection) => {
   const res = await promiseRetry(
     async (retry) => {
@@ -319,3 +404,9 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
 
   readNext()
 }
+
+export const addPriorityFeeIx = anchor.web3.ComputeBudgetProgram.setComputeUnitPrice(
+  {
+    microLamports: PRIORITY_SWAP_FEE,
+  },
+)

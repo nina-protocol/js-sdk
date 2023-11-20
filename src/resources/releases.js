@@ -12,6 +12,10 @@ import {
   readFileChunked,
   uiToNative,
   wrapSol,
+  getLatestBlockhashWithRetry,
+  addPriorityFeeIx,
+  fetchWithRetry,
+  simulateWithRetry,
 } from '../utils'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import UploaderNode from './uploaderNode';
@@ -378,7 +382,7 @@ export default class Release {
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
 
-      const simulationResponse = await this.simulateReleaseInit({
+      const simulationResponse = await simulateWithRetry(this.simulateReleaseInit({
         release,
         releaseBump,
         releaseMint,
@@ -392,9 +396,10 @@ export default class Release {
         isOpen,
         isUsdc,
         hubPublicKey,
-      })
-      if (simulationResponse.value.err) {
-        throw new Error('Error while simulating Release Init')
+      }))
+      if (simulationResponse?.value?.err) {
+        console.warn('simulationResponse', simulationResponse)
+        throw new Error(`Error while simulating Release Init: ${JSON.stringify(simulationResponse.value)}`)
       }
       let ninaUploader
       if (this.isNode) {
@@ -496,8 +501,7 @@ export default class Release {
           paymentMint,
           true,
         )
-
-      const instructions = [releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
+      const instructions = [addPriorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
 
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
@@ -638,7 +642,7 @@ export default class Release {
       }
       instructions.push(releaseInitIx)
 
-      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
@@ -656,7 +660,7 @@ export default class Release {
       console.log('txid', txid)
       await getConfirmTransaction(txid, this.provider.connection)
 
-      const createdRelease = await this.fetch(release.toBase58())
+      const createdRelease = await fetchWithRetry(this.fetch(release.toBase58()))
       return {
         release: createdRelease,
         releasePublicKey: release.toBase58(),
@@ -733,7 +737,7 @@ export default class Release {
           true,
         )
 
-      const instructions = [releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
+      const instructions = [addPriorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
 
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
@@ -877,8 +881,8 @@ export default class Release {
           .instruction()
       }
       instructions.push(releaseInitIx)
-
-      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
