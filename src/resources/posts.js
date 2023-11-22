@@ -2,6 +2,8 @@ import {
   decodeNonEncryptedByteArray,
   getConfirmTransaction,
   getLatestBlockhashWithRetry,
+  simulateWithRetry,
+  sleep,
 } from '../utils'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
@@ -70,16 +72,20 @@ export default class Post {
     heroImage,
     images,    
     hubPublicKeyString,
+    simulate=false
   ) {
     try {
-      const simulationResponse = await this.simulatePostInit({
-        authority,
-        slug,
-        hubPublicKeyString,
-      })
-      
-      if (simulationResponse.value.err) {
-        throw new Error('Error while simulating Post Init')
+      if (simulate) {
+        const simulationResponse = await simulateWithRetry(this.simulatePostInit({
+          authority,
+          slug,
+          hubPublicKeyString,
+        }))
+        
+        if (simulationResponse?.value?.err) {
+          console.log('simulationResponse', simulationResponse)
+          throw new Error('Error while simulating Post Init')
+        }
       }
       
       let ninaUploader
@@ -236,15 +242,31 @@ export default class Post {
         .accounts(request.accounts)
         .transaction()
 
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
-      tx.recentBlockhash = latestBlockhash.blockhash
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+      tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txId = await this.provider.connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: true,
-      });
-      await getConfirmTransaction(txId, this.provider.connection)
-      const createdPost = await this.fetch(post.toBase58(), true, { txId })
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
+      
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send post init tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send post init tx, retrying from blockheight: ', blockheight)
+        }
+      }
+      await getConfirmTransaction(txid, this.provider.connection)
+      await sleep(3000)
 
       return {
         success: true,

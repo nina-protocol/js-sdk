@@ -13,6 +13,7 @@ import {
   addPriorityFeeIx,
   fetchWithRetry,
   simulateWithRetry,
+  sleep,
 } from '../utils'
 
 /**
@@ -357,18 +358,22 @@ export default class Hub {
     image,
     publishFee=0,
     referralFee=0,
+    simulate=false
   ) {
     try {
-      const simulationResponse = await simulateWithRetry(this.simulateHubInit({
-        handle,
-        authority,
-        publishFee,
-        referralFee,
-      }))
-      if (simulationResponse.value.err) {
-        console.warn('simulationResponse', simulationResponse)
-        throw new Error('Error while simulating Hub Init')
+      if (simulate) {
+        const simulationResponse = await simulateWithRetry(this.simulateHubInit({
+          handle,
+          authority,
+          publishFee,
+          referralFee,
+        }))
+        if (simulationResponse.value.err) {
+          console.warn('simulationResponse', simulationResponse)
+          throw new Error('Error while simulating Hub Init')
+        }
       }
+      
       let ninaUploader
       if (this.isNode) {
         ninaUploader = new UploaderNode()
@@ -482,22 +487,38 @@ export default class Hub {
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
+        recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)
-
-      tx.recentBlockhash = latestBlockhash.blockhash
+      
       const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txid = await this.provider.connection.sendTransaction(signedTx, {
-        maxRetries: 5,
-      });
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
 
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send hub tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send hub tx, retrying from blockheight: ', blockheight)
+        }
+      }
       await getConfirmTransaction(txid, this.provider.connection)
-      const createdHub = await fetchWithRetry(this.fetch(hub.toBase58()))
+      await sleep(3000)
+      const createdHub = await this.fetch(hub.toBase58())
 
       return {
         ...createdHub,
@@ -657,8 +678,9 @@ export default class Hub {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
         .transaction()
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
-      tx.recentBlockhash = latestBlockhash.blockhash
+
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1044,8 +1066,8 @@ export default class Hub {
         // .remainingAccounts(remainingAccounts)
         .transaction()
 
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
-      tx.recentBlockhash = latestBlockhash.blockhash
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = payer
       const signedTx = await this.provider.wallet.signTransaction(tx);
       if (asTx) {

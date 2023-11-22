@@ -16,10 +16,12 @@ import {
   addPriorityFeeIx,
   fetchWithRetry,
   simulateWithRetry,
+  sleep,
 } from '../utils'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
+
 /**
  * @module Release
  */
@@ -264,8 +266,8 @@ export default class Release {
       }
 
       tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        await this.provider.connection.getLatestBlockhashAndContext()
+      ).value.blockhash
       tx.feePayer = this.provider.wallet.publicKey
       const txid = await this.provider.wallet.sendTransaction(
         tx,
@@ -377,30 +379,33 @@ export default class Release {
     trackMap,
     hubPublicKey = undefined,
     tags = [],
+    simulate=false
   ) {
     try {
       const { release, releaseBump, releaseMint } =
         await this.initializeReleaseAndMint()
 
-      const simulationResponse = await simulateWithRetry(this.simulateReleaseInit({
-        release,
-        releaseBump,
-        releaseMint,
-        authority,
-        retailPrice,
-        amount,
-        resalePercentage,
-        title,
-        description,
-        catalogNumber,
-        isOpen,
-        isUsdc,
-        hubPublicKey,
-      }))
-      if (simulationResponse?.value?.err) {
-        console.warn('simulationResponse', simulationResponse)
-        throw new Error(`Error while simulating Release Init: ${JSON.stringify(simulationResponse.value)}`)
-      }
+        if (simulate) {
+          const simulationResponse = await simulateWithRetry(this.simulateReleaseInit({
+            release,
+            releaseBump,
+            releaseMint,
+            authority,
+            retailPrice,
+            amount,
+            resalePercentage,
+            title,
+            description,
+            catalogNumber,
+            isOpen,
+            isUsdc,
+            hubPublicKey,
+          }))
+          if (simulationResponse?.value?.err) {
+            console.warn('simulationResponse', simulationResponse)
+            throw new Error(`Error while simulating Release Init: ${JSON.stringify(simulationResponse.value)}`)
+          }
+        }
       let ninaUploader
       if (this.isNode) {
         ninaUploader = new UploaderNode()
@@ -642,25 +647,42 @@ export default class Release {
       }
       instructions.push(releaseInitIx)
 
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
+        recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)
       tx.sign([releaseMint])
       const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txid = await this.provider.connection.sendTransaction(signedTx, {
-        maxRetries: 5,
-      });
-      console.log('txid', txid)
-      await getConfirmTransaction(txid, this.provider.connection)
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
 
-      const createdRelease = await fetchWithRetry(this.fetch(release.toBase58()))
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send release init tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send release init tx, retrying from blockheight: ', blockheight)
+        }
+      }
+      await getConfirmTransaction(txid, this.provider.connection)
+      await sleep(2500)
+      const createdRelease = await this.fetch(release.toBase58())
       return {
         release: createdRelease,
         releasePublicKey: release.toBase58(),
@@ -932,8 +954,8 @@ export default class Release {
         .transaction()
 
       tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        await this.provider.connection.getLatestBlockhashAndContext()
+      ).value.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1015,8 +1037,8 @@ export default class Release {
         .transaction()
 
       tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        await this.provider.connection.getLatestBlockhashAndContext()
+      ).value.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1100,8 +1122,8 @@ export default class Release {
         .transaction()
 
       tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        await this.provider.connection.getLatestBlockhashAndContext()
+      ).value.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
@@ -1194,8 +1216,8 @@ export default class Release {
         .transaction()
 
       tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
+        await this.provider.connection.getLatestBlockhashAndContext()
+      ).value.blockhash
       tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx);

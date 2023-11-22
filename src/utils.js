@@ -181,7 +181,7 @@ export const findOrCreateAssociatedTokenAccount = async (
 export const getLatestBlockhashWithRetry = async (connection) => {
   const res = await promiseRetry(
     async (retry) => {
-      const latestBlockhash = await connection.getLatestBlockhashAndContext('finalized')
+      const latestBlockhash = await connection.getLatestBlockhashAndContext('confirmed')
       if (!latestBlockhash) {
         const error = new Error('Failed to get recent blockhash')
 
@@ -193,7 +193,7 @@ export const getLatestBlockhashWithRetry = async (connection) => {
       return latestBlockhash
     },
     {
-      retries: 10,
+      retries: 20,
       minTimeout: 500,
       maxTimeout: 1000,
     },
@@ -221,7 +221,7 @@ export const simulateWithRetry = async (simulateFunction) => {
 
       return result
     }, {
-      retries: 10,
+      retries: 20,
       minTimeout: 500,
       maxTimeout: 1000,
     }
@@ -234,22 +234,24 @@ export const simulateWithRetry = async (simulateFunction) => {
 }
 
 export const fetchWithRetry = async (fetchFunction) => {
-  let attempts = 0
   const res = await promiseRetry(
     async (retry) => {
-      attempts += 1
-      const result = await fetchFunction
-      if (!result || result.message?.includes('not found')) {
-        const error = new Error('Failed to fetch')
-
+      try {
+        const result = await fetchFunction
+        if (!result || result.message?.includes('not found')) {
+          const error = new Error('Failed to fetch')
+  
+          retry(error)
+  
+          return
+        }
+        return result
+      } catch (error) {
         retry(error)
-
         return
       }
-
-      return result
     }, {
-      retries: 10,
+      retries: 20,
       minTimeout: 500,
       maxTimeout: 1000,
     }
@@ -264,7 +266,8 @@ export const fetchWithRetry = async (fetchFunction) => {
 
 export const getConfirmTransaction = async (txid, connection) => {
   const res = await promiseRetry(
-    async (retry) => {
+    async (retry, number) => {
+      console.log(`attempt: ${number}`)
       const txResult = await connection.getTransaction(txid, {
         commitment: 'confirmed',
         maxSupportedTransactionVersion: 0,
@@ -282,7 +285,7 @@ export const getConfirmTransaction = async (txid, connection) => {
       return txResult
     },
     {
-      retries: 10,
+      retries: 20,
       minTimeout: 500,
       maxTimeout: 1000,
     },
@@ -410,3 +413,7 @@ export const addPriorityFeeIx = anchor.web3.ComputeBudgetProgram.setComputeUnitP
     microLamports: PRIORITY_SWAP_FEE,
   },
 )
+
+export const sleep = async (ms) => {
+  return new Promise((r) => setTimeout(r, ms));
+};
