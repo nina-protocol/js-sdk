@@ -537,9 +537,9 @@ export default class Release {
         metadataProgram,
       )
 
-      const nameBuf = Buffer.from(`${title}`.substring(0, 32))
+      const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
       const nameBufString = nameBuf.slice(0, 32).toString()
-      const symbolBuf = Buffer.from(catalogNumber.substring(0, 10))
+      const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
       const symbolBufString = symbolBuf.slice(0, 10).toString()
 
       const metadataData = {
