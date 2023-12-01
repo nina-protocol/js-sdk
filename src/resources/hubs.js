@@ -560,49 +560,106 @@ export default class Hub {
    * @returns {Object} The updated Hub account.
    */
 
-  async hubUpdateConfig(hubPublicKey, uri, publishFee, referralFee, asTx = false) {
+  async hubUpdateConfig(
+    authority,
+    hubPublicKey,
+    image,
+    description,
+    displayName,
+    publishFee = 0,
+    referralFee = 0,
+  ) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
 
-      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
-      const tx = await this.program.methods
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+      if (image && !ninaUploader.hasBalanceForFiles([image])) {
+        throw new Error('Insufficient upload balance for files')
+      }
+
+      if (image && !ninaUploader.isValidArtworkFile(image)) {
+        throw new Error('Invalid artwork file')
+      }
+
+      let totalFiles = 1
+      let artworkTx
+      if (image) {
+        totalFiles = 2
+        artworkTx = await ninaUploader.uploadFile(image, 0, totalFiles)
+      }
+
+      const data = {
+        displayName: displayName || hub.displayName,
+        description: description || hub.description,
+        externalurl: '',
+        image: artworkTx ? `https://arweave.net/${artworkTx}` : hub.image
+      }
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
+      const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+      const hubUpdateConfigIx = await this.program.methods
         .hubUpdateConfig(
-          uri,
+          `https://arweave.net/${dataTx}`,
           hub.handle,
           new anchor.BN(publishFee * 10000),
           new anchor.BN(referralFee * 10000),
         )
         .accounts({
-          payer,
-          authority: this.provider.wallet.publicKey,
+          payer: this.fileServicePublicKey,
+          authority: new anchor.web3.PublicKey(authority),
           hub: hubPublicKey,
         })
-        .transaction()
+        .instruction()
         
-      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
-      tx.recentBlockhash = latestBlockhash.blockhash
-      tx.feePayer = payer
-
-      const signedTx = await this.provider.wallet.signTransaction(tx);
-      if (asTx) {
-        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
-        return serializedTx
-      }
-
-      const txid = await this.provider.wallet.sendTransaction(
-        signedTx,
-        this.provider.connection,
-      )
-
-      await getConfirmTransaction(txid, this.provider.connection)
-      await axios.get(
-        `${this.http.endpoint}/hubs/${hubPublicKey.toBase58()}/tx/${txid}`,
-      )
-      const updatedHub = await fetch(hubPublicKey)
+        const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+        const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+        const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+        const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+        const lastValidBlockHeight = latestBlockhash.context.slot + 150
+  
+        const messageV0 = new anchor.web3.TransactionMessage({
+          payerKey: this.provider.wallet.publicKey,
+          recentBlockhash: latestBlockhash.value.blockhash,
+          instructions: [hubUpdateConfigIx],
+        }).compileToV0Message([lookupTableAccount.value]);
+        const tx = new anchor.web3.VersionedTransaction(messageV0)
+        
+        const signedTx = await this.provider.wallet.signTransaction(tx);
+        const rawTx = signedTx.serialize()
+        let blockheight = await this.provider.connection.getBlockHeight();
+  
+        let txid
+        let attempts = 0
+        while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+          try {
+            attempts+=1
+            const tx = await this.provider.connection.sendRawTransaction(rawTx);
+            await getConfirmTransaction(tx, this.provider.connection)
+            txid = tx
+          } catch (error) {
+            console.log('failed attempted to send hub tx: ', error)
+            await sleep(500)
+            blockheight = await this.provider.connection.getBlockHeight();
+            console.log('failed attempted to send hub tx, retrying from blockheight: ', blockheight)
+          }
+        }
+        await getConfirmTransaction(txid, this.provider.connection)
+        await sleep(3000)
+        const updatedHub = await this.fetch(hubPublicKey)
 
       return {
-        updatedHub,
+        hub: updatedHub,
       }
     } catch (error) {
       console.warn(error)
