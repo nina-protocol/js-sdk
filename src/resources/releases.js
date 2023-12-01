@@ -65,8 +65,8 @@ export default class Release {
    * @returns {Object} an object containing the Release data.
    */
 
-  async fetch(publicKey, withAccountData = false) {
-    return this.http.get(`/releases/${publicKey}`, undefined, withAccountData)
+  async fetch(publicKey, query = {}, withAccountData = false) {
+    return this.http.get(`/releases/${publicKey}`, query, withAccountData)
   }
 
   /**
@@ -682,7 +682,7 @@ export default class Release {
       }
       await getConfirmTransaction(txid, this.provider.connection)
       await sleep(2500)
-      const createdRelease = await this.fetch(release.toBase58())
+      const createdRelease = await this.fetch(release.toBase58(), { txid })
       return {
         release: createdRelease,
         releasePublicKey: release.toBase58(),
