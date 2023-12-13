@@ -427,6 +427,7 @@ export default class Release {
       }
 
       for (const audioFile of audioFiles) {
+        console.log('audioFile', audioFile)
         if (!ninaUploader.isValidAudioFile(audioFile)) {
           throw new Error('Invalid audio files')
         }

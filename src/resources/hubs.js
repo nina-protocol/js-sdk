@@ -601,10 +601,10 @@ export default class Hub {
       }
 
       const data = {
-        displayName: displayName || hub.displayName,
-        description: description || hub.description,
+        displayName: displayName || hub.data.displayName,
+        description: description || hub.data.description,
         externalurl: '',
-        image: artworkTx ? `https://arweave.net/${artworkTx}` : hub.image
+        image: artworkTx ? `https://arweave.net/${artworkTx}` : hub.data.image
       }
       const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
       const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
@@ -622,44 +622,47 @@ export default class Hub {
         })
         .instruction()
         
-        const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-        const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-        const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-        const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
-        const lastValidBlockHeight = latestBlockhash.context.slot + 150
-  
-        const messageV0 = new anchor.web3.TransactionMessage({
-          payerKey: this.provider.wallet.publicKey,
-          recentBlockhash: latestBlockhash.value.blockhash,
-          instructions: [hubUpdateConfigIx],
-        }).compileToV0Message([lookupTableAccount.value]);
-        const tx = new anchor.web3.VersionedTransaction(messageV0)
-        
-        const signedTx = await this.provider.wallet.signTransaction(tx);
-        const rawTx = signedTx.serialize()
-        let blockheight = await this.provider.connection.getBlockHeight();
-  
-        let txid
-        let attempts = 0
-        while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
-          try {
-            attempts+=1
-            const tx = await this.provider.connection.sendRawTransaction(rawTx);
-            await getConfirmTransaction(tx, this.provider.connection)
-            txid = tx
-          } catch (error) {
-            console.log('failed attempted to send hub tx: ', error)
-            await sleep(500)
-            blockheight = await this.provider.connection.getBlockHeight();
-            console.log('failed attempted to send hub tx, retrying from blockheight: ', blockheight)
-          }
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.value.blockhash,
+        instructions: [hubUpdateConfigIx],
+      }).compileToV0Message([lookupTableAccount.value]);
+      const tx = new anchor.web3.VersionedTransaction(messageV0)
+      
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
+
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send hub tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send hub tx, retrying from blockheight: ', blockheight)
         }
-        await getConfirmTransaction(txid, this.provider.connection)
-        await sleep(3000)
-        const updatedHub = await this.fetch(hubPublicKey)
+      }
+      await getConfirmTransaction(txid, this.provider.connection)
+      await sleep(3000)
 
       return {
-        hub: updatedHub,
+        hub: {
+          publicKey: hubPublicKey.toBase58(),
+          handle: hub.handle,
+          data
+        },
       }
     } catch (error) {
       console.warn(error)

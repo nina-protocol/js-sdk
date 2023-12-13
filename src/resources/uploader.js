@@ -193,9 +193,11 @@ export default class Uploader {
   isValidArtworkFile(file) {
     return (
       (file.type === 'image/jpeg' ||
+        file.type === 'image/jpg' ||
         file.type === 'image/png' ||
         file.type === 'image/gif' ||
         file.mimetype === 'image/jpeg' ||
+        file.mimetype === 'image/jpg' ||
         file.mimetype === 'image/png' || 
         file.mimetype === 'image/gif') &&
       file.size <= MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES
