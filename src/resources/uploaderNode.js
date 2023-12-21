@@ -167,15 +167,16 @@ export default class UploaderNode {
   }
 
   isValidAudioFile(file) {
-    console.log('file', file)
+    console.log('isValidAudioFile', file)
     
     return (
-      file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg' &&
+      (file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg') &&
       file.size <= MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES
     )
   }
 
   isValidArtworkFile(file) {
+    console.log('isValidArtworkFile file', file)
     return (
       (file.type === 'image/jpeg' ||
         file.type === 'image/jpg' ||

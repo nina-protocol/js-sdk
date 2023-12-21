@@ -515,7 +515,8 @@ export default class Release {
 
       const now = new Date()
       const editionAmount = isOpen ? MAX_U64 : amount
-
+      console.log('uiToNative(retailPrice, paymentMint, this.cluster)', uiToNative(retailPrice, paymentMint, this.cluster))
+      console.log('retailPrice', retailPrice)
       const config = {
         amountTotalSupply: new anchor.BN(editionAmount),
         amountToArtistTokenAccount: new anchor.BN(0),

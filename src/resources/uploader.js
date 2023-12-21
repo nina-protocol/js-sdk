@@ -20,12 +20,13 @@ export default class Uploader {
     this.cluster = null
   }
 
-  async init({ provider, endpoint, cluster }) {
+  async init({ provider, endpoint, cluster, bundlrEndpoint = 'https://node1.bundlr.network' }) {
     return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
+        this.bundlrEndpoint = bundlrEndpoint
         import('@bundlr-network/client').then(async (module) => {
           const bundlrInstance = new module.WebBundlr(
             this.bundlrEndpoint,
@@ -185,7 +186,7 @@ export default class Uploader {
 
   isValidAudioFile(file) {
     return (
-      file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg' &&
+      (file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg') &&
       file.size <= MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES
     )
   }
