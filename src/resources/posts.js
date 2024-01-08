@@ -55,7 +55,7 @@ export default class Post {
    * @example const post = await NinaClient.Post.fetch("K8XJr7LHWJeJJARTvnsFZViqxBzyDSjsfpS6iBuWhrV")
    * @returns {Object} an object containing the Post's data.
    */
-  async fetch(publicKey, withAccountData = false, params = {}, ) {
+  async fetch(publicKey, params = {}, withAccountData = false) {
     return this.http.get(`/posts/${publicKey}`, params, withAccountData)
   }
 

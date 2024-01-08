@@ -64,8 +64,8 @@ export default class Hub {
    * @returns {Object} The Hub account.
    */
 
-  async fetch(publicKeyOrHandle, withAccountData = false) {
-    return this.http.get(`/hubs/${publicKeyOrHandle}`, undefined, withAccountData)
+  async fetch(publicKeyOrHandle, params = {}, withAccountData = false) {
+    return this.http.get(`/hubs/${publicKeyOrHandle}`, params, withAccountData)
   }
 
   /**
