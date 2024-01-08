@@ -17,6 +17,7 @@ import {
   fetchWithRetry,
   simulateWithRetry,
   sleep,
+  calculatePriorityFee,
 } from '../utils'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import UploaderNode from './uploaderNode';
@@ -427,7 +428,6 @@ export default class Release {
       }
 
       for (const audioFile of audioFiles) {
-        console.log('audioFile', audioFile)
         if (!ninaUploader.isValidAudioFile(audioFile)) {
           throw new Error('Invalid audio files')
         }
@@ -507,7 +507,10 @@ export default class Release {
           paymentMint,
           true,
         )
-      const instructions = [addPriorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
+
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      const instructions = [priorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
 
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
@@ -684,7 +687,7 @@ export default class Release {
       }
       await getConfirmTransaction(txid, this.provider.connection)
       await sleep(2500)
-      const createdRelease = await this.fetch(release.toBase58(), { txid })
+      const createdRelease = await fetchWithRetry(this.fetch(release.toBase58(), { txid }))
       return {
         release: createdRelease,
         releasePublicKey: release.toBase58(),

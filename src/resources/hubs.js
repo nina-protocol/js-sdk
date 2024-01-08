@@ -10,10 +10,11 @@ import {
   getConfirmTransaction,
   getLatestBlockhashWithRetry,
   uiToNative,
-  addPriorityFeeIx,
   fetchWithRetry,
   simulateWithRetry,
   sleep,
+  calculatePriorityFee,
+  addPriorityFeeIx,
 } from '../utils'
 
 /**
@@ -291,7 +292,12 @@ export default class Hub {
         anchor.web3.SystemProgram.programId,
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
-      const instructions = [addPriorityFeeIx]
+
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      console.log('priorityFee', priorityFee)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      console.log('priorityFeeIx', priorityFeeIx)
+      const instructions = [priorityFeeIx]
       if (usdcVaultIx) {
         instructions.push(usdcVaultIx)
       }
@@ -460,8 +466,10 @@ export default class Hub {
         anchor.web3.SystemProgram.programId,
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      const instructions = [priorityFeeIx]
 
-      const instructions = [addPriorityFeeIx]
       if (usdcVaultIx) {
         instructions.push(usdcVaultIx)
       }

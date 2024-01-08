@@ -7,7 +7,7 @@ const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
 export const MAX_U64 = '18446744073709551615'
-const PRIORITY_SWAP_FEE = 7500
+const DEFAULT_PRIORITY_FEE = 7500
 
 export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
@@ -193,7 +193,7 @@ export const getLatestBlockhashWithRetry = async (connection) => {
       return latestBlockhash
     },
     {
-      retries: 20,
+      retries: 25,
       minTimeout: 500,
       maxTimeout: 1000,
     },
@@ -221,7 +221,7 @@ export const simulateWithRetry = async (simulateFunction) => {
 
       return result
     }, {
-      retries: 20,
+      retries: 25,
       minTimeout: 500,
       maxTimeout: 1000,
     }
@@ -234,24 +234,23 @@ export const simulateWithRetry = async (simulateFunction) => {
 }
 
 export const fetchWithRetry = async (fetchFunction) => {
+  let attempts = 0
   const res = await promiseRetry(
     async (retry) => {
-      try {
-        const result = await fetchFunction
-        if (!result || result.message?.includes('not found')) {
-          const error = new Error('Failed to fetch')
-  
-          retry(error)
-  
-          return
-        }
-        return result
-      } catch (error) {
+      attempts += 1
+      console.log('fetchWithRetry', attempts)
+      const result = await fetchFunction
+      if (!result || result.message?.includes('not found')) {
+        const error = new Error('Failed to fetch')
+        console.log('fetchWithRetry error', JSON.stringify(error))
         retry(error)
+
         return
       }
+
+      return result
     }, {
-      retries: 20,
+      retries: 25,
       minTimeout: 500,
       maxTimeout: 1000,
     }
@@ -266,8 +265,7 @@ export const fetchWithRetry = async (fetchFunction) => {
 
 export const getConfirmTransaction = async (txid, connection) => {
   const res = await promiseRetry(
-    async (retry, number) => {
-      console.log(`attempt: ${number}`)
+    async (retry) => {
       const txResult = await connection.getTransaction(txid, {
         commitment: 'confirmed',
         maxSupportedTransactionVersion: 0,
@@ -285,7 +283,7 @@ export const getConfirmTransaction = async (txid, connection) => {
       return txResult
     },
     {
-      retries: 20,
+      retries: 25,
       minTimeout: 500,
       maxTimeout: 1000,
     },
@@ -408,12 +406,28 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
   readNext()
 }
 
-export const addPriorityFeeIx = anchor.web3.ComputeBudgetProgram.setComputeUnitPrice(
-  {
-    microLamports: PRIORITY_SWAP_FEE,
-  },
-)
-
 export const sleep = async (ms) => {
   return new Promise((r) => setTimeout(r, ms));
 };
+
+export const calculatePriorityFee = async (connection) => {
+  const recentPrioritizationFees =
+    await connection.getRecentPrioritizationFees()
+  if (!recentPrioritizationFees) {
+    throw new Error('Failed to get recent prioritization fee')
+  }
+  const totalFees = recentPrioritizationFees.reduce(
+    (total, current) => total + current.prioritizationFee,
+    0,
+  )
+  return (
+    Math.ceil(totalFees / recentPrioritizationFees.length) ||
+    DEFAULT_PRIORITY_FEE
+  )
+}
+
+export const addPriorityFeeIx = (fee) => {
+  return anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: fee,
+  })
+}

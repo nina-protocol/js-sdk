@@ -4,6 +4,8 @@ import {
   getLatestBlockhashWithRetry,
   simulateWithRetry,
   sleep,
+  calculatePriorityFee,
+  addPriorityFeeIx,
 } from '../utils'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
@@ -220,6 +222,9 @@ export default class Post {
         this.program.programId
       )
 
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+
       const handle = decodeNonEncryptedByteArray(hub.handle)
       const request = {
         accounts: {
@@ -233,6 +238,7 @@ export default class Post {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
+        instructions: [priorityFeeIx],
       }
       let tx = await this.program.methods.postInitViaHub(
           handle,

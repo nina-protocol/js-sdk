@@ -23,6 +23,8 @@ import {
   getConfirmTransaction,
   NinaProgramAction,
   NinaProgramActionCost,
+  calculatePriorityFee,
+  addPriorityFeeIx,
 } from './utils'
 
 /** Class Representing the Nina Client */
@@ -81,7 +83,9 @@ class NinaClient {
     this.program = await anchor.Program.at(this.programId, this.provider)
     this.isNode = isNode
     this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
-
+    this.calculatePriorityFee = calculatePriorityFee
+    this.addPriorityFeeIx = addPriorityFeeIx
+    
     if (this.isNode) {
       this.Uploader = new UploaderNode()
 
