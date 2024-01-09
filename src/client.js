@@ -1,4 +1,5 @@
 import * as anchor from '@coral-xyz/anchor';
+import axios from 'axios'
 import Http from './http'
 import Account from './resources/accounts'
 import Exchange from './resources/exchanges'
@@ -37,6 +38,7 @@ class NinaClient {
     this.programId = null
     this.connection = null
     this.apiKey = null
+    this.uid = null
     this.cluster = 'mainnet'
     this.NinaProgramAction = NinaProgramAction
     this.NinaProgramActionCost = NinaProgramActionCost
@@ -61,16 +63,18 @@ class NinaClient {
    * @param {String} programId - Nina Program Id (ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4)
    * @example Nina.client.init(endpoint, cluster, programId)
    */
-  async init(
+  async init({
     endpoint,
     rpcEndpoint,
     cluster,
     programId,
+    uid = undefined,
     apiKey = undefined,
     wallet = {},
     isNode = false,
-  ) {
+  }) {
     this.apiKey = apiKey
+    this.uid = uid
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/' //NOTE: trailing slash should be removed
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
     this.cluster = cluster || 'mainnet'
@@ -85,7 +89,11 @@ class NinaClient {
     this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
     this.calculatePriorityFee = calculatePriorityFee
     this.addPriorityFeeIx = addPriorityFeeIx
-    
+
+    if (uid) {
+      axios.defaults.headers.common['x-id'] = uid
+    }
+
     if (this.isNode) {
       this.Uploader = new UploaderNode()
 
