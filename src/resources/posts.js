@@ -6,6 +6,7 @@ import {
   sleep,
   calculatePriorityFee,
   addPriorityFeeIx,
+  fetchWithRetry,
 } from '../utils'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
@@ -273,6 +274,7 @@ export default class Post {
       }
       await getConfirmTransaction(txid, this.provider.connection)
       await sleep(3000)
+      await fetchWithRetry(this.fetch(post.toBase58(), { txid }))
 
       return {
         success: true,
