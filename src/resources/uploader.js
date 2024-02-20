@@ -43,7 +43,7 @@ export default class Uploader {
           resolve(this)
         });
     } catch (error) {
-      console.warn('bundlr error: ', error)
+      console.error('bundlr error: ', error)
       reject(error)
     }
    })
@@ -54,7 +54,7 @@ export default class Uploader {
       return new Promise((resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          console.warn(
+          console.log(
             `Uploaded Chunk number ${chunkInfo.id}, offset of ${chunkInfo.offset}, size ${chunkInfo.size} Bytes, with a total of ${chunkInfo.totalUploaded} bytes uploaded.`,
           )
         })
@@ -64,7 +64,7 @@ export default class Uploader {
           )
         })
         uploader.on('done', (finishRes) => {
-          console.warn(`Upload completed with ID ${JSON.stringify(finishRes)}`)
+          console.log(`Upload completed with ID ${JSON.stringify(finishRes)}`)
         })
         const reader = new FileReader()
         reader.onload = async () => {
@@ -99,7 +99,7 @@ export default class Uploader {
       })
 
     } catch (error) {
-      console.warn('Unable to convert metadata JSON to buffer: ', error)
+      console.log('Unable to convert metadata JSON to buffer: ', error)
     }
   }
   async getBalanceForPublicKey(publicKey) {
@@ -108,7 +108,7 @@ export default class Uploader {
 
       return bundlrBalanceRequest
     } catch (error) {
-      console.warn('Unable to get Bundlr Balance: ', error)
+      console.log('Unable to get Bundlr Balance: ', publicKey, error)
 
       return error
     }
@@ -137,7 +137,7 @@ export default class Uploader {
         msg: `${amount} Sol successfully deposited`,
       }
     } catch (error) {
-      console.warn('Bundlr fund error: ', error)
+      console.error('Bundlr fund error: ', error)
 
       return error
     }
@@ -156,7 +156,7 @@ export default class Uploader {
         msg: `${amount} Sol successfully withdrawn`,
       }
     } catch (error) {
-      console.warn('Bundlr withdraw error: ', error)
+      console.error('Bundlr withdraw error: ', error)
 
       return error
     }
@@ -178,7 +178,7 @@ export default class Uploader {
 
       return balance >= totalCost
     } catch (error) {
-      console.warn('Bundlr hasBalanceForFiles error: ', error)
+      console.error('Bundlr hasBalanceForFiles error: ', error)
 
       return error
     }
@@ -225,7 +225,7 @@ export default class Uploader {
 
       return true
     } catch (error) {
-      console.warn(error)
+      console.error(error)
     }
   }
 }

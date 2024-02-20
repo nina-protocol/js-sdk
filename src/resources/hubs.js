@@ -337,7 +337,7 @@ export default class Hub {
       const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
       return simulationResponse
     } catch (error) {
-      console.warn(error)
+      console.error('simulateHubInit', error)
 
       return {
         error
@@ -375,7 +375,7 @@ export default class Hub {
           referralFee,
         }))
         if (simulationResponse.value.err) {
-          console.warn('simulationResponse', simulationResponse)
+          console.error('hubInit simulationResponse', simulationResponse)
           throw new Error('Error while simulating Hub Init')
         }
       }
@@ -532,7 +532,7 @@ export default class Hub {
         ...createdHub,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubInit', error)
 
       return {
         error,
@@ -661,19 +661,20 @@ export default class Hub {
           blockheight = await this.provider.connection.getBlockHeight();
           console.log('failed attempted to send hub tx, retrying from blockheight: ', blockheight)
         }
-      }
+      } 
       await getConfirmTransaction(txid, this.provider.connection)
       await sleep(3000)
-
+      await fetchWithRetry(this.http.get(`/hubs/${hubPublicKey.toBase58()}/tx/${txid}`))
+      const hubUpdated = await this.fetch(hubPublicKey.toBase58())
       return {
         hub: {
           publicKey: hubPublicKey.toBase58(),
           handle: hub.handle,
-          data
+          data: hubUpdated.hub.data,
         },
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubUpdateConfig', error)
 
       return {
         error,
@@ -780,7 +781,7 @@ export default class Hub {
         hubPublicKey: hubPublicKey.toBase58(),
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubAddCollaborator', error)
 
       return {
         error,
@@ -809,7 +810,7 @@ export default class Hub {
     asTx=false,
   ) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
 
@@ -879,7 +880,7 @@ export default class Hub {
         hubPublicKey: hubPublicKey.toBase58(),
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubUpdateCollaboratorPermissions', error)
 
       return {
         error,
@@ -898,7 +899,7 @@ export default class Hub {
 
   async hubRemoveCollaborator(hubPublicKey, collaboratorPubkey, asTx=false) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
 
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
@@ -952,7 +953,7 @@ export default class Hub {
         hubPublicKey: hubPublicKey.toBase58(),
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubRemoveCollaborator', error)
 
       return {
         error,
@@ -1053,7 +1054,7 @@ export default class Hub {
         hubRelease: toggledResult,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubContentToggleVisibility', error)
 
       return {
         error,
@@ -1164,7 +1165,7 @@ export default class Hub {
         hubRelease: hubReleaseData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubAddRelease', error)
 
       return {
         error,
@@ -1182,7 +1183,7 @@ export default class Hub {
 
   async hubWithdraw(hubPublicKey, asTx=false) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
 
       const USDC_MINT = new anchor.web3.PublicKey(
@@ -1264,7 +1265,7 @@ export default class Hub {
         hub: hubData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('hubWithdraw', error)
 
       return {
         error,
@@ -1293,7 +1294,7 @@ export default class Hub {
     asTx=false,
   ) {
     try {
-      const { hub } = await fetch(hubPublicKey)
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
 
       if (referenceRelease) {
@@ -1431,7 +1432,7 @@ export default class Hub {
         post: hubPostData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('postInitViaHub', error)
 
       return {
         error,
@@ -1522,7 +1523,7 @@ export default class Hub {
         post: hubPostData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('postUpdateViaHub', error)
 
       return {
         error,

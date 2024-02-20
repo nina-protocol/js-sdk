@@ -286,7 +286,7 @@ export default class Release {
         release: newRelease,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('purchase', error)
 
       return {
         error,
@@ -338,7 +338,7 @@ export default class Release {
         hubRelease,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('initializeReleaseAndMint', error)
 
       return false
     }
@@ -403,7 +403,7 @@ export default class Release {
             hubPublicKey,
           }))
           if (simulationResponse?.value?.err) {
-            console.warn('simulationResponse', simulationResponse)
+            console.error('simulationResponse', simulationResponse)
             throw new Error(`Error while simulating Release Init: ${JSON.stringify(simulationResponse.value)}`)
           }
         }
@@ -693,7 +693,7 @@ export default class Release {
         releasePublicKey: release.toBase58(),
       }
     } catch (error) {
-      console.warn(error)
+      console.error('releaseInit', error)
 
       return {
         error,
@@ -924,7 +924,7 @@ export default class Release {
       const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
       return simulationResponse
     } catch (error) {
-      console.warn(error)
+      console.error('simulateReleaseInit', error)
 
       return {
         error,
@@ -981,7 +981,7 @@ export default class Release {
         release: closedRelease,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('closeRelease', error)
 
       return {
         error,
@@ -1064,7 +1064,7 @@ export default class Release {
         release: collectedRelease,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('collectRoyaltyForRelease', error)
 
       return {
         error,
@@ -1150,7 +1150,7 @@ export default class Release {
         release: releaseAccount,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('collectRoyaltyForReleaseViaHub', error)
 
       return {
         error,
@@ -1175,13 +1175,14 @@ export default class Release {
       const release = await this.program.account.release.fetch(releasePublicKey)
       const recipientPublicKey = new anchor.web3.PublicKey(recipientAddress)
       const updateAmount = percentShare * 10000
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const instructions = []
       const [
         newRoyaltyRecipientTokenAccount,
         newRoyaltyRecipientTokenAccountIx,
       ] = await findOrCreateAssociatedTokenAccount(
         this.provider.connection,
-        this.provider.wallet.publicKey,
+        payer,
         recipientPublicKey,
         anchor.web3.SystemProgram.programId,
         release.paymentMint,
@@ -1189,7 +1190,7 @@ export default class Release {
       const [authorityTokenAccount, authorityTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
-          this.provider.wallet.publicKey,
+          payer,
           this.provider.wallet.publicKey,
           anchor.web3.SystemProgram.programId,
           release.paymentMint,
@@ -1201,7 +1202,6 @@ export default class Release {
         instructions.push(authorityTokenAccountIx)
       }
 
-      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
       const tx = await this.program.methods
         .releaseRevenueShareTransfer(new anchor.BN(updateAmount))
         .accounts({
@@ -1243,7 +1243,7 @@ export default class Release {
         release: updatedRelease,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('addRoyaltyRecipient', error)
 
       return {
         error,

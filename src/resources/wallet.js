@@ -56,8 +56,7 @@ export default class Wallet {
           }
         }
       } catch (error) {
-        console.warn('error getting usdc balance')
-        console.warn(error)
+        console.error('error getting usdc balance', error)
       }
     }
 

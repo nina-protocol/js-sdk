@@ -84,7 +84,11 @@ class NinaClient {
       commitment: 'confirmed',
       preflightCommitment: 'processed',
     })
-    this.program = await anchor.Program.at(this.programId, this.provider)
+    try {
+      this.program = await anchor.Program.at(this.programId, this.provider)
+    } catch (error) {
+      console.error('Error initializing program:', error)
+    }
     this.isNode = isNode
     this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
     this.calculatePriorityFee = calculatePriorityFee

@@ -282,7 +282,7 @@ export default class Post {
         msg: 'Post created.',
       }
     } catch (error) {
-      console.warn('Post postInit error: ', error)
+      console.error('postInit: ', error)
       return {
         success: false,
         error,
@@ -394,7 +394,7 @@ export default class Post {
 
       return simulationResponse
     } catch (error) {
-      console.warn(error)
+      console.error('simulatePostInit', error)
 
       return {
         error,

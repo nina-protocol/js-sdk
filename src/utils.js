@@ -250,8 +250,8 @@ export const fetchWithRetry = async (fetchFunction) => {
 
       return result
     }, {
-      retries: 25,
-      minTimeout: 500,
+      retries: 50,
+      minTimeout: 50,
       maxTimeout: 1000,
     }
   )
@@ -270,7 +270,7 @@ export const getConfirmTransaction = async (txid, connection) => {
         commitment: 'confirmed',
         maxSupportedTransactionVersion: 0,
       })
-
+      console.log('getConfirmTransaction', txResult)
       if (!txResult) {
         const error = new Error('unable_to_confirm_transaction')
         error.txid = txid
@@ -283,8 +283,8 @@ export const getConfirmTransaction = async (txid, connection) => {
       return txResult
     },
     {
-      retries: 25,
-      minTimeout: 500,
+      retries: 50,
+      minTimeout: 50,
       maxTimeout: 1000,
     },
   )
@@ -380,7 +380,7 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
 
   reader.onload = () => {
     if (reader.error) {
-      console.warn(reader.error)
+      console.error('readFileChunked reader.onload', reader.error)
       endCallback(reader.error || {})
 
       return
@@ -399,7 +399,7 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
   }
 
   reader.onerror = (err) => {
-    console.warn(err)
+    console.error('readFileChunked onerror', err)
     endCallback(err || {})
   }
 

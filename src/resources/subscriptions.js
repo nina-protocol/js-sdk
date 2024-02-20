@@ -114,7 +114,7 @@ export default class Subscription {
         subscription: subscriptionData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('subscriptionSubscribe', error)
 
       return {
         error,
@@ -171,7 +171,7 @@ export default class Subscription {
         subscription: subscriptionData,
       }
     } catch (error) {
-      console.warn(error)
+      console.error('subscriptionUnsubscribe', error)
 
       return {
         error,

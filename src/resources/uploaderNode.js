@@ -44,7 +44,7 @@ export default class UploaderNode {
           resolve(this)
         });
     } catch (error) {
-      console.warn('bundlr error: ', error)
+      console.error('bundlr error: ', error)
       reject(error)
     }
    })
@@ -55,7 +55,7 @@ export default class UploaderNode {
       return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
         uploader.on('chunkUpload', (chunkInfo) => {
-          console.warn(
+          console.log(
             `Uploaded Chunk number ${chunkInfo.id}, offset of ${chunkInfo.offset}, size ${chunkInfo.size} Bytes, with a total of ${chunkInfo.totalUploaded} bytes uploaded.`,
           )
         })
@@ -68,7 +68,7 @@ export default class UploaderNode {
 
         const transactionOptions = {tags: [{ name: 'Content-Type', value: file.mimetype || 'application/json' }] }
         const response = await uploader.uploadData(nameOverride ? file : file.buffer, transactionOptions)
-        console.warn(`Upload completed with ID ${JSON.stringify(response.data.id)}`)
+        console.log(`Upload completed with ID ${JSON.stringify(response.data.id)}`)
         resolve(response.data.id)
       })
     } catch (error) {
@@ -82,7 +82,7 @@ export default class UploaderNode {
 
       return Buffer.from(metadataJSONString)
     } catch (error) {
-      console.warn('Unable to convert metadata JSON to buffer: ', error)
+      console.error('Unable to convert metadata JSON to buffer: ', error)
     }
   }
 
@@ -92,7 +92,7 @@ export default class UploaderNode {
 
       return bundlrBalanceRequest
     } catch (error) {
-      console.warn('Unable to get Bundlr Balance: ', error)
+      console.error('Unable to get Bundlr Balance: ', error)
 
       return error
     }
@@ -119,7 +119,7 @@ export default class UploaderNode {
         msg: `${amount} Sol successfully deposited`,
       }
     } catch (error) {
-      console.warn('Bundlr fund error: ', error)
+      console.error('Bundlr fund error: ', error)
 
       return error
     }
@@ -138,7 +138,7 @@ export default class UploaderNode {
         msg: `${amount} Sol successfully withdrawn`,
       }
     } catch (error) {
-      console.warn('Bundlr withdraw error: ', error)
+      console.error('Bundlr withdraw error: ', error)
 
       return error
     }
@@ -160,15 +160,13 @@ export default class UploaderNode {
 
       return balance >= totalCost
     } catch (error) {
-      console.warn('Bundlr hasBalanceForFiles error: ', error)
+      console.error('Bundlr hasBalanceForFiles error: ', error)
 
       return error
     }
   }
 
-  isValidAudioFile(file) {
-    console.log('isValidAudioFile', file)
-    
+  isValidAudioFile(file) {    
     return (
       (file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg') &&
       file.size <= MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES
@@ -210,7 +208,7 @@ export default class UploaderNode {
 
       return true
     } catch (error) {
-      console.warn(error)
+      console.error(error)
     }
   }
 }
