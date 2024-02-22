@@ -13,6 +13,7 @@ export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
   HUB_ADD_RELEASE: 'HUB_ADD_RELEASE',
   HUB_INIT_WITH_CREDIT: 'HUB_INIT_WITH_CREDIT',
+  HUB_UPDATE_COLLABORATOR_PERMISSIONS: 'HUB_UPDATE_COLLABORATOR_PERMISSIONS',
   HUB_UPDATE: 'HUB_UPDATE',
   POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE:
     'POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE',
@@ -182,9 +183,9 @@ export const getLatestBlockhashWithRetry = async (connection) => {
   const res = await promiseRetry(
     async (retry) => {
       const latestBlockhash = await connection.getLatestBlockhashAndContext('confirmed')
+
       if (!latestBlockhash) {
         const error = new Error('Failed to get recent blockhash')
-
         retry(error)
 
         return
@@ -198,6 +199,7 @@ export const getLatestBlockhashWithRetry = async (connection) => {
       maxTimeout: 1000,
     },
   )
+
   if (!res?.value?.blockhash) {
     throw new Error('Failed to get recent blockhash')
   }
@@ -207,13 +209,14 @@ export const getLatestBlockhashWithRetry = async (connection) => {
 
 export const simulateWithRetry = async (simulateFunction) => {
   let attempts = 0
+
   const res = await promiseRetry(
     async (retry) => {
       attempts += 1
       const result = await simulateFunction
+
       if (!result || result.value?.err) {
         const error = new Error('Failed to simulate')
-
         retry(error)
 
         return
@@ -226,6 +229,7 @@ export const simulateWithRetry = async (simulateFunction) => {
       maxTimeout: 1000,
     }
   )
+
   if (!res) {
     throw new Error('Failed to simulate')
   }
@@ -235,11 +239,13 @@ export const simulateWithRetry = async (simulateFunction) => {
 
 export const fetchWithRetry = async (fetchFunction) => {
   let attempts = 0
+
   const res = await promiseRetry(
     async (retry) => {
       attempts += 1
       console.log('fetchWithRetry', attempts)
       const result = await fetchFunction
+
       if (!result || result.message?.includes('not found')) {
         const error = new Error('Failed to fetch')
         console.log('fetchWithRetry error', JSON.stringify(error))
@@ -255,13 +261,13 @@ export const fetchWithRetry = async (fetchFunction) => {
       maxTimeout: 1000,
     }
   )
+
   if (!res) {
     throw new Error('Failed to fetch')
   }
 
   return res
 }
-
 
 export const getConfirmTransaction = async (txid, connection) => {
   const res = await promiseRetry(
@@ -270,7 +276,9 @@ export const getConfirmTransaction = async (txid, connection) => {
         commitment: 'confirmed',
         maxSupportedTransactionVersion: 0,
       })
+
       console.log('getConfirmTransaction', txResult)
+
       if (!txResult) {
         const error = new Error('unable_to_confirm_transaction')
         error.txid = txid
@@ -406,28 +414,27 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
   readNext()
 }
 
-export const sleep = async (ms) => {
-  return new Promise((r) => setTimeout(r, ms));
-};
+export const sleep = async (ms) => new Promise((r) => setTimeout(r, ms));
 
 export const calculatePriorityFee = async (connection) => {
   const recentPrioritizationFees =
     await connection.getRecentPrioritizationFees()
+
   if (!recentPrioritizationFees) {
     throw new Error('Failed to get recent prioritization fee')
   }
+
   const totalFees = recentPrioritizationFees.reduce(
     (total, current) => total + current.prioritizationFee,
     0,
   )
+
   return (
     Math.ceil(totalFees / recentPrioritizationFees.length) ||
     DEFAULT_PRIORITY_FEE
   )
 }
 
-export const addPriorityFeeIx = (fee) => {
-  return anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({
+export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: fee,
   })
-}
