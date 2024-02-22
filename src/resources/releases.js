@@ -708,12 +708,13 @@ export default class Release {
     description,
     catalogNumber,
     artworkFile,
+    audioFiles = [],
+    trackMap,
     tags,
   ) {
     try {
       console.log('releaseUpdateMetadata', releasePublicKey, authority, title, description, catalogNumber, artworkFile, tags)
       const { release } = await this.fetch(releasePublicKey)
-      console.log('release', release)
       let ninaUploader
       if (this.isNode) {
         ninaUploader = new UploaderNode()
@@ -727,9 +728,11 @@ export default class Release {
         cluster: this.cluster,
       });
 
-      let totalFiles = 1
+      let totalFiles = audioFiles.length + 1
+
       let artworkTx
       let metadataData
+      let files = []
       if (artworkFile) {
         if (!ninaUploader.hasBalanceForFiles([artworkFile])) {
           throw new Error('Insufficient upload balance for files')
@@ -742,6 +745,40 @@ export default class Release {
         artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
         release.metadata.image = `https://www.arweave.net/${artworkTx}`
       }
+
+      let newMetadataFiles = []
+      if (trackMap) {
+        for (const track of Object.values(trackMap)) {
+          if (track.uri) {
+            newMetadataFiles.push(track)
+          }
+        }
+      }
+
+      if (audioFiles.length > 0) {
+        for (const audioFile of audioFiles) {
+          if (!ninaUploader.isValidAudioFile(audioFile)) {
+            throw new Error('Invalid audio files')
+          }
+        }
+        
+        for await (const audioFile of audioFiles) {
+          const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
+          newMetadataFiles.push({
+            uri: `https://www.arweave.net/${trackTx}`,
+            track: trackMap[audioFile.originalname].trackNumber,
+            track_title: trackMap[audioFile.originalname].title,
+            duration: trackMap[audioFile.originalname].duration,
+            type: 'audio/mpeg',
+          })
+        }
+      }
+      newMetadataFiles = newMetadataFiles.sort((a, b) => a.track - b.track)
+
+      if (newMetadataFiles.length > 0) {
+        release.metadata.properties.files = newMetadataFiles
+      }
+
       if (description) {
         release.metadata.description = description
       }
@@ -761,13 +798,17 @@ export default class Release {
         release.metadata.name = title
         release.metadata.collection.name = `${title} (Nina)`,
         release.metadata.properties.title = title
-        const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
-        const nameBufString = nameBuf.slice(0, 32).toString()
-        metadataData = {
-          ...metadataData,
-          name: nameBufString,
-        }
+      } else {
+        title = release.metadata.name
       }
+
+      const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
+      const nameBufString = nameBuf.slice(0, 32).toString()
+      metadataData = {
+        ...metadataData,
+        name: nameBufString,
+      }
+
       if (tags) {
         release.metadata.properties.tags = tags
       }
@@ -808,7 +849,6 @@ export default class Release {
         ],
         metadataProgram,
       )
-      console.log('metadata', metadata, metadataData)
       const accounts = {
         payer: this.provider.wallet.publicKey,
         authority: new anchor.web3.PublicKey(authority),
@@ -821,39 +861,30 @@ export default class Release {
         systemProgram: anchor.web3.SystemProgram.programId,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       }
-      console.log('accounts', accounts)
 
       const bumps = {
         release: releaseBump,
         signer: releaseSignerBump,
       }
-      console.log('bumps', bumps)
       const priorityFee = await calculatePriorityFee(this.provider.connection)
-      console.log('priorityFee', priorityFee)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
-      console.log('priorityFeeIx', priorityFeeIx)
       const releaseUpdateMetadataInstruction = await this.program.methods
         .releaseUpdateMetadata(bumps, metadataData)
         .accounts(accounts)
         .instruction()
-      console.log('releaseUpdateMetadataInstruction', releaseUpdateMetadataInstruction)
       const instructions = [priorityFeeIx, releaseUpdateMetadataInstruction]
-      console.log('instructions', instructions)
       const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
       const lastValidBlockHeight = latestBlockhash.context.slot + 150
 
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
       const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      console.log('lookupTableAccount', lookupTableAccount)
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
       }).compileToV0Message([lookupTableAccount.value]);
-      console.log('messageV0', messageV0)
       tx = new anchor.web3.VersionedTransaction(messageV0)
-      console.log('tx', tx)
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight();
@@ -888,6 +919,7 @@ export default class Release {
       }
     }
   }
+
 
   async simulateReleaseInit({
     release,
@@ -1468,7 +1500,7 @@ export default class Release {
         date: new Date(),
         files,
         category: 'audio',
-      },
+      },  
     }
 
     return metadata
