@@ -701,6 +701,194 @@ export default class Release {
     }
   }
 
+  async releaseUpdateMetadata(
+    releasePublicKey,
+    authority,
+    title,
+    description,
+    catalogNumber,
+    artworkFile,
+    tags,
+  ) {
+    try {
+      console.log('releaseUpdateMetadata', releasePublicKey, authority, title, description, catalogNumber, artworkFile, tags)
+      const { release } = await this.fetch(releasePublicKey)
+      console.log('release', release)
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+
+      let totalFiles = 1
+      let artworkTx
+      let metadataData
+      if (artworkFile) {
+        if (!ninaUploader.hasBalanceForFiles([artworkFile])) {
+          throw new Error('Insufficient upload balance for files')
+        }
+        if (!ninaUploader.isValidArtworkFile(artworkFile)) {
+          throw new Error('Invalid artwork file')
+        }
+  
+        totalFiles += 1
+        artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
+        release.metadata.image = `https://www.arweave.net/${artworkTx}`
+      }
+      if (description) {
+        release.metadata.description = description
+      }
+      if (catalogNumber) {
+        release.metadata.symbol = catalogNumber
+      } else {
+        catalogNumber = release.metadata.symbol
+      }
+      const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
+      const symbolBufString = symbolBuf.slice(0, 10).toString()
+      metadataData = {
+        ...metadataData,
+        symbol: symbolBufString,
+      }
+
+      if (title) {
+        release.metadata.name = title
+        release.metadata.collection.name = `${title} (Nina)`,
+        release.metadata.properties.title = title
+        const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
+        const nameBufString = nameBuf.slice(0, 32).toString()
+        metadataData = {
+          ...metadataData,
+          name: nameBufString,
+        }
+      }
+      if (tags) {
+        release.metadata.properties.tags = tags
+      }
+
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(release.metadata)
+      const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+      metadataData = {
+        ...metadataData,
+        uri: `https://arweave.net/${metadataTx}`,
+        sellerFeeBasisPoints: release.metadata.seller_fee_basis_points,
+      }
+
+      const releaseAccount = await this.program.account['release'].fetch(
+        new anchor.web3.PublicKey(releasePublicKey),
+        'confirmed'
+      )
+
+      const [releasePubKey, releaseBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-release')),
+          releaseAccount.releaseMint.toBuffer(),
+        ],
+        this.program.programId,
+      )
+      const [releaseSigner, releaseSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [new anchor.web3.PublicKey(releasePublicKey).toBuffer()],
+          this.program.programId,
+        )
+      
+      const metadataProgram = new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].programs.metaplex)
+      const [metadata] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from('metadata'),
+          metadataProgram.toBuffer(),
+          releaseAccount.releaseMint.toBuffer(),
+        ],
+        metadataProgram,
+      )
+      console.log('metadata', metadata, metadataData)
+      const accounts = {
+        payer: this.provider.wallet.publicKey,
+        authority: new anchor.web3.PublicKey(authority),
+        release: releasePubKey,
+        releaseSigner: releaseSigner,
+        releaseMint: releaseAccount.releaseMint,
+        metadata,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        metadataProgram,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      }
+      console.log('accounts', accounts)
+
+      const bumps = {
+        release: releaseBump,
+        signer: releaseSignerBump,
+      }
+      console.log('bumps', bumps)
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      console.log('priorityFee', priorityFee)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      console.log('priorityFeeIx', priorityFeeIx)
+      const releaseUpdateMetadataInstruction = await this.program.methods
+        .releaseUpdateMetadata(bumps, metadataData)
+        .accounts(accounts)
+        .instruction()
+      console.log('releaseUpdateMetadataInstruction', releaseUpdateMetadataInstruction)
+      const instructions = [priorityFeeIx, releaseUpdateMetadataInstruction]
+      console.log('instructions', instructions)
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      console.log('lookupTableAccount', lookupTableAccount)
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.value.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      console.log('messageV0', messageV0)
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+      console.log('tx', tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
+
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send release update tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send release update tx, retrying from blockheight: ', blockheight)
+        }
+      }
+      await getConfirmTransaction(txid, this.provider.connection)
+      await sleep(2500)
+      await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
+      return {
+        release,
+        releasePublicKey,
+      }
+    } catch (error) {
+      console.error('releaseUpdateMetadata', error)
+
+      return {
+        error,
+      }
+    }
+  }
+
   async simulateReleaseInit({
     release,
     releaseBump,

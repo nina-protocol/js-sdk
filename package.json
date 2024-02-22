@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk-dev",
-  "version": "0.0.194",
+  "version": "0.0.195",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -39,6 +39,7 @@
     "@coral-xyz/anchor": "0.28.1-beta.2",
     "@solana/buffer-layout-utils": "^0.2.0",
     "@solana/spl-token": "^0.3.8",
+    "@solana/spl-token-metadata": "^0.1.2",
     "@solana/web3.js": "1.77.3",
     "axios": "^0.27.2",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
