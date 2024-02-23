@@ -1248,6 +1248,8 @@ export default class Hub {
         ]
       }
 
+      console.log('log')
+
       const payer = asTx
         ? this.fileServicePublicKey
         : this.provider.wallet.publicKey
