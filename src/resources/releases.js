@@ -701,6 +701,226 @@ export default class Release {
     }
   }
 
+  async releaseUpdateMetadata(
+    releasePublicKey,
+    authority,
+    title,
+    description,
+    catalogNumber,
+    artworkFile,
+    audioFiles = [],
+    trackMap,
+    tags,
+  ) {
+    try {
+      console.log('releaseUpdateMetadata', releasePublicKey, authority, title, description, catalogNumber, artworkFile, tags)
+      const { release } = await this.fetch(releasePublicKey)
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+
+      let totalFiles = audioFiles.length + 1
+
+      let artworkTx
+      let metadataData
+      let files = []
+      if (artworkFile) {
+        if (!ninaUploader.hasBalanceForFiles([artworkFile])) {
+          throw new Error('Insufficient upload balance for files')
+        }
+        if (!ninaUploader.isValidArtworkFile(artworkFile)) {
+          throw new Error('Invalid artwork file')
+        }
+  
+        totalFiles += 1
+        artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
+        release.metadata.image = `https://www.arweave.net/${artworkTx}`
+      }
+
+      let newMetadataFiles = []
+      if (trackMap) {
+        for (const track of Object.values(trackMap)) {
+          if (track.uri) {
+            newMetadataFiles.push(track)
+          }
+        }
+      }
+
+      if (audioFiles.length > 0) {
+        for (const audioFile of audioFiles) {
+          if (!ninaUploader.isValidAudioFile(audioFile)) {
+            throw new Error('Invalid audio files')
+          }
+        }
+        
+        for await (const audioFile of audioFiles) {
+          const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
+          newMetadataFiles.push({
+            uri: `https://www.arweave.net/${trackTx}`,
+            track: trackMap[audioFile.originalname].trackNumber,
+            track_title: trackMap[audioFile.originalname].title,
+            duration: trackMap[audioFile.originalname].duration,
+            type: 'audio/mpeg',
+          })
+        }
+      }
+      newMetadataFiles = newMetadataFiles.sort((a, b) => a.track - b.track)
+
+      if (newMetadataFiles.length > 0) {
+        release.metadata.properties.files = newMetadataFiles
+      }
+
+      if (description) {
+        release.metadata.description = description
+      }
+      if (catalogNumber) {
+        release.metadata.symbol = catalogNumber
+      } else {
+        catalogNumber = release.metadata.symbol
+      }
+      const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
+      const symbolBufString = symbolBuf.slice(0, 10).toString()
+      metadataData = {
+        ...metadataData,
+        symbol: symbolBufString,
+      }
+
+      if (title) {
+        release.metadata.name = title
+        release.metadata.collection.name = `${title} (Nina)`,
+        release.metadata.properties.title = title
+      } else {
+        title = release.metadata.name
+      }
+
+      const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
+      const nameBufString = nameBuf.slice(0, 32).toString()
+      metadataData = {
+        ...metadataData,
+        name: nameBufString,
+      }
+
+      if (tags) {
+        release.metadata.properties.tags = tags
+      }
+
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(release.metadata)
+      const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+      metadataData = {
+        ...metadataData,
+        uri: `https://arweave.net/${metadataTx}`,
+        sellerFeeBasisPoints: release.metadata.seller_fee_basis_points,
+      }
+
+      const releaseAccount = await this.program.account['release'].fetch(
+        new anchor.web3.PublicKey(releasePublicKey),
+        'confirmed'
+      )
+
+      const [releasePubKey, releaseBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from(anchor.utils.bytes.utf8.encode('nina-release')),
+          releaseAccount.releaseMint.toBuffer(),
+        ],
+        this.program.programId,
+      )
+      const [releaseSigner, releaseSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [new anchor.web3.PublicKey(releasePublicKey).toBuffer()],
+          this.program.programId,
+        )
+      
+      const metadataProgram = new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].programs.metaplex)
+      const [metadata] = await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from('metadata'),
+          metadataProgram.toBuffer(),
+          releaseAccount.releaseMint.toBuffer(),
+        ],
+        metadataProgram,
+      )
+      const accounts = {
+        payer: this.provider.wallet.publicKey,
+        authority: new anchor.web3.PublicKey(authority),
+        release: releasePubKey,
+        releaseSigner: releaseSigner,
+        releaseMint: releaseAccount.releaseMint,
+        metadata,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+        metadataProgram,
+        systemProgram: anchor.web3.SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      }
+
+      const bumps = {
+        release: releaseBump,
+        signer: releaseSignerBump,
+      }
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      const releaseUpdateMetadataInstruction = await this.program.methods
+        .releaseUpdateMetadata(bumps, metadataData)
+        .accounts(accounts)
+        .instruction()
+      const instructions = [priorityFeeIx, releaseUpdateMetadataInstruction]
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.value.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const rawTx = signedTx.serialize()
+      let blockheight = await this.provider.connection.getBlockHeight();
+
+      let txid
+      let attempts = 0
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send release update tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send release update tx, retrying from blockheight: ', blockheight)
+        }
+      }
+      await getConfirmTransaction(txid, this.provider.connection)
+      await sleep(2500)
+      await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
+      return {
+        release,
+        releasePublicKey,
+      }
+    } catch (error) {
+      console.error('releaseUpdateMetadata', error)
+
+      return {
+        error,
+      }
+    }
+  }
+
+
   async simulateReleaseInit({
     release,
     releaseBump,
@@ -1280,7 +1500,7 @@ export default class Release {
         date: new Date(),
         files,
         category: 'audio',
-      },
+      },  
     }
 
     return metadata
