@@ -10,7 +10,7 @@ import {
 } from '../utils'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
-import * as anchor from '@coral-xyz/anchor'
+import * as anchor from '@project-serum/anchor'
 import MD5 from 'crypto-js/md5'
 
 /**
@@ -60,6 +60,7 @@ export default class Post {
     return this.http.get(`/posts/${publicKey}`, params, withAccountData)
   }
 
+
   // TODO: this method does not use the asTx pattern yet
   async postInit(
     authority,
@@ -72,7 +73,7 @@ export default class Post {
     imageMap,
     slug,
     heroImage,
-    images,
+    images,    
     hubPublicKeyString,
     simulate=false
   ) {
@@ -83,27 +84,25 @@ export default class Post {
           slug,
           hubPublicKeyString,
         }))
-
+        
         if (simulationResponse?.value?.err) {
           console.log('simulationResponse', simulationResponse)
           throw new Error('Error while simulating Post Init')
         }
       }
-
+      
       let ninaUploader
-
       if (this.isNode) {
         ninaUploader = new UploaderNode()
       } else {
         ninaUploader = new Uploader()
       }
-
       ninaUploader = await ninaUploader.init({
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
       });
-
+      
       if (images?.length > 0) {
         if (!ninaUploader.hasBalanceForFiles([...images])) {
           throw new Error('Insufficient upload balance for files')
@@ -118,14 +117,12 @@ export default class Post {
 
       let totalFiles = (images?.length || 0) + 1
       let heroImageTx = null
-
       if (heroImage) {
         totalFiles += 1
         heroImageTx = await ninaUploader.uploadFile(heroImage, 0, totalFiles)
       }
 
       const imageBlocks = []
-
       if (images?.length > 0) {
         for await (const image of images) {
           const imageTx = await ninaUploader.uploadFile(image, images?.length + 1, totalFiles)
@@ -142,10 +139,10 @@ export default class Post {
       }
 
       const formattedBlocks = []
-      blocks.forEach((block) => {
-        if (block.type === 'image') {
-          const blockForIndex = imageBlocks.find((imageBlock) => imageBlock.index === block.index)
 
+      blocks.forEach(block => {
+        if (block.type === 'image') {
+          const blockForIndex = imageBlocks.find(imageBlock => imageBlock.index === block.index)
           if (blockForIndex) {
             formattedBlocks.push(blockForIndex)
           }
@@ -157,24 +154,20 @@ export default class Post {
       const checkIfSlugIsValid = async (slug) => {
         try {
           const postForSlug = await this.http.get(`/posts/${slug}`)
-
           if (postForSlug) {
             slug = `${slug}-${Math.floor(Math.random() * 1000000)}`
           }
-
           const postForNewSlug = await this.http.get(`/posts/${slug}`)
-
           if (postForNewSlug) {
             await checkIfSlugIsValid(slug)
           }
-
           return slug
         } catch (error) {
           // console.log('error', error)
           return slug
         }
-      }
-
+      } 
+      
       slug = await checkIfSlugIsValid(slug)
 
       const data = {
@@ -191,7 +184,9 @@ export default class Post {
 
       const dataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
       const dataTx = await ninaUploader.uploadFile(dataBuffer, totalFiles - 1, totalFiles, 'data.json')
+
       const hubPublicKey = new anchor.web3.PublicKey(hubPublicKeyString)
+
       const hub = await this.program.account.hub.fetch(hubPublicKey)
       const slugHash = MD5(slug).toString().slice(0, 32)
 
@@ -203,7 +198,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-post')),
@@ -212,7 +206,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
@@ -221,7 +214,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -233,8 +225,8 @@ export default class Post {
 
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
-      const handle = decodeNonEncryptedByteArray(hub.handle)
 
+      const handle = decodeNonEncryptedByteArray(hub.handle)
       const request = {
         accounts: {
           payer: this.provider.wallet.publicKey,
@@ -249,8 +241,7 @@ export default class Post {
         },
         instructions: [priorityFeeIx],
       }
-
-      const tx = await this.program.methods.postInitViaHub(
+      let tx = await this.program.methods.postInitViaHub(
           handle,
           slugHash,
           `https://arweave.net/${dataTx}`
@@ -265,7 +256,7 @@ export default class Post {
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight();
-
+      
       let txid
       let attempts = 0
       while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
@@ -292,7 +283,6 @@ export default class Post {
       }
     } catch (error) {
       console.error('postInit: ', error)
-
       return {
         success: false,
         error,
@@ -320,27 +310,24 @@ export default class Post {
       const checkIfSlugIsValid = async (slug) => {
         try {
           const postForSlug = await this.http.get(`/posts/${slug}`)
-
           if (postForSlug) {
             slug = `${slug}-${Math.floor(Math.random() * 1000000)}`
           }
-
           const postForNewSlug = await this.http.get(`/posts/${slug}`)
-
           if (postForNewSlug) {
             await checkIfSlugIsValid(slug)
           }
-
           return slug
         } catch (error) {
           // console.log('error', error)
           return slug
         }
-      }
-
+      } 
+      
       slug = await checkIfSlugIsValid(slug)
 
       const hubPublicKey = new anchor.web3.PublicKey(hubPublicKeyString)
+
       const hub = await this.program.account.hub.fetch(hubPublicKey)
       const slugHash = MD5(slug).toString().slice(0, 32)
 
@@ -352,7 +339,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubPost] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-post')),
@@ -361,7 +347,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubContent] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-content')),
@@ -370,7 +355,6 @@ export default class Post {
         ],
         this.program.programId
       )
-
       const [hubCollaborator] = await anchor.web3.PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode('nina-hub-collaborator')),
@@ -381,7 +365,6 @@ export default class Post {
       )
 
       const handle = decodeNonEncryptedByteArray(hub.handle)
-
       const request = {
         accounts: {
           payer: this.provider.wallet.publicKey,
@@ -395,8 +378,7 @@ export default class Post {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         },
       }
-
-      const tx = await this.program.methods.postInitViaHub(
+      let tx = await this.program.methods.postInitViaHub(
           handle,
           slugHash,
           `https://arweave.net/simulated-data-tx`

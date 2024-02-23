@@ -1,21 +1,21 @@
-import * as anchor from '@coral-xyz/anchor'
+import * as anchor from '@coral-xyz/anchor';
 import axios from 'axios'
 import MD5 from 'crypto-js/md5'
+import UploaderNode from './uploaderNode';
+import Uploader from './uploader';
 import {
   NINA_CLIENT_IDS,
   NinaProgramAction,
-  addPriorityFeeIx,
-  calculatePriorityFee,
-  fetchWithRetry,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
   getLatestBlockhashWithRetry,
+  uiToNative,
+  fetchWithRetry,
   simulateWithRetry,
   sleep,
-  uiToNative,
+  calculatePriorityFee,
+  addPriorityFeeIx,
 } from '../utils'
-import Uploader from './uploader'
-import UploaderNode from './uploaderNode'
 
 /**
  * @module Hub
@@ -237,7 +237,12 @@ export default class Hub {
     return this.http.get(`/hubs/${publicKey}/all`, pagination)
   }
 
-  async simulateHubInit({ handle, authority, publishFee, referralFee }) {
+  async simulateHubInit({
+    handle,
+    authority,
+    publishFee,
+    referralFee,
+  }) {
     try {
       publishFee = new anchor.BN(publishFee * 10000)
       referralFee = new anchor.BN(referralFee * 10000)
@@ -327,29 +332,22 @@ export default class Hub {
           : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
 
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-
-      const lookupTableAccount =
-        await this.provider.connection.getAddressLookupTable(
-          lookupTablePublicKey,
-        )
-
-      const latestBlockhash = await getLatestBlockhashWithRetry(
-        this.provider.connection,
-      )
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
 
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.blockhash,
         instructions,
-      }).compileToV0Message([lookupTableAccount.value])
+      }).compileToV0Message([lookupTableAccount.value]);
+
+      tx = new anchor.web3.VersionedTransaction(messageV0)
 
       const tx = new anchor.web3.VersionedTransaction(messageV0)
       tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = this.provider.wallet.publicKey
-      const signedTx = await this.provider.wallet.signTransaction(tx)
-
-      const simulationResponse =
-        await this.provider.connection.simulateTransaction(signedTx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const simulationResponse = await this.provider.connection.simulateTransaction(signedTx);
 
       return simulationResponse
     } catch (error) {
@@ -384,14 +382,12 @@ export default class Hub {
   ) {
     try {
       if (simulate) {
-        const simulationResponse = await simulateWithRetry(
-          this.simulateHubInit({
-            handle,
-            authority,
-            publishFee,
-            referralFee,
-          }),
-        )
+        const simulationResponse = await simulateWithRetry(this.simulateHubInit({
+          handle,
+          authority,
+          publishFee,
+          referralFee,
+        }))
 
         if (simulationResponse.value.err) {
           console.error('hubInit simulationResponse', simulationResponse)
@@ -411,7 +407,7 @@ export default class Hub {
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
-      })
+      });
 
       if (image && !ninaUploader.hasBalanceForFiles([image])) {
         throw new Error('Insufficient upload balance for files')
@@ -435,17 +431,8 @@ export default class Hub {
         image: artworkTx ? `https://arweave.net/${artworkTx}` : '',
       }
 
-      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(
-        data,
-      )
-
-      const dataTx = await ninaUploader.uploadFile(
-        metadataBuffer,
-        totalFiles - 1,
-        totalFiles,
-        'metadata.json',
-      )
-
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
+      const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
       publishFee = new anchor.BN(publishFee * 10000)
       referralFee = new anchor.BN(referralFee * 10000)
 
@@ -549,10 +536,11 @@ export default class Hub {
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.value.blockhash,
         instructions,
-      }).compileToV0Message([lookupTableAccount.value])
+      }).compileToV0Message([lookupTableAccount.value]);
 
-      const tx = new anchor.web3.VersionedTransaction(messageV0)
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      tx = new anchor.web3.VersionedTransaction(messageV0)
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight()
 
@@ -647,7 +635,7 @@ export default class Hub {
         provider: this.provider,
         endpoint: this.http.endpoint,
         cluster: this.cluster,
-      })
+      });
 
       if (image && !ninaUploader.hasBalanceForFiles([image])) {
         throw new Error('Insufficient upload balance for files')
@@ -672,16 +660,8 @@ export default class Hub {
         image: artworkTx ? `https://arweave.net/${artworkTx}` : hub.data.image,
       }
 
-      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(
-        data,
-      )
-
-      const dataTx = await ninaUploader.uploadFile(
-        metadataBuffer,
-        totalFiles - 1,
-        totalFiles,
-        'metadata.json',
-      )
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
+      const dataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
 
       const hubUpdateConfigIx = await this.program.methods
         .hubUpdateConfig(
@@ -697,11 +677,7 @@ export default class Hub {
         })
         .instruction()
 
-      const lookupTableAddress =
-        this.cluster === 'mainnet'
-          ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9'
-          : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
 
       const lookupTableAccount =
@@ -718,10 +694,10 @@ export default class Hub {
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.value.blockhash,
         instructions: [hubUpdateConfigIx],
-      }).compileToV0Message([lookupTableAccount.value])
+      }).compileToV0Message([lookupTableAccount.value]);
 
       const tx = new anchor.web3.VersionedTransaction(messageV0)
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight()
 
@@ -813,9 +789,7 @@ export default class Hub {
           this.program.programId,
         )
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubAddCollaborator(
@@ -842,12 +816,10 @@ export default class Hub {
       tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return {
           tx: serializedTx,
@@ -929,9 +901,7 @@ export default class Hub {
           this.program.programId,
         )
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubUpdateCollaboratorPermissions(
@@ -950,19 +920,14 @@ export default class Hub {
         })
         .transaction()
 
-      const latestBlockhash =
-        await this.provider.connection.getLatestBlockhashAndContext()
-
-      tx.recentBlockhash = latestBlockhash.value.blockhash
-
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
@@ -982,10 +947,8 @@ export default class Hub {
 
       // endpoint needs to be updated to return collaborator
       return {
-        tx: txid,
         collaboratorPublicKey: collaboratorPubkey.toBase58(),
         hubPublicKey: hubPublicKey.toBase58(),
-        type: NinaProgramAction.HUB_UPDATE_COLLABORATOR_PERMISSIONS,
       }
     } catch (error) {
       console.error('hubUpdateCollaboratorPermissions', error)
@@ -1021,9 +984,7 @@ export default class Hub {
         this.program.programId,
       )
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubRemoveCollaborator(hub.handle)
@@ -1037,19 +998,14 @@ export default class Hub {
         })
         .transaction()
 
-      const latestBlockhash =
-        await this.provider.connection.getLatestBlockhashAndContext()
-
-      tx.recentBlockhash = latestBlockhash.value.blockhash
-
+      const latestBlockhash = await getLatestBlockhashWithRetry(this.provider.connection)
+      tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
@@ -1126,9 +1082,7 @@ export default class Hub {
           this.program.programId,
         )
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubContentToggleVisibility(hub.handle)
@@ -1150,12 +1104,10 @@ export default class Hub {
 
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
@@ -1248,9 +1200,7 @@ export default class Hub {
         ]
       }
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubAddRelease(hub.handle)
@@ -1273,12 +1223,10 @@ export default class Hub {
 
       tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = payer
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return {
           tx: serializedTx,
@@ -1364,9 +1312,7 @@ export default class Hub {
       const withdrawAmount =
         tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .hubWithdraw(
@@ -1389,15 +1335,10 @@ export default class Hub {
         this.provider.connection,
       )
 
-      tx.recentBlockhash = latestBlockhash.blockhash
-      tx.feePayer = payer
-
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
@@ -1490,10 +1431,7 @@ export default class Hub {
 
       let tx
       const params = [hub.handle, slugHash, uri]
-
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const request = {
         accounts: {
@@ -1564,12 +1502,10 @@ export default class Hub {
       tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
@@ -1642,9 +1578,7 @@ export default class Hub {
         this.program.programId,
       )
 
-      const payer = asTx
-        ? this.fileServicePublicKey
-        : this.provider.wallet.publicKey
+      const payer = asTx ? this.fileServicePublicKey : this.provider.wallet.publicKey
 
       const tx = await this.program.methods
         .postUpdateViaHubPost(hub.handle, slug, uri)
@@ -1665,12 +1599,10 @@ export default class Hub {
       tx.recentBlockhash = latestBlockhash.blockhash
       tx.feePayer = payer
 
-      const signedTx = await this.provider.wallet.signTransaction(tx)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       if (asTx) {
-        const serializedTx = signedTx
-          .serialize({ verifySignatures: false })
-          .toString('base64')
+        const serializedTx = signedTx.serialize({ verifySignatures: false }).toString('base64')
 
         return serializedTx
       }
