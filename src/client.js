@@ -1,18 +1,32 @@
-import * as anchor from '@coral-xyz/anchor';
-import axios from 'axios';
-import Http from './http';
-import Account from './resources/accounts';
-import Exchange from './resources/exchanges';
-import Hub from './resources/hubs';
-import Post from './resources/posts';
-import Release from './resources/releases';
-import Search from './resources/search';
-import Subscription from './resources/subscriptions';
-import Uploader from './resources/uploader';
-import UploaderNode from './resources/uploaderNode';
-import Wallet from './resources/wallet';
-import { NinaProgramAction, NinaProgramActionCost, addPriorityFeeIx, calculatePriorityFee, decimalsForMint, decodeNonEncryptedByteArray, findOrCreateAssociatedTokenAccount, getConfirmTransaction, isSol, isUsdc, nativeToUi, nativeToUiString, uiToNative, wrapSol } from './utils';
-
+import * as anchor from '@coral-xyz/anchor'
+import axios from 'axios'
+import Http from './http'
+import Account from './resources/accounts'
+import Exchange from './resources/exchanges'
+import Hub from './resources/hubs'
+import Post from './resources/posts'
+import Release from './resources/releases'
+import Search from './resources/search'
+import Subscription from './resources/subscriptions'
+import Uploader from './resources/uploader'
+import UploaderNode from './resources/uploaderNode'
+import Wallet from './resources/wallet'
+import {
+  NinaProgramAction,
+  NinaProgramActionCost,
+  addPriorityFeeIx,
+  calculatePriorityFee,
+  decimalsForMint,
+  decodeNonEncryptedByteArray,
+  findOrCreateAssociatedTokenAccount,
+  getConfirmTransaction,
+  isSol,
+  isUsdc,
+  nativeToUi,
+  nativeToUiString,
+  uiToNative,
+  wrapSol,
+} from './utils'
 
 /** Class Representing the Nina Client */
 class NinaClient {
@@ -59,10 +73,7 @@ class NinaClient {
     wallet = {},
     isNode = false,
   }) {
-    console.log('init1111111')
-
-
-        this.apiKey = apiKey
+    this.apiKey = apiKey
     this.uid = uid
     this.endpoint = endpoint || 'https://api.ninaprotocol.com/v1/' //NOTE: trailing slash should be removed
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
@@ -79,7 +90,8 @@ class NinaClient {
       console.error('Error initializing program:', error)
     }
     this.isNode = isNode
-    this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
+    this.confirmTransaction = (txid) =>
+      getConfirmTransaction(txid, this.connection)
     this.calculatePriorityFee = calculatePriorityFee
     this.addPriorityFeeIx = addPriorityFeeIx
 
@@ -119,7 +131,9 @@ class NinaClient {
       provider: this.provider,
       cluster: this.cluster,
       isNode: this.isNode,
-      fileServicePublicKey: new anchor.web3.PublicKey('3skAZNf7EjUus6VNNgHog44JZFsp8BBaso9pBRgYntSd')
+      fileServicePublicKey: new anchor.web3.PublicKey(
+        '3skAZNf7EjUus6VNNgHog44JZFsp8BBaso9pBRgYntSd',
+      ),
     }
 
     this.Account = new Account(config)
