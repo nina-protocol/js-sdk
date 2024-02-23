@@ -41,6 +41,10 @@ export default class Formatter {
   }
 
   static parseHubCollaboratorAccountData(hubCollaborator, publicKey) {
+    if (!hubCollaborator || !publicKey) {
+      return undefined
+    }
+
     hubCollaborator.publicKey = publicKey
     hubCollaborator.hub = hubCollaborator.hub.toBase58()
     hubCollaborator.collaborator = hubCollaborator.collaborator.toBase58()

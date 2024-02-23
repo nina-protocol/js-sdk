@@ -90,7 +90,8 @@ class NinaClient {
       console.error('Error initializing program:', error)
     }
     this.isNode = isNode
-    this.confirmTransaction = (txid) => getConfirmTransaction(txid, this.connection)
+    this.confirmTransaction = (txid) =>
+      getConfirmTransaction(txid, this.connection)
     this.calculatePriorityFee = calculatePriorityFee
     this.addPriorityFeeIx = addPriorityFeeIx
 
@@ -105,7 +106,7 @@ class NinaClient {
         provider: this.provider,
         endpoint: this.endpoint,
         cluster: this.cluster,
-      })  
+      })
     } else {
       if (wallet && wallet.publicKey) {
         this.Uploader = new Uploader()
@@ -114,7 +115,7 @@ class NinaClient {
           provider: this.provider,
           endpoint: this.endpoint,
           cluster: this.cluster,
-        })    
+        })
       }
     }
 
@@ -130,7 +131,9 @@ class NinaClient {
       provider: this.provider,
       cluster: this.cluster,
       isNode: this.isNode,
-      fileServicePublicKey: new anchor.web3.PublicKey('3skAZNf7EjUus6VNNgHog44JZFsp8BBaso9pBRgYntSd')
+      fileServicePublicKey: new anchor.web3.PublicKey(
+        '3skAZNf7EjUus6VNNgHog44JZFsp8BBaso9pBRgYntSd',
+      ),
     }
 
     this.Account = new Account(config)
