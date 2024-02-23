@@ -1,21 +1,9 @@
-import * as anchor from '@coral-xyz/anchor'
-import axios from 'axios'
-import MD5 from 'crypto-js/md5'
-import {
-  NINA_CLIENT_IDS,
-  NinaProgramAction,
-  addPriorityFeeIx,
-  calculatePriorityFee,
-  fetchWithRetry,
-  findOrCreateAssociatedTokenAccount,
-  getConfirmTransaction,
-  getLatestBlockhashWithRetry,
-  simulateWithRetry,
-  sleep,
-  uiToNative,
-} from '../utils'
-import Uploader from './uploader'
-import UploaderNode from './uploaderNode'
+import * as anchor from '@coral-xyz/anchor';
+import axios from 'axios';
+import MD5 from 'crypto-js/md5';
+import { NINA_CLIENT_IDS, NinaProgramAction, addPriorityFeeIx, calculatePriorityFee, fetchWithRetry, findOrCreateAssociatedTokenAccount, getConfirmTransaction, getLatestBlockhashWithRetry, simulateWithRetry, sleep, uiToNative } from '../utils';
+import Uploader from './uploader';
+import UploaderNode from './uploaderNode';
 
 /**
  * @module Hub
@@ -908,7 +896,6 @@ export default class Hub {
     asTx = false,
   ) {
     try {
-      console.log('hub update collab')
       const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       collaboratorPubkey = new anchor.web3.PublicKey(collaboratorPubkey)
@@ -1042,12 +1029,11 @@ export default class Hub {
         })
         .transaction()
 
-      const latestBlockhash = await getLatestBlockhashWithRetry(
-        this.provider.connection,
-      )
+          const latestBlockhash =
+            await this.provider.connection.getLatestBlockhashAndContext()
 
-      tx.recentBlockhash = latestBlockhash.blockhash
-      tx.feePayer = payer
+          tx.recentBlockhash = latestBlockhash.value.blockhash
+          tx.feePayer = payer
 
       const signedTx = await this.provider.wallet.signTransaction(tx)
 
