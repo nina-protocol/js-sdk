@@ -955,8 +955,6 @@ export default class Hub {
         })
         .transaction()
 
-      // const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
-      // tx.recentBlockhash = latestBlockhash.value.blockhash
       const latestBlockhash =
         await this.provider.connection.getLatestBlockhashAndContext()
 
@@ -986,8 +984,6 @@ export default class Hub {
           hub.handle
         }/collaborators/${hubCollaborator.toBase58()}`,
       )
-
-      console.log('txid sdk', txid)
 
       // endpoint needs to be updated to return collaborator
       return {
@@ -1213,7 +1209,6 @@ export default class Hub {
   async hubAddRelease(hubPublicKey, releasePublicKey, fromHub, asTx = false) {
     try {
       const { hub } = await this.fetch(hubPublicKey, false)
-      console.log('hub', hub)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
       releasePublicKey = new anchor.web3.PublicKey(releasePublicKey)
 
