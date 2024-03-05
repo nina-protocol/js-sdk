@@ -262,7 +262,9 @@ export default class Post {
       while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
         try {
           attempts+=1
-          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          const tx = await this.provider.connection.sendRawTransaction(rawTx, {
+            skipPreflight: true,
+          });
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {

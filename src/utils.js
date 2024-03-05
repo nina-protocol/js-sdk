@@ -7,7 +7,7 @@ const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
 export const MAX_U64 = '18446744073709551615'
-const DEFAULT_PRIORITY_FEE = 7500
+const BASE_PRIORITY_FEE = 2500
 
 export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
@@ -431,8 +431,7 @@ export const calculatePriorityFee = async (connection) => {
   )
 
   return (
-    Math.ceil(totalFees / recentPrioritizationFees.length) ||
-    DEFAULT_PRIORITY_FEE
+    Math.ceil(totalFees / recentPrioritizationFees.length) + BASE_PRIORITY_FEE
   )
 }
 
