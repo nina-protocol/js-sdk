@@ -243,19 +243,23 @@ export const fetchWithRetry = async (fetchFunction) => {
 
   const res = await promiseRetry(
     async (retry) => {
-      attempts += 1
-      console.log('fetchWithRetry', attempts)
-      const result = await fetchFunction
-
-      if (!result || result.message?.includes('not found')) {
-        const error = new Error('Failed to fetch')
-        console.log('fetchWithRetry error', JSON.stringify(error))
-        retry(error)
-
-        return
+      try {
+        attempts += 1
+        console.log('fetchWithRetry', attempts)
+        const result = await fetchFunction
+        if (!result || result.message?.includes('not found')) {
+          const error = new Error('Failed to fetch')
+          console.log('fetchWithRetry error', JSON.stringify(error))
+          retry(error)
+  
+          return
+        }
+        return result
+      } catch(err) {
+        console.log('fetchWithRetry error', JSON.stringify(err))
+          retry(err)
+          return
       }
-
-      return result
     }, {
       retries: 50,
       minTimeout: 50,
@@ -271,28 +275,35 @@ export const fetchWithRetry = async (fetchFunction) => {
 }
 
 export const getConfirmTransaction = async (txid, connection) => {
+  console.log('getConfirmTransaction', txid)
   const res = await promiseRetry(
     async (retry) => {
-      const txResult = await connection.getTransaction(txid, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0,
-      })
-
-      console.log('getConfirmTransaction', txResult)
-
-      if (!txResult) {
-        const error = new Error('unable_to_confirm_transaction')
-        error.txid = txid
-
-        retry(error)
-
+      try {
+        const txResult = await connection.getTransaction(txid, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        })
+  
+        console.log('getConfirmTransaction', txResult)
+  
+        if (!txResult) {
+          const error = new Error('unable_to_confirm_transaction')
+          error.txid = txid
+  
+          retry(error)
+  
+          return
+        }
+  
+        return txResult  
+      }catch (err) {
+        console.log('getConfirmTransaction error', JSON.stringify(err))
+        retry(err)
         return
       }
-
-      return txResult
     },
     {
-      retries: 50,
+      retries: 4,
       minTimeout: 50,
       maxTimeout: 1000,
     },
@@ -302,7 +313,7 @@ export const getConfirmTransaction = async (txid, connection) => {
     throw new Error('Transaction failed')
   }
 
-  return txid
+  return res
 }
 
 export const decimalsForMint = (mint, cluster) => {

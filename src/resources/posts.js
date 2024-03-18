@@ -8,11 +8,12 @@ import UploaderNode from './uploaderNode'
  * @module Post
  */
 export default class Post {
-  constructor({ http, provider, program, isNode }) {
+  constructor({ http, provider, program, isNode, cluster }) {
     this.http = http
     this.provider = provider
     this.program = program
     this.isNode = isNode
+    this.cluster = cluster
   }
 
   /**
@@ -179,7 +180,7 @@ export default class Post {
         tags,
         blocks: formattedBlocks,
       }
-
+      console.log('data', data)
       const dataBuffer = await ninaUploader.convertMetadataJSONToBuffer(data)
       const dataTx = await ninaUploader.uploadFile(dataBuffer, totalFiles - 1, totalFiles, 'data.json')
       const hubPublicKey = new anchor.web3.PublicKey(hubPublicKeyString)
@@ -225,7 +226,7 @@ export default class Post {
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
       const handle = decodeNonEncryptedByteArray(hub.handle)
-
+      console.log('priorityFee', priorityFee)
       const request = {
         accounts: {
           payer: this.provider.wallet.publicKey,
@@ -240,19 +241,27 @@ export default class Post {
         },
         instructions: [priorityFeeIx],
       }
-
-      const tx = await this.program.methods.postInitViaHub(
+      console.log('request', request)
+      const postInitIx = await this.program.methods.postInitViaHub(
           handle,
           slugHash,
           `https://arweave.net/${dataTx}`
         )
         .accounts(request.accounts)
-        .transaction()
-
+        .instruction()
+      const instructions = [priorityFeeIx, postInitIx]
       const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
       const lastValidBlockHeight = latestBlockhash.context.slot + 150
-      tx.recentBlockhash = latestBlockhash.value.blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.value.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      const tx = new anchor.web3.VersionedTransaction(messageV0)
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight();
@@ -262,9 +271,8 @@ export default class Post {
       while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
         try {
           attempts+=1
-          const tx = await this.provider.connection.sendRawTransaction(rawTx, {
-            skipPreflight: true,
-          });
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
+          console.log('tx', tx)
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {

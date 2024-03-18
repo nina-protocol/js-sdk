@@ -653,6 +653,7 @@ export default class Release {
       instructions.push(releaseInitIx)
 
       const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      console.log("latestBlockhash", latestBlockhash)
       const lastValidBlockHeight = latestBlockhash.context.slot + 150
 
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
@@ -669,15 +670,17 @@ export default class Release {
       const signedTx = await this.provider.wallet.signTransaction(tx);
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight();
-
+      console.log('blockheight', blockheight)
       let txid
       let attempts = 0
-      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+      while (!txid && attempts < 50) {
         try {
           attempts+=1
+          console.log('sending release init tx', attempts)
           const tx = await this.provider.connection.sendRawTransaction(rawTx, {
             skipPreflight: true,
           });
+          console.log('tx', tx)
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {
@@ -687,8 +690,6 @@ export default class Release {
           console.log('failed attempted to send release init tx, retrying from blockheight: ', blockheight)
         }
       }
-      await getConfirmTransaction(txid, this.provider.connection)
-      await sleep(2500)
       const createdRelease = await fetchWithRetry(this.fetch(release.toBase58(), { txid }))
       return {
         release: createdRelease,
