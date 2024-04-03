@@ -1245,6 +1245,12 @@ export default class Hub {
         ? this.fileServicePublicKey
         : this.provider.wallet.publicKey
 
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      console.log('priorityFee', priorityFee)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      console.log('priorityFeeIx', priorityFeeIx)
+      const instructions = [priorityFeeIx]
+
       const tx = await this.program.methods
         .hubAddRelease(hub.handle)
         .accounts({
@@ -1258,6 +1264,7 @@ export default class Hub {
           systemProgram: anchor.web3.SystemProgram.programId,
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         })
+        .preInstructions(instructions)
         // .remainingAccounts(remainingAccounts)
         .transaction()
 
@@ -1266,10 +1273,9 @@ export default class Hub {
 
       tx.recentBlockhash = latestBlockhash.value.blockhash
       tx.feePayer = payer
-      const signedTx = await this.provider.wallet.signTransaction(tx)
 
       if (asTx) {
-        const serializedTx = signedTx
+        const serializedTx = tx
           .serialize({ verifySignatures: false })
           .toString('base64')
 
@@ -1280,6 +1286,8 @@ export default class Hub {
           hubReleasePublicKey: hubRelease.toBase58(),
         }
       }
+
+      const signedTx = await this.provider.wallet.signTransaction(tx);
 
       const txid = await this.provider.wallet.sendTransaction(
         signedTx,

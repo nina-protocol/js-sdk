@@ -889,17 +889,16 @@ export default class Release {
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)
       const signedTx = await this.provider.wallet.signTransaction(tx);
+      console.log('signedTx', signedTx)
       const rawTx = signedTx.serialize()
       let blockheight = await this.provider.connection.getBlockHeight();
 
       let txid
       let attempts = 0
-      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
+      while (!txid && attempts < 50) {
         try {
           attempts+=1
-          const tx = await this.provider.connection.sendRawTransaction(rawTx, {
-            skipPreflight: true,
-          });
+          const tx = await this.provider.connection.sendRawTransaction(rawTx);
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {
@@ -909,11 +908,9 @@ export default class Release {
           console.log('failed attempted to send release update tx, retrying from blockheight: ', blockheight)
         }
       }
-      await getConfirmTransaction(txid, this.provider.connection)
-      await sleep(2500)
-      await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
+      const updatedRelease = await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
       return {
-        release,
+        release: updatedRelease,
         releasePublicKey,
       }
     } catch (error) {
