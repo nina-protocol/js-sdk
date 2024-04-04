@@ -1,29 +1,132 @@
-import * as anchor from '@project-serum/anchor';
-import promiseRetry from 'promise-retry';
+import * as anchor from '@coral-xyz/anchor';
+import { createSyncNativeInstruction } from '@solana/spl-token'
+import { Buffer } from 'buffer'
+import promiseRetry from 'promise-retry'
 
-import NinaClient from './client';
+const USDC_DECIMAL_AMOUNT = 6
+const SOL_DECIMAL_AMOUNT = 9
 
-const USDC_DECIMAL_AMOUNT = 6;
-const SOL_DECIMAL_AMOUNT = 9;
+export const MAX_U64 = '18446744073709551615'
+const BASE_PRIORITY_FEE = 2500
 
-export const TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.TOKEN_PROGRAM_ID.toString());
+export const NinaProgramAction = {
+  HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
+  HUB_ADD_RELEASE: 'HUB_ADD_RELEASE',
+  HUB_INIT_WITH_CREDIT: 'HUB_INIT_WITH_CREDIT',
+  HUB_UPDATE_COLLABORATOR_PERMISSIONS: 'HUB_UPDATE_COLLABORATOR_PERMISSIONS',
+  HUB_REMOVE_COLLABORATOR: 'HUB_REMOVE_COLLABORATOR',
+  HUB_UPDATE: 'HUB_UPDATE',
+  POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE:
+    'POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE',
+  POST_INIT_VIA_HUB: 'POST_INIT_VIA_HUB',
+  RELEASE_INIT_VIA_HUB: 'RELEASE_INIT_VIA_HUB',
+  RELEASE_INIT_WITH_CREDIT: 'RELEASE_INIT_WITH_CREDIT',
+  RELEASE_PURCHASE: 'RELEASE_PURCHASE',
+  RELEASE_PURCHASE_VIA_HUB: 'RELEASE_PURCHASE_VIA_HUB',
+  EXCHANGE_INIT: 'EXCHANGE_INIT',
+  EXCHANGE_ACCEPT: 'EXCHANGE_ACCEPT',
+  CONNECTION_CREATE: 'CONNECTION_CREATE',
+  SUBSCRIPTION_SUBSCRIBE_HUB: 'SUBSCRIPTION_SUBSCRIBE_HUB',
+  SUBSCRIPTION_SUBSCRIBE_ACCOUNT: 'SUBSCRIPTION_SUBSCRIBE_ACCOUNT',
+}
 
-const ASSOCIATED_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(anchor.utils.token.ASSOCIATED_PROGRAM_ID.toString());
+export const NinaProgramActionCost = {
+  HUB_ADD_COLLABORATOR: 0.001919,
+  HUB_ADD_RELEASE: 0.00368684,
+  HUB_INIT: 0.00923396,
+  HUB_INIT_WITH_CREDIT: 0.00923396,
+  HUB_UPDATE: 0.000005,
+  POST_INIT_VIA_HUB_WITH_REFERENCE_RELEASE: 0.01140548,
+  POST_INIT_VIA_HUB: 0.00772364,
+  RELEASE_INIT_VIA_HUB: 0.03212192,
+  RELEASE_INIT: 0.03047936,
+  RELEASE_INIT_WITH_CREDIT: 0.03047936,
+  RELEASE_PURCHASE: 0.00204428,
+  RELEASE_PURCHASE_VIA_HUB: 0.00204428,
+  EXCHANGE_INIT: 0.0051256,
+  EXCHANGE_ACCEPT: 0.00377536,
+  CONNECTION_CREATE: 0.009535238,
+  SUBSCRIPTION_SUBSCRIBE_HUB: 0.00173804,
+  SUBSCRIPTION_SUBSCRIBE_ACCOUNT: 0.00168236,
+}
+
+export const hasBalanceForAction = (action, balance) => {
+  const cost = NinaProgramActionCost[action]
+
+  return balance >= cost
+}
+
+export const NINA_CLIENT_IDS = {
+  mainnet: {
+    programs: {
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+    },
+    mints: {
+      usdc: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+      wsol: 'So11111111111111111111111111111111111111112',
+    },
+  },
+  devnet: {
+    programs: {
+      metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
+    },
+    mints: {
+      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      wsol: 'So11111111111111111111111111111111111111112',
+    },
+  },
+}
+
+export const isSol = (mint, cluster) => {
+  if (typeof mint !== 'string') {
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster].mints.wsol
+  }
+
+  return mint === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.wsol
+}
+
+export const isUsdc = (mint, cluster) => {
+  if (typeof mint !== 'string') {
+    return mint.toBase58() === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc
+  }
+
+  return mint === NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc
+}
+
+export const findAssociatedTokenAddress = async (
+  ownerAddress,
+  tokenMintAddress,
+) =>
+  (
+    await anchor.web3.PublicKey.findProgramAddress(
+      [
+        ownerAddress.toBuffer(),
+        anchor.utils.token.TOKEN_PROGRAM_ID.toBuffer(),
+        tokenMintAddress.toBuffer(),
+      ],
+      anchor.utils.token.ASSOCIATED_PROGRAM_ID,
+    )
+  )[0]
 
 export const findOrCreateAssociatedTokenAccount = async (
   connection,
   payer,
   owner,
   systemProgramId,
-  clockSysvarId,
   splTokenMintAddress,
-  skipLookup = false
+  skipLookup = false,
 ) => {
-  const associatedTokenAddress = await findAssociatedTokenAddress(owner, splTokenMintAddress);
+  const associatedTokenAddress = await findAssociatedTokenAddress(
+    owner,
+    splTokenMintAddress,
+  )
 
-  let userAssociatedTokenAddress = null;
+  let userAssociatedTokenAddress = null
+
   if (!skipLookup) {
-    userAssociatedTokenAddress = await connection.getAccountInfo(associatedTokenAddress);
+    userAssociatedTokenAddress = await connection.getAccountInfo(
+      associatedTokenAddress,
+    )
   }
 
   if (!userAssociatedTokenAddress) {
@@ -54,7 +157,7 @@ export const findOrCreateAssociatedTokenAccount = async (
         isWritable: false,
       },
       {
-        pubkey: TOKEN_PROGRAM_ID,
+        pubkey: anchor.utils.token.TOKEN_PROGRAM_ID,
         isSigner: false,
         isWritable: false,
       },
@@ -63,129 +166,286 @@ export const findOrCreateAssociatedTokenAccount = async (
         isSigner: false,
         isWritable: false,
       },
-    ];
+    ]
 
     const ix = new anchor.web3.TransactionInstruction({
       keys,
-      programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+      programId: anchor.utils.token.ASSOCIATED_PROGRAM_ID,
       data: Buffer.from([]),
-    });
+    })
 
-    return [associatedTokenAddress, ix];
-  } else {
-    return [associatedTokenAddress, undefined];
+    return [associatedTokenAddress, ix]
   }
-};
 
-export const findAssociatedTokenAddress = async (ownerAddress, tokenMintAddress) => {
-  return (
-    await anchor.web3.PublicKey.findProgramAddress(
-      [ownerAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMintAddress.toBuffer()],
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    )
-  )[0];
-};
+  return [associatedTokenAddress, undefined]
+}
 
-export const getUsdcBalance = async (publicKey, connection) => {
-  if (publicKey) {
-    try {
-      let [usdcTokenAccountPubkey] = await findOrCreateAssociatedTokenAccount(
-        connection,
-        publicKey,
-        publicKey,
-        anchor.web3.SystemProgram.programId,
-        anchor.web3.SYSVAR_RENT_PUBKEY,
-        new anchor.web3.PublicKey(NinaClient.ids.mints.usdc)
-      );
-
-      if (usdcTokenAccountPubkey) {
-        let usdcTokenAccount = await connection.getTokenAccountBalance(usdcTokenAccountPubkey);
-        return usdcTokenAccount.value.uiAmount.toFixed(2);
-      } else {
-        return 0;
-      }
-    } catch (error) {
-      console.warn('error getting usdc balance: ', error);
-      return 0;
-    }
-  } else {
-    return 0;
-  }
-};
-
-export const getConfirmTransaction = async (txid, connection) => {
+export const getLatestBlockhashWithRetry = async (connection) => {
   const res = await promiseRetry(
     async (retry) => {
-      let txResult = await connection.getTransaction(txid, {
-        commitment: 'confirmed',
-      });
+      const latestBlockhash = await connection.getLatestBlockhashAndContext('confirmed')
 
-      if (!txResult) {
-        const error = new Error('unable_to_confirm_transaction');
-        error.txid = txid;
+      if (!latestBlockhash) {
+        const error = new Error('Failed to get recent blockhash')
+        retry(error)
 
-        retry(error);
-        return;
+        return
       }
-      return txResult;
+
+      return latestBlockhash
     },
     {
-      retries: 5,
+      retries: 25,
+      minTimeout: 500,
+      maxTimeout: 1000,
+    },
+  )
+
+  if (!res?.value?.blockhash) {
+    throw new Error('Failed to get recent blockhash')
+  }
+
+  return res.value
+}
+
+export const simulateWithRetry = async (simulateFunction) => {
+  let attempts = 0
+
+  const res = await promiseRetry(
+    async (retry) => {
+      attempts += 1
+      const result = await simulateFunction
+
+      if (!result || result.value?.err) {
+        const error = new Error('Failed to simulate')
+        retry(error)
+
+        return
+      }
+
+      return result
+    }, {
+      retries: 25,
       minTimeout: 500,
       maxTimeout: 1000,
     }
-  );
+  )
+
+  if (!res) {
+    throw new Error('Failed to simulate')
+  }
+
+  return res
+}
+
+export const fetchWithRetry = async (fetchFunction) => {
+  let attempts = 0
+
+  const res = await promiseRetry(
+    async (retry) => {
+      try {
+        attempts += 1
+        console.log('fetchWithRetry', attempts)
+        const result = await fetchFunction
+        if (!result || result.message?.includes('not found')) {
+          const error = new Error('Failed to fetch')
+          console.log('fetchWithRetry error', JSON.stringify(error))
+          retry(error)
+  
+          return
+        }
+        return result
+      } catch(err) {
+        console.log('fetchWithRetry error', JSON.stringify(err))
+          retry(err)
+          return
+      }
+    }, {
+      retries: 50,
+      minTimeout: 50,
+      maxTimeout: 1000,
+    }
+  )
+
+  if (!res) {
+    throw new Error('Failed to fetch')
+  }
+
+  return res
+}
+
+export const getConfirmTransaction = async (txid, connection) => {
+  console.log('getConfirmTransaction', txid)
+  const res = await promiseRetry(
+    async (retry) => {
+      try {
+        const txResult = await connection.getTransaction(txid, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        })
+  
+        console.log('getConfirmTransaction', txResult)
+  
+        if (!txResult) {
+          const error = new Error('unable_to_confirm_transaction')
+          error.txid = txid
+  
+          retry(error)
+  
+          return
+        }
+  
+        return txResult  
+      }catch (err) {
+        console.log('getConfirmTransaction error', JSON.stringify(err))
+        retry(err)
+        return
+      }
+    },
+    {
+      retries: 4,
+      minTimeout: 50,
+      maxTimeout: 1000,
+    },
+  )
+
   if (res.meta.err) {
-    throw new Error('Transaction failed');
+    throw new Error('Transaction failed')
   }
-  return txid;
-};
 
-export const decimalsForMint = (mint) => {
+  return res
+}
+
+export const decimalsForMint = (mint, cluster) => {
   switch (typeof mint === 'string' ? mint : mint.toBase58()) {
-    case NinaClient.ids.mints.usdc:
-      return USDC_DECIMAL_AMOUNT;
-    case NinaClient.ids.mints.wsol:
-      return SOL_DECIMAL_AMOUNT;
+    case NINA_CLIENT_IDS[cluster || 'mainnet'].mints.usdc:
+      return USDC_DECIMAL_AMOUNT
+    case NINA_CLIENT_IDS[cluster || 'mainnet'].mints.wsol:
+      return SOL_DECIMAL_AMOUNT
     default:
-      return undefined;
+      return undefined
   }
-};
+}
 
-export const nativeToUi = (amount, mint) => {
-  return amount / Math.pow(10, decimalsForMint(mint));
-};
+export const nativeToUi = (amount, mint, cluster) =>
+  amount / Math.pow(10, decimalsForMint(mint, cluster))
 
-export const uiToNative = (amount, mint) => {
-  return Math.round(amount * Math.pow(10, decimalsForMint(mint)));
-};
+export const uiToNative = (amount, mint, cluster) =>
+  Math.round(amount * Math.pow(10, decimalsForMint(mint, cluster)))
 
-export const decodeNonEncryptedByteArray = (byteArray) => {
-  return new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\u0000/g, '');
-};
+export const decodeNonEncryptedByteArray = (byteArray) =>
+  new TextDecoder().decode(new Uint8Array(byteArray)).replaceAll(/\\u0000/g, '')
 
-export const createMintInstructions = async (provider, authority, mint, decimals) => {
-  const tokenProgram = anchor.Spl.token(provider);
-  const systemProgram = anchor.Native.system(provider);
-  const mintSize = tokenProgram.coder.accounts.size(tokenProgram.idl.accounts[0]);
+export const nativeToUiString = (
+  amount,
+  mint,
+  cluster,
+  decimalOverride = false,
+  showCurrency = true,
+) => {
+  let amountString = nativeToUi(amount, mint, cluster).toFixed(
+    isUsdc(mint, cluster) || decimalOverride ? 2 : 3,
+  )
 
-  const mintRentExemption = await provider.connection.getMinimumBalanceForRentExemption(mintSize);
+  if (showCurrency) {
+    amountString = `${isUsdc(mint, cluster) ? '$' : ''}${amountString} ${
+      isUsdc(mint, cluster) ? 'USDC' : 'SOL'
+    }`
+  }
 
-  let instructions = [
-    await systemProgram.methods
-      .createAccount(new anchor.BN(mintRentExemption), new anchor.BN(mintSize), tokenProgram.programId)
-      .accounts({
-        from: authority,
-        to: mint,
-      })
-      .instruction(),
-    await tokenProgram.methods
-      .initializeMint(decimals, authority, null)
-      .accounts({
-        mint,
-      })
-      .instruction(),
-  ];
+  return amountString
+}
 
-  return instructions;
-};
+export const wrapSol = async (connection, publicKey, amount, mint) => {
+  const wrappedSolInstructions = []
+
+  const [wrappedSolAccount, wrappedSolAccountIx] =
+    await findOrCreateAssociatedTokenAccount(
+      connection,
+      new anchor.web3.PublicKey(publicKey),
+      new anchor.web3.PublicKey(publicKey),
+      anchor.web3.SystemProgram.programId,
+      anchor.web3.SYSVAR_RENT_PUBKEY,
+      mint,
+    )
+
+  if (wrappedSolAccountIx) {
+    wrappedSolInstructions.push(wrappedSolAccountIx)
+  }
+
+  const wrappedSolTransferIx = anchor.web3.SystemProgram.transfer({
+    fromPubkey: new anchor.web3.PublicKey(publicKey),
+    toPubkey: wrappedSolAccount,
+    lamports: new anchor.BN(amount),
+  })
+
+  // sync wrapped SOL balance
+  const syncNativeIx = createSyncNativeInstruction(wrappedSolAccount)
+  wrappedSolInstructions.push(wrappedSolTransferIx, syncNativeIx)
+
+  return [wrappedSolAccount, wrappedSolInstructions]
+}
+
+export const readFileChunked = (file, chunkCallback, endCallback) => {
+  const chunkSize = 1024 * 1024 * 10 // 10MB
+  const fileSize = file.size
+  let offset = 0
+
+  const reader = new FileReader()
+
+  const readNext = () => {
+    const slice = file.slice(offset, offset + chunkSize)
+    reader.readAsBinaryString(slice)
+  }
+
+  reader.onload = () => {
+    if (reader.error) {
+      console.error('readFileChunked reader.onload', reader.error)
+      endCallback(reader.error || {})
+
+      return
+    }
+
+    offset += reader.result.length
+    chunkCallback(reader.result, offset, fileSize)
+
+    if (offset >= fileSize) {
+      endCallback()
+
+      return
+    }
+
+    readNext()
+  }
+
+  reader.onerror = (err) => {
+    console.error('readFileChunked onerror', err)
+    endCallback(err || {})
+  }
+
+  readNext()
+}
+
+export const sleep = async (ms) => new Promise((r) => setTimeout(r, ms));
+
+export const calculatePriorityFee = async (connection) => {
+  const recentPrioritizationFees =
+    await connection.getRecentPrioritizationFees()
+
+  if (!recentPrioritizationFees) {
+    throw new Error('Failed to get recent prioritization fee')
+  }
+
+  const totalFees = recentPrioritizationFees.reduce(
+    (total, current) => total + current.prioritizationFee,
+    0,
+  )
+
+  return (
+    Math.ceil(totalFees / recentPrioritizationFees.length) + BASE_PRIORITY_FEE
+  )
+}
+
+export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: fee,
+  })

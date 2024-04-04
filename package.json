@@ -1,6 +1,6 @@
 {
-  "name": "@nina-protocol/js-sdk",
-  "version": "0.0.18",
+  "name": "@nina-protocol/js-sdk-dev",
+  "version": "0.0.217",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -20,25 +20,42 @@
   "scripts": {
     "build": "microbundle build",
     "watch": "microbundle watch --compress false",
-    "format": "yarn prettier --write",
+    "format": "yarn prettier --check --ignore-path .prettierignore .",
+    "format:fix": "yarn prettier --write --ignore-path .prettierignore .",
+    "lint": "yarn eslint ./ --ignore-path .prettierignore",
+    "lint:fix": "yarn eslint ./ --ignore-path .prettierignore --fix",
     "build:docs": "yarn jsdoc -c jsdoc.json --verbose",
     "watch:doc-src": "yarn nodemon --exec 'npm run build:docs' --watch src",
     "watch:doc-output": "yarn livereload out",
     "watch:docs": "yarn run watch:doc-output & npm run watch:doc-src",
     "serve:docs": "cd docs && python3 -m http.server",
     "docs:dev": "yarn run watch:docs & yarn run serve:docs",
-    "buildAndPublish": "npm run build & npm publish"
+    "publish": "npm run build & npm publish"
   },
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
   "dependencies": {
-    "@project-serum/anchor": "^0.25.0",
+    "@bundlr-network/client": "^0.11.17",
+    "@coral-xyz/anchor": "0.29.0",
+    "@solana/buffer-layout-utils": "^0.2.0",
+    "@solana/spl-token": "^0.3.8",
+    "@solana/spl-token-metadata": "^0.1.2",
+    "@solana/web3.js": "1.77.3",
     "axios": "^0.27.2",
+    "babel-plugin-syntax-dynamic-import": "^6.18.0",
+    "babel-preset-es2015": "^6.24.1",
     "crypto-js": "^4.1.1",
+    "encoding": "^0.1.13",
+    "events": "^3.3.0",
+    "md5": "^2.3.0",
+    "promise": "^8.3.0",
     "promise-retry": "^2.0.1"
   },
   "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^4.1.1",
     "clean-jsdoc-theme": "^4.1.7",
+    "eslint": "^8.42.0",
+    "eslint-plugin-zero-config": "^2.2.9",
     "husky": "^8.0.1",
     "jsdoc": "^3.6.11",
     "livereload": "^0.9.3",
@@ -60,6 +77,9 @@
     ["commonjs", {"copyFlow": true}],
     "module",
     "typescript"
-  ]
-
+  ],
+  "types": "./dist/index.d.ts",
+  "directories": {
+    "doc": "docs"
+  }
 }
