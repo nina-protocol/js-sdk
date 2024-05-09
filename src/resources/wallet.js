@@ -7,6 +7,7 @@ import {
   getConfirmTransaction,
   uiToNative,
   nativeToUi,
+  sleep,
 } from '../utils'
 import { createTransferInstruction } from '@solana/spl-token'
 
@@ -85,20 +86,38 @@ export default class Wallet {
         ),
       })]
 
-      const latestBlockhash = await this.provider.connection.getRecentBlockhash()
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
+      
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
+        recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
-      }).compileToV0Message();
+      }).compileToV0Message([lookupTableAccount.value]);
       const tx = new anchor.web3.VersionedTransaction(messageV0)
 
       const signedTx = await this.provider.wallet.signTransaction(tx);
-      const txid = await this.provider.connection.sendTransaction(signedTx, {
-        maxRetries: 5,
-      });
-
-      await getConfirmTransaction(txid, this.provider.connection)
+      let txid
+      let attempts = 0
+      let blockheight = await this.provider.connection.getBlockHeight();
+      while (!txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendTransaction(signedTx, {
+            maxRetries: 5,
+          });
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send usdc tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send usdc tx, retrying from blockheight: ', blockheight)
+        }
+      }
 
       return {
         success: true,
@@ -118,8 +137,8 @@ export default class Wallet {
         new anchor.web3.PublicKey(destination),
       )
       console.log('destinationInfo', destinationInfo)
-      // console.log('destinationInfo.owner', destinationInfo.owner.toBase58())
-      // console.log('anchor.web3.SystemProgram.programId.toBase58()', anchor.web3.SystemProgram.programId.toBase58())
+      console.log('destinationInfo.owner', destinationInfo.owner.toBase58())
+      console.log('anchor.web3.SystemProgram.programId.toBase58()', anchor.web3.SystemProgram.programId.toBase58())
       let isSystemAccount = false
       let isUsdcTokenAccount = false
       let toUsdcTokenAccount = null
@@ -134,6 +153,7 @@ export default class Wallet {
       }
 
       try {
+        console.log('destination', destination)
         const tokenAccount = await getAccount(
           this.provider.connection,
           new anchor.web3.PublicKey(destination),
@@ -193,23 +213,40 @@ export default class Wallet {
         )
       )
 
-      const tx = new anchor.web3.Transaction()
-      for (const instruction of instructions) {
-        tx.add(instruction)
-      }
-      tx.add(transferInstruction)
+      instructions.push(transferInstruction)
+
+      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+
+      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
       
-      tx.recentBlockhash = (
-        await this.provider.connection.getRecentBlockhash()
-      ).blockhash
-      tx.feePayer = this.provider.wallet.publicKey
+      const messageV0 = new anchor.web3.TransactionMessage({
+        payerKey: this.provider.wallet.publicKey,
+        recentBlockhash: latestBlockhash.value.blockhash,
+        instructions: instructions,
+      }).compileToV0Message([lookupTableAccount.value]);
+      const tx = new anchor.web3.VersionedTransaction(messageV0)
 
-      const txid = await this.provider.wallet.sendTransaction(
-        tx,
-        this.provider.connection,
-      )
-
-      await getConfirmTransaction(txid, this.provider.connection)
+      const signedTx = await this.provider.wallet.signTransaction(tx);
+      let txid
+      let attempts = 0
+      let blockheight = await this.provider.connection.getBlockHeight();
+      while (!txid && attempts < 50) {
+        try {
+          attempts+=1
+          const tx = await this.provider.connection.sendTransaction(signedTx, {
+            maxRetries: 5,
+          });
+          await getConfirmTransaction(tx, this.provider.connection)
+          txid = tx
+        } catch (error) {
+          console.log('failed attempted to send usdc tx: ', error)
+          await sleep(500)
+          blockheight = await this.provider.connection.getBlockHeight();
+          console.log('failed attempted to send usdc tx, retrying from blockheight: ', blockheight)
+        }
+      }
 
       return {
         success: true,
