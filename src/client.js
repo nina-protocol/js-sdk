@@ -82,7 +82,7 @@ class NinaClient {
     this.connection = new anchor.web3.Connection(this.rpcEndpoint)
     this.provider = new anchor.AnchorProvider(this.connection, wallet, {
       commitment: 'confirmed',
-      preflightCommitment: 'processed',
+      preflightCommitment: 'confirmed',
     })
     try {
       this.program = await anchor.Program.at(this.programId, this.provider)

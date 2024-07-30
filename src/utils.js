@@ -441,9 +441,9 @@ export const calculatePriorityFee = async (connection) => {
     0,
   )
 
-  return (
-    Math.ceil(totalFees / recentPrioritizationFees.length) + BASE_PRIORITY_FEE
-  )
+  const fee = Math.ceil(totalFees / recentPrioritizationFees.length) + BASE_PRIORITY_FEE
+  console.log('calculatePriorityFee', fee)
+  return fee
 }
 
 export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({

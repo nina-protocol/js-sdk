@@ -652,9 +652,9 @@ export default class Release {
       }
       instructions.push(releaseInitIx)
 
-      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
       console.log("latestBlockhash", latestBlockhash)
-      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+      const lastValidBlockHeight = blockhashResponse.lastValidBlockHeight - 150
 
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
@@ -673,10 +673,12 @@ export default class Release {
       console.log('blockheight', blockheight)
       let txid
       let attempts = 0
-      while (!txid && attempts < 50) {
+      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
         try {
           attempts+=1
           console.log('sending release init tx', attempts)
+          console.log('blockheight', blockheight)
+          console.log('lastValidBlockHeight', lastValidBlockHeight)
           const tx = await this.provider.connection.sendRawTransaction(rawTx, {
             skipPreflight: true,
           });
