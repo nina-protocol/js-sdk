@@ -654,7 +654,7 @@ export default class Release {
 
       const latestBlockhash = await this.provider.connection.getLatestBlockhash();
       console.log("latestBlockhash", latestBlockhash)
-      const lastValidBlockHeight = blockhashResponse.lastValidBlockHeight - 150
+      const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
 
       const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
@@ -662,7 +662,7 @@ export default class Release {
       
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.value.blockhash,
+        recentBlockhash: latestBlockhash.blockhash,
         instructions: instructions,
       }).compileToV0Message([lookupTableAccount.value]);
       tx = new anchor.web3.VersionedTransaction(messageV0)

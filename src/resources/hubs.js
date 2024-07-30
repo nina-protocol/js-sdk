@@ -531,14 +531,13 @@ export default class Hub {
           lookupTablePublicKey,
         )
 
-      const latestBlockhash =
-        await this.provider.connection.getLatestBlockhashAndContext()
+      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
 
-      const lastValidBlockHeight = latestBlockhash.context.slot + 150
+      const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
 
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.value.blockhash,
+        recentBlockhash: latestBlockhash.blockhash,
         instructions,
       }).compileToV0Message([lookupTableAccount.value])
 
