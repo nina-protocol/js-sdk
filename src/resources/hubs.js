@@ -4,10 +4,14 @@ import MD5 from 'crypto-js/md5';
 import { NINA_CLIENT_IDS, NinaProgramAction, addPriorityFeeIx, calculatePriorityFee, fetchWithRetry, findOrCreateAssociatedTokenAccount, getConfirmTransaction, getLatestBlockhashWithRetry, simulateWithRetry, sleep, uiToNative } from '../utils';
 import Uploader from './uploader';
 import UploaderNode from './uploaderNode';
+import { buildAndSendTxForInstructions } from '../utils';
+import { ComputeBudgetProgram } from '@solana/web3.js';
 
 /**
  * @module Hub
  */
+
+const HUB_CREATE_COMPUTE_UNIT_AMOUNT = 140000
 
 export default class Hub {
   constructor({
@@ -491,9 +495,12 @@ export default class Hub {
         new anchor.web3.PublicKey(NINA_CLIENT_IDS[this.cluster].mints.wsol),
       )
 
+      const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({ 
+        units: HUB_CREATE_COMPUTE_UNIT_AMOUNT, 
+      });
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
-      const instructions = [priorityFeeIx]
+      const instructions = [modifyComputeUnits, priorityFeeIx]
 
       if (usdcVaultIx) {
         instructions.push(usdcVaultIx)
@@ -519,56 +526,7 @@ export default class Hub {
 
       instructions.push(hubInitIx)
 
-      const lookupTableAddress =
-        this.cluster === 'mainnet'
-          ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9'
-          : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-
-      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-
-      const lookupTableAccount =
-        await this.provider.connection.getAddressLookupTable(
-          lookupTablePublicKey,
-        )
-
-      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
-
-      const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
-
-      const messageV0 = new anchor.web3.TransactionMessage({
-        payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
-        instructions,
-      }).compileToV0Message([lookupTableAccount.value])
-
-      tx = new anchor.web3.VersionedTransaction(messageV0)
-
-      const signedTx = await this.provider.wallet.signTransaction(tx)
-      const rawTx = signedTx.serialize()
-      let blockheight = await this.provider.connection.getBlockHeight()
-
-      let txid
-      let attempts = 0
-      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
-        try {
-          attempts += 1
-          const tx = await this.provider.connection.sendRawTransaction(rawTx, {
-            skipPreflight: true,
-          })
-          await getConfirmTransaction(tx, this.provider.connection)
-          txid = tx
-        } catch (error) {
-          console.log('failed attempted to send hub tx: ', error)
-          await sleep(500)
-          blockheight = await this.provider.connection.getBlockHeight()
-          console.log(
-            'failed attempted to send hub tx, retrying from blockheight: ',
-            blockheight,
-          )
-        }
-      }
-      await getConfirmTransaction(txid, this.provider.connection)
-      await sleep(3000)
+      const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'hub-create')
       const createdHub = await this.fetch(hub.toBase58())
 
       return {
@@ -1091,8 +1049,8 @@ export default class Hub {
     asTx = false,
   ) {
     try {
+      const { hub } = await this.fetch(hubPublicKey)
       hubPublicKey = new anchor.web3.PublicKey(hubPublicKey)
-      const hub = this.program.account.hub.fetch(hubPublicKey)
       contentAccountPublicKey = new anchor.web3.PublicKey(
         contentAccountPublicKey,
       )
@@ -1149,7 +1107,10 @@ export default class Hub {
           .serialize({ verifySignatures: false })
           .toString('base64')
 
-        return serializedTx
+        return {
+          tx: serializedTx,
+          hubReleasePublicKey: hubChildPublicKey.toBase58(),
+        }
       }
 
       const txid = await this.provider.wallet.sendTransaction(

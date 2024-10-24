@@ -18,10 +18,14 @@ import {
   simulateWithRetry,
   sleep,
   calculatePriorityFee,
+  buildAndSendTxForInstructions,
 } from '../utils'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
+import { ComputeBudgetProgram } from '@solana/web3.js';
+
+const RELEASE_CREATE_COMPUTE_UNIT_AMOUNT = 200000
 
 /**
  * @module Release
@@ -508,9 +512,13 @@ export default class Release {
           true,
         )
 
+      const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({ 
+        units: RELEASE_CREATE_COMPUTE_UNIT_AMOUNT, 
+      });
+      
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
-      const instructions = [priorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
+      const instructions = [modifyComputeUnits, priorityFeeIx, releaseMintCreateIx, releaseMintInitializeIx, royaltyTokenAccountIx]
 
       if (authorityTokenAccountIx) {
         instructions.push(authorityTokenAccountIx)
@@ -651,47 +659,7 @@ export default class Release {
 
       }
       instructions.push(releaseInitIx)
-
-      const latestBlockhash = await this.provider.connection.getLatestBlockhash();
-      console.log("latestBlockhash", latestBlockhash)
-      const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
-
-      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      
-      const messageV0 = new anchor.web3.TransactionMessage({
-        payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
-        instructions: instructions,
-      }).compileToV0Message([lookupTableAccount.value]);
-      tx = new anchor.web3.VersionedTransaction(messageV0)
-      tx.sign([releaseMint])
-      const signedTx = await this.provider.wallet.signTransaction(tx);
-      const rawTx = signedTx.serialize()
-      let blockheight = await this.provider.connection.getBlockHeight();
-      console.log('blockheight', blockheight)
-      let txid
-      let attempts = 0
-      while (blockheight < lastValidBlockHeight && !txid && attempts < 50) {
-        try {
-          attempts+=1
-          console.log('sending release init tx', attempts)
-          console.log('blockheight', blockheight)
-          console.log('lastValidBlockHeight', lastValidBlockHeight)
-          const tx = await this.provider.connection.sendRawTransaction(rawTx, {
-            skipPreflight: true,
-          });
-          console.log('tx', tx)
-          await getConfirmTransaction(tx, this.provider.connection)
-          txid = tx
-        } catch (error) {
-          console.log('failed attempted to send release init tx: ', error)
-          await sleep(500)
-          blockheight = await this.provider.connection.getBlockHeight();
-          console.log('failed attempted to send release init tx, retrying from blockheight: ', blockheight)
-        }
-      }
+      const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'release-create', [releaseMint])
       const createdRelease = await fetchWithRetry(this.fetch(release.toBase58(), { txid }))
       return {
         release: createdRelease,
@@ -878,38 +846,7 @@ export default class Release {
         .accounts(accounts)
         .instruction()
       const instructions = [priorityFeeIx, releaseUpdateMetadataInstruction]
-      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
-      const lastValidBlockHeight = latestBlockhash.context.slot + 150
-
-      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-      const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      const messageV0 = new anchor.web3.TransactionMessage({
-        payerKey: this.provider.wallet.publicKey,
-        recentBlockhash: latestBlockhash.value.blockhash,
-        instructions: instructions,
-      }).compileToV0Message([lookupTableAccount.value]);
-      tx = new anchor.web3.VersionedTransaction(messageV0)
-      const signedTx = await this.provider.wallet.signTransaction(tx);
-      console.log('signedTx', signedTx)
-      const rawTx = signedTx.serialize()
-      let blockheight = await this.provider.connection.getBlockHeight();
-
-      let txid
-      let attempts = 0
-      while (!txid && attempts < 50) {
-        try {
-          attempts+=1
-          const tx = await this.provider.connection.sendRawTransaction(rawTx);
-          await getConfirmTransaction(tx, this.provider.connection)
-          txid = tx
-        } catch (error) {
-          console.log('failed attempted to send release update tx: ', error)
-          await sleep(500)
-          blockheight = await this.provider.connection.getBlockHeight();
-          console.log('failed attempted to send release update tx, retrying from blockheight: ', blockheight)
-        }
-      }
+      const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'release-update')
       const updatedRelease = await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
       return {
         release: updatedRelease,

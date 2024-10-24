@@ -2,12 +2,13 @@ import * as anchor from '@coral-xyz/anchor';
 import { createSyncNativeInstruction } from '@solana/spl-token'
 import { Buffer } from 'buffer'
 import promiseRetry from 'promise-retry'
-
+import axios from 'axios';
 const USDC_DECIMAL_AMOUNT = 6
 const SOL_DECIMAL_AMOUNT = 9
 
 export const MAX_U64 = '18446744073709551615'
-const BASE_PRIORITY_FEE = 2500
+const MAX_RETRY_ATTEMPTS = 50
+const BASE_PRIORITY_FEE = 20000
 
 export const NinaProgramAction = {
   HUB_ADD_COLLABORATOR: 'HUB_ADD_COLLABORATOR',
@@ -28,6 +29,7 @@ export const NinaProgramAction = {
   CONNECTION_CREATE: 'CONNECTION_CREATE',
   SUBSCRIPTION_SUBSCRIBE_HUB: 'SUBSCRIPTION_SUBSCRIBE_HUB',
   SUBSCRIPTION_SUBSCRIBE_ACCOUNT: 'SUBSCRIPTION_SUBSCRIBE_ACCOUNT',
+  HUB_CONTENT_TOGGLE_VISIBILITY: 'HUB_CONTENT_TOGGLE_VISIBILITY',
 }
 
 export const NinaProgramActionCost = {
@@ -428,7 +430,43 @@ export const readFileChunked = (file, chunkCallback, endCallback) => {
 
 export const sleep = async (ms) => new Promise((r) => setTimeout(r, ms));
 
+const getPriorityFeesFromQuickNode = async () => {
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+  const data = {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "qn_estimatePriorityFees",
+  };
+  try {
+    const response = await axios
+      .post(
+        "https://weathered-maximum-card.solana-mainnet.quiknode.pro/b739cc13404478b1837122ffa27fd324053b80aa/",
+        data,
+        config
+      )
+      if (response.data.result.per_compute_unit) {
+        console.log('response.data.result.per_compute_unit.high', response.data.result.per_compute_unit.high)
+        console.log('response.data.result.per_compute_unit.extreme', response.data.result.per_compute_unit.extreme)
+        return response.data.result.per_compute_unit.extreme
+      }
+      return BASE_PRIORITY_FEE
+
+  } catch (err) {
+    console.log('getPriorityFeesFromQuickNode', err)
+    return BASE_PRIORITY_FEE
+  }
+}
+
 export const calculatePriorityFee = async (connection) => {
+  const quickNodeFee = await getPriorityFeesFromQuickNode()
+  if (quickNodeFee !== BASE_PRIORITY_FEE) {
+    return quickNodeFee
+  }
+
   const recentPrioritizationFees =
     await connection.getRecentPrioritizationFees()
 
@@ -449,3 +487,45 @@ export const calculatePriorityFee = async (connection) => {
 export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setComputeUnitPrice({
     microLamports: fee,
   })
+
+export const buildAndSendTxForInstructions = async (provider, instructions, type='not_provided', signers = undefined) => {
+  const latestBlockhash = await provider.connection.getLatestBlockhash();
+  const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
+  const lookupTableAddress = process.env.SOLANA_CLUSTER === 'mainnet' || process.env.SOLANA_NETWORK === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+  const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+  const lookupTableAccount = await provider.connection.getAddressLookupTable(lookupTablePublicKey);
+  const messageV0 = new anchor.web3.TransactionMessage({
+    payerKey: provider.wallet.publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions: instructions,
+  }).compileToV0Message([lookupTableAccount.value]);
+  let tx = new anchor.web3.VersionedTransaction(messageV0)
+  if (signers) {
+    tx.sign(signers)
+  }
+  const signedTx = await provider.wallet.signTransaction(tx);
+  const rawTx = signedTx.serialize()
+  let blockheight = await provider.connection.getBlockHeight();
+
+  let txid
+  let attempts = 0
+  while (blockheight < lastValidBlockHeight && !txid && attempts < MAX_RETRY_ATTEMPTS) {
+    try {
+      attempts += 1
+      console.log('attempting to send tx: ', attempts)
+      const tx = await provider.connection.sendRawTransaction(rawTx, {
+        skipPreflight: true,
+      });
+      console.log('buildAndSendTxForInstructions', tx)
+      await getConfirmTransaction(tx, provider.connection)
+      txid = tx
+    } catch (error) {
+      console.log(`failed attempted to send ${type} tx: `, error)
+      await sleep(500)
+      blockheight = await provider.connection.getBlockHeight();
+      console.log(`failed attempted to send ${type} tx, retrying from blockheight: `, blockheight)
+    }
+  }
+  console.log(`success sending ${type} tx: `, txid)
+  return txid
+}
