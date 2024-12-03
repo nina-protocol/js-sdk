@@ -1585,6 +1585,37 @@
     base64url "^3.0.1"
     bignumber.js "^9.1.2"
 
+"@irys/upload-solana@^0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@irys/upload-solana/-/upload-solana-0.1.7.tgz#03b7f98d0180d6bc27e8b7011afb8625afe8a78b"
+  integrity sha512-gHrEA6fCN2cEpBLM+urHRd0SeHcx6aOpNHPPeDS64tHXORrz4dU8F+OxWyy9wsCQNQd/wzrZldu/qncvcqkv6g==
+  dependencies:
+    "@irys/bundles" "^0.0.1"
+    "@irys/upload" "^0.0.14"
+    "@irys/upload-core" "^0.0.9"
+    "@solana/spl-token" "^0.4.8"
+    "@solana/web3.js" "^1.95.3"
+    async-retry "^1.3.3"
+    bignumber.js "^9.1.2"
+    bs58 "5.0.0"
+    tweetnacl "^1.0.3"
+
+"@irys/upload@^0.0.14":
+  version "0.0.14"
+  resolved "https://registry.yarnpkg.com/@irys/upload/-/upload-0.0.14.tgz#bb2e1011f5b61590ac4312464a91280f5c098e3a"
+  integrity sha512-6XdkyS5cVINcPjv1MzA6jDsawfG7Bw6sq5wilNx5B4X7nNotBPC3SuRrZs06G/0BTUj15W+TRO/tZTDWRUfZzA==
+  dependencies:
+    "@irys/bundles" "^0.0.1"
+    "@irys/upload-core" "^0.0.9"
+    async-retry "^1.3.3"
+    axios "^1.7.5"
+    base64url "^3.0.1"
+    bignumber.js "^9.1.2"
+    csv-parse "^5.5.6"
+    csv-stringify "^6.5.1"
+    inquirer "^8.2.0"
+    mime-types "^2.1.35"
+
 "@irys/web-upload-solana@^0.1.7":
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/@irys/web-upload-solana/-/web-upload-solana-0.1.7.tgz#f3edadeb77190411081ad9f41721560d9c7e0a9f"
@@ -3717,10 +3748,20 @@ csv-parse@^4.16.3:
   resolved "https://registry.yarnpkg.com/csv-parse/-/csv-parse-4.16.3.tgz#7ca624d517212ebc520a36873c3478fa66efbaf7"
   integrity sha512-cO1I/zmz4w2dcKHVvpCr7JVRu8/FymG5OEpmvsZYlccYolPBLoVGKUHgNoc4ZGkFeFlWGEDmMyBM+TTqRdW/wg==
 
+csv-parse@^5.5.6:
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/csv-parse/-/csv-parse-5.6.0.tgz#219beace2a3e9f28929999d2aa417d3fb3071c7f"
+  integrity sha512-l3nz3euub2QMg5ouu5U09Ew9Wf6/wQ8I++ch1loQ0ljmzhmfZYrH9fflS22i/PQEvsPvxCwxgz5q7UB8K1JO4Q==
+
 csv-stringify@^5.6.5:
   version "5.6.5"
   resolved "https://registry.yarnpkg.com/csv-stringify/-/csv-stringify-5.6.5.tgz#c6d74badda4b49a79bf4e72f91cce1e33b94de00"
   integrity sha512-PjiQ659aQ+fUTQqSrd1XEDnOr52jh30RBurfzkscaE2tPaFsDH5wOAHJiw8XAHphRknCwMUE9KRayc4K/NbO8A==
+
+csv-stringify@^6.5.1:
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/csv-stringify/-/csv-stringify-6.5.2.tgz#b51d61cd949906d5b5b790463f3055d95915193e"
+  integrity sha512-RFPahj0sXcmUyjrObAK+DOWtMvMIFV328n4qZJhgX3x2RqkQgOTU2mCUmiFR0CzM6AzChlRSUErjiJeEt8BaQA==
 
 csv@5.5.3:
   version "5.5.3"
