@@ -85,6 +85,10 @@ class NinaClient {
       preflightCommitment: 'confirmed',
     })
 
+    console.log('LOCAL')
+    console.log('this.provider :>> ', this.provider)
+    console.log('this.provider.wallet! :>> ', this.provider.wallet)
+
     try {
       this.program = await anchor.Program.at(
         new anchor.web3.PublicKey(this.programId),

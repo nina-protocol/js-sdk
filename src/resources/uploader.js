@@ -15,7 +15,7 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
 
 export default class Uploader {
   constructor() {
-    this.bundlrEndpoint = 'https://node1.bundlr.network'
+    // this.bundlrEndpoint = 'https://node1.bundlr.network'
     this.provider = null
     this.endpoint = null
     this.bundlr = null
@@ -26,26 +26,31 @@ export default class Uploader {
     provider,
     endpoint,
     cluster,
-    bundlrEndpoint = 'https://node1.bundlr.network',
+    // bundlrEndpoint = 'https://node1.bundlr.network',
   }) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
-        this.bundlrEndpoint = bundlrEndpoint
+        // this.bundlrEndpoint = bundlrEndpoint
 
-        const getIrysUploader = async () => {
-          const irysUploaderInstance = await irysUploader(Solana).withWallet(
-            this.provider.wallet,
+        const getIrysUploader = (Solana) => {
+          return irysUploader(Solana).withWallet(
+            this.provider.wallet.payer.secretKey,
           )
-          return irysUploaderInstance
         }
 
-        this.bundlr = await getIrysUploader()
-
-        console.log('this.bundlr  :>> ', this.bundlr)
-        resolve(this)
+        getIrysUploader(Solana)
+          .then((irysUploaderInstance) => {
+            this.bundlr = irysUploaderInstance
+            console.log('this.bundlr  :>> ', this.bundlr)
+            resolve(this)
+          })
+          .catch((error) => {
+            console.error('bundlr error: ', error)
+            reject(error)
+          })
       } catch (error) {
         console.error('bundlr error: ', error)
         reject(error)
