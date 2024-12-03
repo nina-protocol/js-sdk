@@ -1,4 +1,4 @@
-import * as anchor from '@coral-xyz/anchor';
+import * as anchor from '@coral-xyz/anchor'
 import axios from 'axios'
 import Http from './http'
 import Account from './resources/accounts'
@@ -6,26 +6,26 @@ import Exchange from './resources/exchanges'
 import Hub from './resources/hubs'
 import Post from './resources/posts'
 import Release from './resources/releases'
-import Subscription from './resources/subscriptions'
 import Search from './resources/search'
-import Wallet from './resources/wallet'
+import Subscription from './resources/subscriptions'
 import Uploader from './resources/uploader'
 import UploaderNode from './resources/uploaderNode'
+import Wallet from './resources/wallet'
 import {
+  NinaProgramAction,
+  NinaProgramActionCost,
+  addPriorityFeeIx,
+  calculatePriorityFee,
   decimalsForMint,
+  decodeNonEncryptedByteArray,
+  findOrCreateAssociatedTokenAccount,
+  getConfirmTransaction,
   isSol,
   isUsdc,
   nativeToUi,
   nativeToUiString,
   uiToNative,
-  findOrCreateAssociatedTokenAccount,
-  decodeNonEncryptedByteArray,
   wrapSol,
-  getConfirmTransaction,
-  NinaProgramAction,
-  NinaProgramActionCost,
-  calculatePriorityFee,
-  addPriorityFeeIx,
 } from './utils'
 
 /** Class Representing the Nina Client */
@@ -84,8 +84,20 @@ class NinaClient {
       commitment: 'confirmed',
       preflightCommitment: 'confirmed',
     })
+
+    console.log('LOCAL !@@@@')
+    console.log('LOCAL !@@@')
+    console.log('LOCAL !@@@@')
+    console.log('LOCAL !@@@@@')
+    console.log('LOCAL !@@@@@')
+    console.log('LOCAL !@@@@@')
+    console.log('LOCAL !@@@@@')
+
     try {
-      this.program = await anchor.Program.at(this.programId, this.provider)
+      this.program = await anchor.Program.at(
+        new anchor.web3.PublicKey(this.programId),
+        this.provider,
+      )
     } catch (error) {
       console.error('Error initializing program:', error)
     }

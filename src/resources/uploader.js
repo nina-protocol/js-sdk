@@ -1,5 +1,7 @@
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
+import { Uploader } from "@irys/upload";
+import { Solana } from "@irys/upload-solana";
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
 export const MEGABYTE = 1024 * 1024
@@ -21,27 +23,22 @@ export default class Uploader {
   }
 
   async init({ provider, endpoint, cluster, bundlrEndpoint = 'https://node1.bundlr.network' }) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
         this.bundlrEndpoint = bundlrEndpoint
-        import('@bundlr-network/client').then(async (module) => {
-          const bundlrInstance = new module.WebBundlr(
-            this.bundlrEndpoint,
-            'solana',
-            this.provider.wallet,
-            {
-              providerUrl: this.provider.connection.rpcEndpoint,
-              timeout: 2147483647,
-            },
-          )
+        
+        const getIrysUploader = async () => {
+            const irysUploader = await Uploader(Solana).withWallet(this.provider.wallet);
+            return irysUploader;
+          };
 
-          await bundlrInstance.ready()
-          this.bundlr = bundlrInstance
-          resolve(this)
-        });
+        this.bundlr = await getIrysUploader()
+        
+        console.log('this.bundlr :>> ', this.bundlr);
+        resolve(this)
     } catch (error) {
       console.error('bundlr error: ', error)
       reject(error)
