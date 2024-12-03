@@ -85,14 +85,6 @@ class NinaClient {
       preflightCommitment: 'confirmed',
     })
 
-    console.log('LOCAL !@@@@')
-    console.log('LOCAL !@@@')
-    console.log('LOCAL !@@@@')
-    console.log('LOCAL !@@@@@')
-    console.log('LOCAL !@@@@@')
-    console.log('LOCAL !@@@@@')
-    console.log('LOCAL !@@@@@')
-
     try {
       this.program = await anchor.Program.at(
         new anchor.web3.PublicKey(this.programId),
@@ -174,7 +166,7 @@ class NinaClient {
     return decodeNonEncryptedByteArray(byteArray)
   }
 
-  static getConfirmTransaction = async (txid, connection) => {
+  static async getConfirmTransaction(txid, connection) {
     return getConfirmTransaction(txid, connection)
   }
 
