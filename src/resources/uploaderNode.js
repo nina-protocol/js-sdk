@@ -1,9 +1,13 @@
+import { Uploader as irysUploader } from '@irys/upload'
+import { Solana } from '@irys/upload-solana'
+import fs from 'fs'
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
-import fs from 'fs'
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
+
 export const MEGABYTE = 1024 * 1024
+
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES =
   MAX_AUDIO_FILE_UPLOAD_SIZE_MB * 1024 * 1024
 
@@ -14,43 +18,44 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
 
 export default class UploaderNode {
   constructor() {
-    this.bundlrEndpoint = 'https://node1.bundlr.network'
+    // this.bundlrEndpoint = 'https://node1.bundlr.network'
     this.provider = null
     this.endpoint = null
     this.bundlr = null
     this.cluster = null
     this.rpcEndpoint = null
   }
-  
+
   async init({ provider, endpoint, cluster }) {
     return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
-        import('@bundlr-network/client').then(async (module) => {
-          const bundlrInstance = new module.NodeBundlr(
-            this.bundlrEndpoint,
-            'solana',
+        const getIrysUploader = (Solana) => {
+          return irysUploader(Solana).withWallet(
             this.provider.wallet.payer.secretKey,
-            {
-              providerUrl: this.provider.connection.rpcEndpoint.replace('.devnet', ''),
-              timeout: 2147483647,
-            },
           )
+        }
 
-          await bundlrInstance.ready()
-          this.bundlr = bundlrInstance
-          resolve(this)
-        });
-    } catch (error) {
-      console.error('bundlr error: ', error)
-      reject(error)
-    }
-   })
+        getIrysUploader(Solana)
+          .then((irysUploaderInstance) => {
+            this.bundlr = irysUploaderInstance
+            console.log('this.bundlr  :>> ', this.bundlr)
+            resolve(this)
+          })
+          .catch((error) => {
+            console.error('bundlr error: ', error)
+            reject(error)
+          })
+      } catch (error) {
+        console.error('bundlr error: ', error)
+        reject(error)
+      }
+    })
   }
 
-  async uploadFile(file, index, totalFiles, nameOverride=null) {
+  async uploadFile(file, index, totalFiles, nameOverride = null) {
     try {
       return new Promise(async (resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
@@ -66,9 +71,23 @@ export default class UploaderNode {
           reject(e)
         })
 
-        const transactionOptions = {tags: [{ name: 'Content-Type', value: file.mimetype || 'application/json' }] }
-        const response = await uploader.uploadData(nameOverride ? file : file.buffer, transactionOptions)
-        console.log(`Upload completed with ID ${JSON.stringify(response.data.id)}`)
+        const transactionOptions = {
+          tags: [
+            {
+              name: 'Content-Type',
+              value: file.mimetype || 'application/json',
+            },
+          ],
+        }
+
+        const response = await uploader.uploadData(
+          nameOverride ? file : file.buffer,
+          transactionOptions,
+        )
+
+        console.log(
+          `Upload completed with ID ${JSON.stringify(response.data.id)}`,
+        )
         resolve(response.data.id)
       })
     } catch (error) {
@@ -98,18 +117,24 @@ export default class UploaderNode {
     }
   }
 
-  async getPricePerMb(native=false) {
+  async getPricePerMb(native = false) {
     try {
       const price = await this.bundlr.getPrice(1000000)
-      return native ? price : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+
+      return native
+        ? price
+        : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
     } catch (error) {
       return error
     }
   }
 
-  async fund(amount, native=false) {
+  async fund(amount, native = false) {
     try {
-      const value = native ? amount : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+      const value = native
+        ? amount
+        : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+
       if (!value) return
 
       await this.bundlr.fund(value)
@@ -144,10 +169,17 @@ export default class UploaderNode {
     }
   }
 
-  async costForFiles(files, native=false) {
-    const totalSizeWithoutMB = files.reduce((acc, file) => acc + file?.size || 0, 0)
+  async costForFiles(files, native = false) {
+    const totalSizeWithoutMB = files.reduce(
+      (acc, file) => acc + file?.size || 0,
+      0,
+    )
+
     const priceWithoutMB = await this.bundlr.getPrice(totalSizeWithoutMB)
-    return native ? priceWithoutMB.toNumber() : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+
+    return native
+      ? priceWithoutMB.toNumber()
+      : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
   }
 
   async hasBalanceForFiles(files) {
@@ -166,7 +198,7 @@ export default class UploaderNode {
     }
   }
 
-  isValidAudioFile(file) {    
+  isValidAudioFile(file) {
     return (
       (file.type === 'audio/mpeg' || file.mimetype === 'audio/mpeg') &&
       file.size <= MAX_AUDIO_FILE_UPLOAD_SIZE_BYTES
@@ -175,6 +207,7 @@ export default class UploaderNode {
 
   isValidArtworkFile(file) {
     console.log('isValidArtworkFile file', file)
+
     return (
       (file.type === 'image/jpeg' ||
         file.type === 'image/jpg' ||
@@ -182,7 +215,7 @@ export default class UploaderNode {
         file.type === 'image/gif' ||
         file.mimetype === 'image/jpeg' ||
         file.mimetype === 'image/jpg' ||
-        file.mimetype === 'image/png' || 
+        file.mimetype === 'image/png' ||
         file.mimetype === 'image/gif') &&
       file.size <= MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES
     )

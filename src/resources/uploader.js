@@ -1,3 +1,5 @@
+import { Uploader as irysUploader } from '@irys/upload'
+import { Solana } from '@irys/upload-solana'
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 
@@ -13,43 +15,50 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
 
 export default class Uploader {
   constructor() {
-    this.bundlrEndpoint = 'https://node1.bundlr.network'
+    // this.bundlrEndpoint = 'https://node1.bundlr.network'
     this.provider = null
     this.endpoint = null
     this.bundlr = null
     this.cluster = null
   }
 
-  async init({ provider, endpoint, cluster, bundlrEndpoint = 'https://node1.bundlr.network' }) {
+  async init({
+    provider,
+    endpoint,
+    cluster,
+    // bundlrEndpoint = 'https://node1.bundlr.network',
+  }) {
     return new Promise((resolve, reject) => {
       try {
         this.provider = provider
         this.endpoint = endpoint
         this.cluster = cluster
-        this.bundlrEndpoint = bundlrEndpoint
-        import('@bundlr-network/client').then(async (module) => {
-          const bundlrInstance = new module.WebBundlr(
-            this.bundlrEndpoint,
-            'solana',
-            this.provider.wallet,
-            {
-              providerUrl: this.provider.connection.rpcEndpoint,
-              timeout: 2147483647,
-            },
-          )
+        // this.bundlrEndpoint = bundlrEndpoint
 
-          await bundlrInstance.ready()
-          this.bundlr = bundlrInstance
-          resolve(this)
-        });
-    } catch (error) {
-      console.error('bundlr error: ', error)
-      reject(error)
-    }
-   })
+        const getIrysUploader = (Solana) => {
+          return irysUploader(Solana).withWallet(
+            this.provider.wallet.payer.secretKey,
+          )
+        }
+
+        getIrysUploader(Solana)
+          .then((irysUploaderInstance) => {
+            this.bundlr = irysUploaderInstance
+            console.log('this.bundlr  :>> ', this.bundlr)
+            resolve(this)
+          })
+          .catch((error) => {
+            console.error('bundlr error: ', error)
+            reject(error)
+          })
+      } catch (error) {
+        console.error('bundlr error: ', error)
+        reject(error)
+      }
+    })
   }
 
-  async uploadFile(file, index, totalFiles, nameOverride=null) {
+  async uploadFile(file, index, totalFiles, nameOverride = null) {
     try {
       return new Promise((resolve, reject) => {
         const uploader = this.bundlr.uploader.chunkedUploader
@@ -97,7 +106,6 @@ export default class Uploader {
       return new Blob([JSON.stringify(metadataJSON)], {
         type: 'application/json',
       })
-
     } catch (error) {
       console.log('Unable to convert metadata JSON to buffer: ', error)
     }
@@ -114,11 +122,13 @@ export default class Uploader {
     }
   }
 
-  async getPricePerMb(native=false) {
+  async getPricePerMb(native = false) {
     try {
       const price = await this.bundlr.getPrice(1000000)
 
-      return native ? price : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+      return native
+        ? price
+        : nativeToUi(price, NINA_CLIENT_IDS[this.cluster].mints.wsol)
     } catch (error) {
       return error
     }
@@ -162,10 +172,15 @@ export default class Uploader {
     }
   }
 
-  async costForFiles(files, native=false) {
-    const totalSizeWithoutMB = files.reduce((acc, file) => acc + file?.size || 0, 0)
+  async costForFiles(files, native = false) {
+    const totalSizeWithoutMB = files.reduce(
+      (acc, file) => acc + file?.size || 0,
+      0,
+    )
     const priceWithoutMB = await this.bundlr.getPrice(totalSizeWithoutMB)
-    return native ? priceWithoutMB.toNumber() : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+    return native
+      ? priceWithoutMB.toNumber()
+      : nativeToUi(priceWithoutMB, NINA_CLIENT_IDS[this.cluster].mints.wsol)
   }
 
   async hasBalanceForFiles(files) {
@@ -199,7 +214,7 @@ export default class Uploader {
         file.type === 'image/gif' ||
         file.mimetype === 'image/jpeg' ||
         file.mimetype === 'image/jpg' ||
-        file.mimetype === 'image/png' || 
+        file.mimetype === 'image/png' ||
         file.mimetype === 'image/gif') &&
       file.size <= MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES
     )

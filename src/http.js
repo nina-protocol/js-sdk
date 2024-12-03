@@ -1,4 +1,4 @@
-import * as anchor from '@coral-xyz/anchor';
+import * as anchor from '@coral-xyz/anchor'
 import axios from 'axios'
 import _ from 'lodash'
 import Formatter from './formatter'
@@ -44,6 +44,7 @@ export default class Http {
   }
 
   async fetchAccountData(publicKey, accountType) {
+    console.log('accountType :>> ', accountType)
     const account = await this.program.account[accountType].fetch(
       new anchor.web3.PublicKey(publicKey),
       'processed',
