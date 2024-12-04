@@ -440,6 +440,7 @@ const getPriorityFeesFromQuickNode = async () => {
     jsonrpc: "2.0",
     id: 1,
     method: "qn_estimatePriorityFees",
+    api_version: 2
   };
   try {
     const response = await axios
@@ -489,43 +490,53 @@ export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setCom
   })
 
 export const buildAndSendTxForInstructions = async (provider, instructions, type='not_provided', signers = undefined) => {
-  const latestBlockhash = await provider.connection.getLatestBlockhash();
-  const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 150
-  const lookupTableAddress = process.env.SOLANA_CLUSTER === 'mainnet' || process.env.SOLANA_NETWORK === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
-  const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-  const lookupTableAccount = await provider.connection.getAddressLookupTable(lookupTablePublicKey);
-  const messageV0 = new anchor.web3.TransactionMessage({
-    payerKey: provider.wallet.publicKey,
-    recentBlockhash: latestBlockhash.blockhash,
-    instructions: instructions,
-  }).compileToV0Message([lookupTableAccount.value]);
-  let tx = new anchor.web3.VersionedTransaction(messageV0)
-  if (signers) {
-    tx.sign(signers)
-  }
-  const signedTx = await provider.wallet.signTransaction(tx);
-  const rawTx = signedTx.serialize()
-  let blockheight = await provider.connection.getBlockHeight();
-
-  let txid
-  let attempts = 0
-  while (blockheight < lastValidBlockHeight && !txid && attempts < MAX_RETRY_ATTEMPTS) {
-    try {
-      attempts += 1
-      console.log('attempting to send tx: ', attempts)
-      const tx = await provider.connection.sendRawTransaction(rawTx, {
-        skipPreflight: true,
-      });
-      console.log('buildAndSendTxForInstructions', tx)
-      await getConfirmTransaction(tx, provider.connection)
-      txid = tx
-    } catch (error) {
-      console.log(`failed attempted to send ${type} tx: `, error)
-      await sleep(500)
-      blockheight = await provider.connection.getBlockHeight();
-      console.log(`failed attempted to send ${type} tx, retrying from blockheight: `, blockheight)
+  try {
+    const latestBlockhash = await provider.connection.getLatestBlockhash();
+    const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 50
+    const lookupTableAddress = process.env.SOLANA_CLUSTER === 'mainnet' || process.env.SOLANA_NETWORK === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+    const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
+    const lookupTableAccount = await provider.connection.getAddressLookupTable(lookupTablePublicKey);
+    const messageV0 = new anchor.web3.TransactionMessage({
+      payerKey: provider.wallet.publicKey,
+      recentBlockhash: latestBlockhash.blockhash,
+      instructions: instructions,
+    }).compileToV0Message([lookupTableAccount.value]);
+    let tx = new anchor.web3.VersionedTransaction(messageV0)
+    if (signers) {
+      tx.sign(signers)
     }
+    const signedTx = await provider.wallet.signTransaction(tx);
+    const rawTx = signedTx.serialize()
+    let blockheight = await provider.connection.getBlockHeight();
+  
+    let txid
+    let attempts = 0
+    console.log('blockheight', blockheight)
+    console.log('lastValidBlockHeight', lastValidBlockHeight)
+    console.log('blockheight < lastValidBlockHeight', blockheight < lastValidBlockHeight)
+    console.log('txid', txid)
+    console.log('attempts < MAX_RETRY_ATTEMPTS', attempts < MAX_RETRY_ATTEMPTS)
+    while (blockheight <= lastValidBlockHeight && !txid && attempts < MAX_RETRY_ATTEMPTS) {
+      try {
+        attempts += 1
+        console.log('attempting to send tx: ', attempts)
+        const tx = await provider.connection.sendRawTransaction(rawTx, {
+          skipPreflight: true,
+        });
+        console.log('buildAndSendTxForInstructions', tx)
+        await getConfirmTransaction(tx, provider.connection)
+        txid = tx
+      } catch (error) {
+        console.log(`failed attempted to send ${type} tx: `, error)
+        await sleep(500)
+        blockheight = await provider.connection.getBlockHeight();
+        console.log(`failed attempted to send ${type} tx, retrying from blockheight: `, blockheight)
+      }
+    }
+    console.log(`success sending ${type} tx: `, txid)
+    return txid
+  } catch (error) {
+    console.log(`failed to buildAndSendTxForInstructions ${type} tx: `, error)
+    return null
   }
-  console.log(`success sending ${type} tx: `, txid)
-  return txid
 }

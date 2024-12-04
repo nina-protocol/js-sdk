@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk-dev",
-  "version": "0.0.255",
+  "version": "0.0.280",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -31,7 +31,7 @@
     "serve:docs": "cd docs && python3 -m http.server",
     "docs:dev": "yarn run watch:docs & yarn run serve:docs",
     "publish": "npm run build & npm publish"
-  },
+  },  
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
   "dependencies": {
