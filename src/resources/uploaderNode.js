@@ -1,6 +1,7 @@
 import Promise from 'promise'
 import { NINA_CLIENT_IDS, nativeToUi, uiToNative } from '../utils'
 import fs from 'fs'
+import Fund from './fund'
 
 export const MAX_AUDIO_FILE_UPLOAD_SIZE_MB = 500
 export const MEGABYTE = 1024 * 1024
@@ -111,7 +112,7 @@ export default class UploaderNode {
     try {
       const value = native ? amount : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
       if (!value) return
-
+      this.bundlr.funder = new Fund(this.bundlr.utils, this.provider)
       await this.bundlr.fund(value)
 
       return {

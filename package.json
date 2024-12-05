@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk-dev",
-  "version": "0.0.280",
+  "version": "0.0.283",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -32,6 +32,11 @@
     "docs:dev": "yarn run watch:docs & yarn run serve:docs",
     "publish": "npm run build & npm publish"
   },  
+  "resolutions": {
+    "arbundles": "0.9.9",
+    "@solana/web3.js": "1.95.8",
+    "secp256k1": "4.0.2"
+  },
   "author": "contact@ninaprotocol.com",
   "license": "Apache-2.0",
   "dependencies": {
@@ -42,6 +47,7 @@
     "@solana/spl-token-metadata": "^0.1.2",
     "@solana/web3.js": "1.77.3",
     "axios": "^0.27.2",
+    "arbundles": "0.9.9",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "babel-preset-es2015": "^6.24.1",
     "crypto-js": "^4.1.1",
