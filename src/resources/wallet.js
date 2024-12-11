@@ -20,12 +20,12 @@ export default class Wallet {
   async getSolPrice(native=false) {
     try {
       const priceResult = await axios.get(
-        `https://price.jup.ag/v4/price?ids=SOL`,
+        `https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112`,
       )
       if (native) {
-        return Math.trunc(uiToNative(priceResult.data.data.SOL.price, priceResult.data.data.SOL.id))
+        return Math.trunc(uiToNative(priceResult.data.data.So11111111111111111111111111111111111111112.price, priceResult.data.data.So11111111111111111111111111111111111111112.id))
       }
-      return priceResult.data.data.SOL.price
+      return priceResult.data.data.So11111111111111111111111111111111111111112.price
     } catch (error) {
       return error
     }
