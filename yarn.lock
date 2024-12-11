@@ -1633,6 +1633,11 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
+"@jup-ag/api@^6.0.31":
+  version "6.0.31"
+  resolved "https://registry.yarnpkg.com/@jup-ag/api/-/api-6.0.31.tgz#e6ae0c340e20d23602376c6fbbd0dc558b2f3b61"
+  integrity sha512-MNzK/dEkQ6pHChcu7abRzIbgNrEJdzckeuCQNt46B96Hvzqb9T/m05WBUKjputVY9SrRYslZ2QwFRYsHlv+g9Q==
+
 "@near-js/crypto@0.0.3", "@near-js/crypto@^0.0.3":
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/@near-js/crypto/-/crypto-0.0.3.tgz#4a33e526ab5fa75b703427067985694a279ff8bd"

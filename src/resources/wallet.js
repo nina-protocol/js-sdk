@@ -1,37 +1,44 @@
-import * as anchor from '@coral-xyz/anchor';
+import * as anchor from '@coral-xyz/anchor'
 import { getAccount } from '@solana/spl-token'
+import { createTransferInstruction } from '@solana/spl-token'
 import axios from 'axios'
 import {
   NINA_CLIENT_IDS,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
-  uiToNative,
   nativeToUi,
   sleep,
+  uiToNative,
 } from '../utils'
-import { createTransferInstruction } from '@solana/spl-token'
 
 export default class Wallet {
-  constructor({ provider, cluster }) {
+  constructor({ provider, cluster, endpoint }) {
     this.cluster = cluster
     this.provider = provider
+    this.endpoint = endpoint
   }
 
-  async getSolPrice(native=false) {
+  async getSolPrice(native = false) {
     try {
-      const priceResult = await axios.get(
-        `https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112`,
-      )
+      const priceResult = await axios.get(`${this.endpoint}/solPrice`)
       if (native) {
-        return Math.trunc(uiToNative(priceResult.data.data.So11111111111111111111111111111111111111112.price, priceResult.data.data.So11111111111111111111111111111111111111112.id))
+        return Math.trunc(
+          uiToNative(
+            priceResult.data.data.So11111111111111111111111111111111111111112
+              .price,
+            priceResult.data.data.So11111111111111111111111111111111111111112
+              .id,
+          ),
+        )
       }
-      return priceResult.data.data.So11111111111111111111111111111111111111112.price
+      return priceResult.data.data.So11111111111111111111111111111111111111112
+        .price
     } catch (error) {
       return error
     }
   }
 
-  async getUsdcBalanceForPublicKey(publicKey, isNative=false) {
+  async getUsdcBalanceForPublicKey(publicKey, isNative = false) {
     let usdc = 0
 
     if (publicKey) {
@@ -47,9 +54,10 @@ export default class Wallet {
         if (usdcTokenAccountPubkey) {
           const usdcTokenAccount =
             await this.provider.connection.getTokenAccountBalance(
-              usdcTokenAccountPubkey, 'processed'
+              usdcTokenAccountPubkey,
+              'processed',
             )
-            
+
           if (isNative) {
             usdc = Number(usdcTokenAccount.value.amount)
           } else {
@@ -64,58 +72,76 @@ export default class Wallet {
     return usdc
   }
 
-  async getSolBalanceForPublicKey(publicKey, isNative=false) {
+  async getSolBalanceForPublicKey(publicKey, isNative = false) {
     const solBalanceResult = await this.provider.connection.getBalance(
-      new anchor.web3.PublicKey(publicKey), 'processed'
+      new anchor.web3.PublicKey(publicKey),
+      'processed',
     )
 
     if (isNative) {
       return solBalanceResult
     } else {
-      return nativeToUi(solBalanceResult, NINA_CLIENT_IDS[this.cluster].mints.wsol)
+      return nativeToUi(
+        solBalanceResult,
+        NINA_CLIENT_IDS[this.cluster].mints.wsol,
+      )
     }
   }
 
-  async sendSol(amount, destination, isNative=false) {
+  async sendSol(amount, destination, isNative = false) {
     try {
-      const instructions = [anchor.web3.SystemProgram.transfer({
-        fromPubkey: this.provider.wallet.publicKey,
-        toPubkey: new anchor.web3.PublicKey(destination),
-        lamports: new anchor.BN(
-          isNative ? amount : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol)
-        ),
-      })]
+      const instructions = [
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: this.provider.wallet.publicKey,
+          toPubkey: new anchor.web3.PublicKey(destination),
+          lamports: new anchor.BN(
+            isNative
+              ? amount
+              : uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.wsol),
+          ),
+        }),
+      ]
 
-      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const latestBlockhash =
+        await this.provider.connection.getLatestBlockhashAndContext()
 
-      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTableAddress =
+        this.cluster === 'mainnet'
+          ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9'
+          : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      
+      const lookupTableAccount =
+        await this.provider.connection.getAddressLookupTable(
+          lookupTablePublicKey,
+        )
+
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
-      }).compileToV0Message([lookupTableAccount.value]);
+      }).compileToV0Message([lookupTableAccount.value])
       const tx = new anchor.web3.VersionedTransaction(messageV0)
 
-      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const signedTx = await this.provider.wallet.signTransaction(tx)
       let txid
       let attempts = 0
-      let blockheight = await this.provider.connection.getBlockHeight();
+      let blockheight = await this.provider.connection.getBlockHeight()
       while (!txid && attempts < 50) {
         try {
-          attempts+=1
+          attempts += 1
           const tx = await this.provider.connection.sendTransaction(signedTx, {
             maxRetries: 5,
-          });
+          })
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {
           console.log('failed attempted to send usdc tx: ', error)
           await sleep(500)
-          blockheight = await this.provider.connection.getBlockHeight();
-          console.log('failed attempted to send usdc tx, retrying from blockheight: ', blockheight)
+          blockheight = await this.provider.connection.getBlockHeight()
+          console.log(
+            'failed attempted to send usdc tx, retrying from blockheight: ',
+            blockheight,
+          )
         }
       }
 
@@ -138,16 +164,19 @@ export default class Wallet {
       )
       console.log('destinationInfo', destinationInfo)
       console.log('destinationInfo.owner', destinationInfo.owner.toBase58())
-      console.log('anchor.web3.SystemProgram.programId.toBase58()', anchor.web3.SystemProgram.programId.toBase58())
+      console.log(
+        'anchor.web3.SystemProgram.programId.toBase58()',
+        anchor.web3.SystemProgram.programId.toBase58(),
+      )
       let isSystemAccount = false
       let isUsdcTokenAccount = false
       let toUsdcTokenAccount = null
       let toUsdcTokenAccountIx = null
-      
+
       if (
         destinationInfo &&
         destinationInfo.owner.toBase58() ===
-        anchor.web3.SystemProgram.programId.toBase58()
+          anchor.web3.SystemProgram.programId.toBase58()
       ) {
         isSystemAccount = true
       }
@@ -168,7 +197,7 @@ export default class Wallet {
       } catch (error) {
         console.error('error getting token account', error)
       }
-      
+
       const [fromUsdcTokenAccount, fromUsdcTokenAccountIx] =
         await findOrCreateAssociatedTokenAccount(
           this.provider.connection,
@@ -210,41 +239,51 @@ export default class Wallet {
         this.provider.wallet.publicKey,
         new anchor.BN(
           uiToNative(amount, NINA_CLIENT_IDS[this.cluster].mints.usdc),
-        )
+        ),
       )
 
       instructions.push(transferInstruction)
 
-      const latestBlockhash = await this.provider.connection.getLatestBlockhashAndContext()
+      const latestBlockhash =
+        await this.provider.connection.getLatestBlockhashAndContext()
 
-      const lookupTableAddress = this.cluster === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
+      const lookupTableAddress =
+        this.cluster === 'mainnet'
+          ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9'
+          : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
       const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
-      const lookupTableAccount = await this.provider.connection.getAddressLookupTable(lookupTablePublicKey);
-      
+      const lookupTableAccount =
+        await this.provider.connection.getAddressLookupTable(
+          lookupTablePublicKey,
+        )
+
       const messageV0 = new anchor.web3.TransactionMessage({
         payerKey: this.provider.wallet.publicKey,
         recentBlockhash: latestBlockhash.value.blockhash,
         instructions: instructions,
-      }).compileToV0Message([lookupTableAccount.value]);
+      }).compileToV0Message([lookupTableAccount.value])
       const tx = new anchor.web3.VersionedTransaction(messageV0)
 
-      const signedTx = await this.provider.wallet.signTransaction(tx);
+      const signedTx = await this.provider.wallet.signTransaction(tx)
       let txid
       let attempts = 0
-      let blockheight = await this.provider.connection.getBlockHeight();
+      let blockheight = await this.provider.connection.getBlockHeight()
       while (!txid && attempts < 50) {
         try {
-          attempts+=1
+          attempts += 1
           const tx = await this.provider.connection.sendTransaction(signedTx, {
             maxRetries: 5,
-          });
+          })
           await getConfirmTransaction(tx, this.provider.connection)
           txid = tx
         } catch (error) {
           console.log('failed attempted to send usdc tx: ', error)
           await sleep(500)
-          blockheight = await this.provider.connection.getBlockHeight();
-          console.log('failed attempted to send usdc tx, retrying from blockheight: ', blockheight)
+          blockheight = await this.provider.connection.getBlockHeight()
+          console.log(
+            'failed attempted to send usdc tx, retrying from blockheight: ',
+            blockheight,
+          )
         }
       }
 
