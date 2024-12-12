@@ -1,6 +1,6 @@
 {
   "name": "@nina-protocol/js-sdk-dev",
-  "version": "0.0.285",
+  "version": "0.0.286",
   "description": "A Javascript SDK for the Nina Protocol",
   "source": "src/index.js",
   "main": "dist/index.cjs",
@@ -42,7 +42,6 @@
   "dependencies": {
     "@bundlr-network/client": "^0.11.17",
     "@coral-xyz/anchor": "0.29.0",
-    "@jup-ag/api": "^6.0.31",
     "@solana/buffer-layout-utils": "^0.2.0",
     "@solana/spl-token": "^0.3.8",
     "@solana/spl-token-metadata": "^0.1.2",
