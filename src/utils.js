@@ -452,7 +452,9 @@ const getPriorityFeesFromQuickNode = async () => {
       if (response.data.result.per_compute_unit) {
         console.log('response.data.result.per_compute_unit.high', response.data.result.per_compute_unit.high)
         console.log('response.data.result.per_compute_unit.extreme', response.data.result.per_compute_unit.extreme)
-        return response.data.result.per_compute_unit.extreme
+        const fee = Math.round(response.data.result.per_compute_unit.extreme * 1.5)  
+        console.log('priority fee paid', fee)
+        return fee
       }
       return BASE_PRIORITY_FEE
 
@@ -492,7 +494,7 @@ export const addPriorityFeeIx = (fee) => anchor.web3.ComputeBudgetProgram.setCom
 export const buildAndSendTxForInstructions = async (provider, instructions, type='not_provided', signers = undefined) => {
   try {
     const latestBlockhash = await provider.connection.getLatestBlockhash();
-    const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight - 50
+    const lastValidBlockHeight = latestBlockhash.lastValidBlockHeight + 200
     const lookupTableAddress = process.env.SOLANA_CLUSTER === 'mainnet' || process.env.SOLANA_NETWORK === 'mainnet' ? 'AGn3U5JJoN6QXaaojTow2b3x1p4ucPs8SbBpQZf6c1o9' : 'Bx9XmjHzZikpThnPSDTAN2sPGxhpf41pyUmEQ1h51QpH'
     const lookupTablePublicKey = new anchor.web3.PublicKey(lookupTableAddress)
     const lookupTableAccount = await provider.connection.getAddressLookupTable(lookupTablePublicKey);
