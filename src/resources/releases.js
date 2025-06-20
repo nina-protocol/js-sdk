@@ -24,16 +24,22 @@ import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, M
 import UploaderNode from './uploaderNode';
 import Uploader from './uploader';
 import { ComputeBudgetProgram } from '@solana/web3.js';
+import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 const RELEASE_CREATE_COMPUTE_UNIT_AMOUNT = 200000
+
+const TOKEN_2022_PROGRAM_ID = new anchor.web3.PublicKey(
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+);
 
 /**
  * @module Release
  */
 
 export default class Release {
-  constructor({ program, provider, http, cluster, isNode, fileServicePublicKey }) {
+  constructor({ program, programV2, provider, http, cluster, isNode, fileServicePublicKey }) {
     this.program = program
+    this.programV2 = programV2
     this.provider = provider
     this.http = http
     this.cluster = cluster
@@ -307,7 +313,7 @@ export default class Release {
    * @returns {Object} the Release, Release bump, Release mint, and Hub Release.
    */
 
-  async initializeReleaseAndMint(hubPublicKey) {
+  async initializeReleaseAndMint(hubPublicKey, program) {
     try {
       const releaseMint = anchor.web3.Keypair.generate()
 
@@ -317,7 +323,7 @@ export default class Release {
             Buffer.from(anchor.utils.bytes.utf8.encode('nina-release')),
             releaseMint.publicKey.toBuffer(),
           ],
-          this.program.programId,
+          program.programId,
         )
 
       let hubRelease
@@ -329,7 +335,7 @@ export default class Release {
             new anchor.web3.PublicKey(hubPublicKey).toBuffer(),
             release.toBuffer(),
           ],
-          this.program.programId,
+          program.programId,
         )
 
         hubRelease = _hubRelease
@@ -368,6 +374,158 @@ export default class Release {
    * @returns {Object} the created Release.
    */
 
+  async releaseInitV2(
+    artistPublicKey,
+    price,
+    amount,
+    title,
+    description,
+    catalogNumber,
+    isOpen,
+    artworkFile,
+    audioFiles,
+    isUsdc,
+    trackMap,
+    tags = [],
+  ) {
+    try {
+      const { release, releaseBump, releaseMint } =
+        await this.initializeReleaseAndMint(null, this.programV2)
+  
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+      if (!ninaUploader.hasBalanceForFiles([artworkFile, ...audioFiles])) {
+        throw new Error('Insufficient upload balance for files')
+      }
+
+      if (!ninaUploader.isValidArtworkFile(artworkFile)) {
+        throw new Error('Invalid artwork file')
+      }
+
+      for (const audioFile of audioFiles) {
+        if (!ninaUploader.isValidAudioFile(audioFile)) {
+          throw new Error('Invalid audio files')
+        }
+      }
+      
+      const totalFiles = audioFiles.length + 2
+      const artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
+      const files = []
+      for await (const audioFile of audioFiles) {
+        const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
+        files.push({
+          uri: `https://www.arweave.net/${trackTx}`,
+          track: trackMap[audioFile.originalname].trackNumber,
+          track_title: trackMap[audioFile.originalname].title,
+          duration: trackMap[audioFile.originalname].duration,
+          type: 'audio/mpeg',
+        })
+      }
+
+      const metadataJson = this.createReleaseMetadataJson({
+        releasePublicKey: release.toBase58(),
+        title,
+        sellerFeeBasisPoints: 5,
+        catalogNumber,
+        description,
+        files,
+        artworkTx,
+        tags,
+      })
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(metadataJson)
+      const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+
+      const paymentMint = new anchor.web3.PublicKey(
+        isUsdc ? NINA_CLIENT_IDS[this.cluster].mints.usdc : NINA_CLIENT_IDS[this.cluster].mints.wsol,
+      )
+
+      const [releaseSigner, releaseSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [release.toBuffer()],
+          this.programV2.programId,
+        )
+
+      const [authorityTokenAccount, authorityTokenAccountIx] =
+        await findOrCreateAssociatedTokenAccount(
+          this.provider.connection,
+          this.provider.wallet.publicKey,
+          new anchor.web3.PublicKey(artistPublicKey),
+          anchor.web3.SystemProgram.programId,
+          paymentMint,
+        )
+
+      // TODO: add this once we have a compute unit limit for the release init v2
+      // const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({ 
+      //   units: RELEASE_CREATE_COMPUTE_UNIT_AMOUNT, 
+      // });
+      
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      const instructions = [priorityFeeIx]
+
+      if (authorityTokenAccountIx) {
+        instructions.push(authorityTokenAccountIx)
+      }
+
+      const editionAmount = isOpen ? MAX_U64 : amount
+
+      console.log('uiToNative(retailPrice, paymentMint, this.cluster)', uiToNative(price, paymentMint, this.cluster))
+      console.log('retailPrice', price)
+
+      const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
+      const nameBufString = nameBuf.slice(0, 32).toString()
+      const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
+      const symbolBufString = symbolBuf.slice(0, 10).toString()
+
+      const ix = await this.programV2.methods
+        .releaseInitV2(
+          `https://arweave.net/${metadataTx}`,
+          nameBufString,
+          symbolBufString,
+          new anchor.BN(editionAmount),
+          new anchor.BN(uiToNative(price, paymentMint, this.cluster)),
+          releaseSignerBump
+        )
+        .accountsStrict({
+          payer: this.provider.wallet.publicKey,
+          authority: artistPublicKey,
+          release,
+          mint: releaseMint.publicKey,
+          releaseSigner,
+          paymentMint,
+          royaltyTokenAccount: authorityTokenAccount,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          associatedTokenProgram: ASSOCIATED_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          token2022Program: TOKEN_2022_PROGRAM_ID,
+        })
+        .instruction();
+  
+      instructions.push(ix)
+      const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'release-create-v2', [releaseMint])
+      const createdRelease = await fetchWithRetry(this.fetch(release.toBase58(), { txid }))
+      return {
+        release: createdRelease,
+        releasePublicKey: release.toBase58(),
+      }
+    } catch (error) {
+      console.error('releaseInitV2', error)
+
+      return {
+        error,
+      }
+    }
+  }
   // TODO: this doesn't follow asTx pattern
   async releaseInit(
     authority,
@@ -384,11 +542,11 @@ export default class Release {
     trackMap,
     hubPublicKey = undefined,
     tags = [],
-    simulate=false
+    simulate=false,
   ) {
     try {
       const { release, releaseBump, releaseMint } =
-        await this.initializeReleaseAndMint()
+        await this.initializeReleaseAndMint(null, this.program)
 
         if (simulate) {
           const simulationResponse = await simulateWithRetry(this.simulateReleaseInit({

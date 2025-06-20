@@ -1,4 +1,5 @@
 import * as anchor from '@coral-xyz/anchor'
+import * as anchor31 from '@coral-xyz/anchor31'
 import axios from 'axios'
 import Http from './http'
 import Account from './resources/accounts'
@@ -72,6 +73,7 @@ class NinaClient {
     apiKey = undefined,
     wallet = {},
     isNode = false,
+    programIdV2 = undefined,
   }) {
     this.apiKey = apiKey
     this.uid = uid
@@ -79,6 +81,7 @@ class NinaClient {
     this.rpcEndpoint = rpcEndpoint || 'https://api.mainnet-beta.solana.com'
     this.cluster = cluster || 'mainnet'
     this.programId = programId || 'ninaN2tm9vUkxoanvGcNApEeWiidLMM2TdBX8HoJuL4'
+    this.programIdV2 = programIdV2 || 'nina2DQvAA8Sa9rxG72swBcNNDYQxdWGojzwDk9yn2q'
     this.connection = new anchor.web3.Connection(this.rpcEndpoint)
     this.provider = new anchor.AnchorProvider(this.connection, wallet, {
       commitment: 'confirmed',
@@ -86,6 +89,7 @@ class NinaClient {
     })
     try {
       this.program = await anchor.Program.at(this.programId, this.provider)
+      this.programV2 = await anchor31.Program.at(this.programIdV2, this.provider)
     } catch (error) {
       console.error('Error initializing program:', error)
     }
@@ -128,6 +132,7 @@ class NinaClient {
     const config = {
       http,
       program: this.program,
+      programV2: this.programV2,
       provider: this.provider,
       cluster: this.cluster,
       isNode: this.isNode,

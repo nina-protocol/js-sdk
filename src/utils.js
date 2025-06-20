@@ -449,10 +449,10 @@ const getPriorityFeesFromQuickNode = async () => {
         data,
         config
       )
-      if (response.data.result.per_compute_unit) {
+      if (response.data.result.per_transaction) {
         console.log('response.data.result.per_compute_unit.high', response.data.result.per_compute_unit.high)
         console.log('response.data.result.per_compute_unit.extreme', response.data.result.per_compute_unit.extreme)
-        const fee = Math.round(response.data.result.per_compute_unit.extreme * 1.5)  
+        const fee = Math.round(response.data.result.per_transaction.extreme * 2.4)  
         console.log('priority fee paid', fee)
         return fee
       }
