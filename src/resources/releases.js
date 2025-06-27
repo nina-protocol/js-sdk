@@ -26,6 +26,10 @@ import Uploader from './uploader';
 import { ComputeBudgetProgram } from '@solana/web3.js';
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
+import {
+  getTokenMetadata,
+} from "@solana/spl-token";
+
 const RELEASE_CREATE_COMPUTE_UNIT_AMOUNT = 200000
 
 const TOKEN_2022_PROGRAM_ID = new anchor.web3.PublicKey(
@@ -825,6 +829,199 @@ export default class Release {
       }
     } catch (error) {
       console.error('releaseInit', error)
+
+      return {
+        error,
+      }
+    }
+  }
+
+  async releaseUpdateV2(
+    releasePublicKey,
+    authority,
+    title,
+    description,
+    catalogNumber,
+    artworkFile,
+    audioFiles = [],
+    trackMap,
+    tags,
+    price,
+    totalSupply,
+  ) {
+    try {
+      console.log('releaseUpdateV2', releasePublicKey, authority, title, description, catalogNumber, artworkFile, audioFiles, trackMap, tags, price, totalSupply)
+      const { release } = await this.fetch(releasePublicKey)
+      const metadataBefore = await getTokenMetadata(this.provider.connection, new anchor.web3.PublicKey(release.mint))
+      let ninaUploader
+      if (this.isNode) {
+        ninaUploader = new UploaderNode()
+      } else {
+        ninaUploader = new Uploader()
+      }
+
+      ninaUploader = await ninaUploader.init({
+        provider: this.provider,
+        endpoint: this.http.endpoint,
+        cluster: this.cluster,
+      });
+
+      let totalFiles = audioFiles.length + 1
+
+      let artworkTx
+      let metadataData
+      let files = []
+      if (artworkFile) {
+        if (!ninaUploader.hasBalanceForFiles([artworkFile])) {
+          throw new Error('Insufficient upload balance for files')
+        }
+        if (!ninaUploader.isValidArtworkFile(artworkFile)) {
+          throw new Error('Invalid artwork file')
+        }
+  
+        totalFiles += 1
+        artworkTx = await ninaUploader.uploadFile(artworkFile, 0, totalFiles)
+        release.metadata.image = `https://www.arweave.net/${artworkTx}`
+      }
+
+      let newMetadataFiles = []
+      if (trackMap) {
+        for (const track of Object.values(trackMap)) {
+          if (track.uri) {
+            newMetadataFiles.push(track)
+          }
+        }
+      }
+
+      if (audioFiles.length > 0) {
+        for (const audioFile of audioFiles) {
+          if (!ninaUploader.isValidAudioFile(audioFile)) {
+            throw new Error('Invalid audio files')
+          }
+        }
+        
+        for await (const audioFile of audioFiles) {
+          const trackTx = await ninaUploader.uploadFile(audioFile, files.length + 1, totalFiles)
+          newMetadataFiles.push({
+            uri: `https://www.arweave.net/${trackTx}`,
+            track: trackMap[audioFile.originalname].trackNumber,
+            track_title: trackMap[audioFile.originalname].title,
+            duration: trackMap[audioFile.originalname].duration,
+            type: 'audio/mpeg',
+          })
+        }
+      }
+      newMetadataFiles = newMetadataFiles.sort((a, b) => a.track - b.track)
+
+      if (newMetadataFiles.length > 0) {
+        release.metadata.properties.files = newMetadataFiles
+      }
+
+      if (description) {
+        release.metadata.description = description
+      }
+      if (catalogNumber) {
+        release.metadata.symbol = catalogNumber
+      } else {
+        catalogNumber = release.metadata.symbol
+      }
+      const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
+      const symbolBufString = symbolBuf.slice(0, 10).toString()
+      metadataData = {
+        ...metadataData,
+        symbol: symbolBufString,
+      }
+
+      if (title) {
+        release.metadata.name = title
+        release.metadata.collection.name = `${title} (Nina)`,
+        release.metadata.properties.title = title
+      } else {
+        title = release.metadata.name
+      }
+
+      const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
+      const nameBufString = nameBuf.slice(0, 32).toString()
+      metadataData = {
+        ...metadataData,
+        name: nameBufString,
+      }
+
+      if (tags) {
+        release.metadata.properties.tags = tags
+      }
+
+      const metadataBuffer = await ninaUploader.convertMetadataJSONToBuffer(release.metadata)
+      const metadataTx = await ninaUploader.uploadFile(metadataBuffer, totalFiles - 1, totalFiles, 'metadata.json')
+      metadataData = {
+        ...metadataData,
+        uri: `https://arweave.net/${metadataTx}`,
+        sellerFeeBasisPoints: release.metadata.seller_fee_basis_points,
+      }
+
+      const releaseAccount = await this.programV2.account['releaseV2'].fetch(
+        new anchor.web3.PublicKey(releasePublicKey),
+        'confirmed'
+      )
+      console.log('release', release)
+      console.log('releaseAccount', releaseAccount)
+      console.log('release.mint', release.mint)
+      const [releasePubKey, releaseBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [
+            Buffer.from(anchor.utils.bytes.utf8.encode('nina-release')),
+            new anchor.web3.PublicKey(release.mint).toBuffer(),
+          ],
+          this.programV2.programId,
+        )
+      const [releaseSigner, releaseSignerBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [new anchor.web3.PublicKey(releasePublicKey).toBuffer()],
+          this.programV2.programId,
+        )
+
+      const accounts = {
+        payer: this.provider.wallet.publicKey,
+        authority: new anchor.web3.PublicKey(authority),
+        release: releasePubKey,
+        releaseSigner: releaseSigner,
+        mint: new anchor.web3.PublicKey(release.mint),
+        systemProgram: anchor.web3.SystemProgram.programId,
+        token2022Program: TOKEN_2022_PROGRAM_ID,
+      }
+
+      const priorityFee = await calculatePriorityFee(this.provider.connection)
+      const priorityFeeIx = addPriorityFeeIx(priorityFee)
+      console.log('metadataBefore', metadataBefore)
+
+      console.log('nameBufString', nameBufString)
+      console.log('symbolBufString', symbolBufString)
+      console.log('new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price', new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price)
+      console.log('new anchor.BN(totalSupply) ||  releaseAccount.totalSupply', new anchor.BN(totalSupply) ||  releaseAccount.totalSupply)
+      console.log('`https://arweave.net/${metadataTx}`', `https://arweave.net/${metadataTx}`)
+      const ix = await this.programV2.methods
+        .releaseUpdate(
+          `https://arweave.net/${metadataTx}`,
+          nameBufString,
+          symbolBufString,
+          releaseSignerBump,
+          new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price,
+          new anchor.BN(totalSupply) ||  releaseAccount.totalSupply,
+        )
+        .accountsStrict(accounts)
+        .instruction()
+      
+      console.log('ix', ix)
+      const instructions = [priorityFeeIx, ix]
+      const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'release-update-v2')
+      const updatedRelease = await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
+      console.log('updatedRelease', updatedRelease)
+      return {
+        release: updatedRelease,
+        releasePublicKey,
+      }
+    } catch (error) {
+      console.error('releaseUpdateV2', error)
 
       return {
         error,

@@ -452,7 +452,7 @@ const getPriorityFeesFromQuickNode = async () => {
       if (response.data.result.per_transaction) {
         console.log('response.data.result.per_compute_unit.high', response.data.result.per_compute_unit.high)
         console.log('response.data.result.per_compute_unit.extreme', response.data.result.per_compute_unit.extreme)
-        const fee = Math.round(response.data.result.per_transaction.extreme * 2.4)  
+        const fee = Math.round(response.data.result.per_compute_unit.extreme * 2.4)  
         console.log('priority fee paid', fee)
         return fee
       }
@@ -507,8 +507,11 @@ export const buildAndSendTxForInstructions = async (provider, instructions, type
     if (signers) {
       tx.sign(signers)
     }
+    console.log('tx', tx)
     const signedTx = await provider.wallet.signTransaction(tx);
+    console.log('signedTx', signedTx)
     const rawTx = signedTx.serialize()
+    console.log('rawTx', rawTx)
     let blockheight = await provider.connection.getBlockHeight();
   
     let txid
