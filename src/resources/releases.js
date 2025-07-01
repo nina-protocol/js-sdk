@@ -985,13 +985,7 @@ export default class Release {
 
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
-      console.log('metadataBefore', metadataBefore)
 
-      console.log('nameBufString', nameBufString)
-      console.log('symbolBufString', symbolBufString)
-      console.log('new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price', new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price)
-      console.log('new anchor.BN(totalSupply) ||  releaseAccount.totalSupply', new anchor.BN(totalSupply) ||  releaseAccount.totalSupply)
-      console.log('`https://arweave.net/${metadataTx}`', `https://arweave.net/${metadataTx}`)
       const ix = await this.programV2.methods
         .releaseUpdate(
           `https://arweave.net/${metadataTx}`,
@@ -1004,11 +998,10 @@ export default class Release {
         .accountsStrict(accounts)
         .instruction()
       
-      console.log('ix', ix)
       const instructions = [priorityFeeIx, ix]
       const txid = await buildAndSendTxForInstructions(this.provider, instructions, 'release-update-v2')
       const updatedRelease = await fetchWithRetry(this.fetch(releasePublicKey, { txid }))
-      console.log('updatedRelease', updatedRelease)
+
       return {
         release: updatedRelease,
         releasePublicKey,

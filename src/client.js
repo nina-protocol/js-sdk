@@ -88,12 +88,14 @@ class NinaClient {
       commitment: 'confirmed',
       preflightCommitment: 'confirmed',
     })
+
     try {
       this.program = await anchor.Program.at(this.programId, this.provider)
       this.programV2 = await anchor31.Program.at(this.programIdV2, this.provider)
     } catch (error) {
       console.error('Error initializing program:', error)
     }
+
     this.isNode = isNode
     this.confirmTransaction = (txid) =>
       getConfirmTransaction(txid, this.connection)
