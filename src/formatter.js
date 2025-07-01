@@ -97,54 +97,65 @@ export default class Formatter {
     return hub
   }
 
-  static parseReleaseAccountData(release) {
+  static parseReleaseAccountData(release, programId) {
     release.authority = release.authority.toBase58()
-    release.exchangeSaleCounter = release.exchangeSaleCounter.toNumber()
-    release.exchangeSaleTotal = release.exchangeSaleTotal.toNumber()
-    release.payer = release.payer.toBase58()
-    release.paymentMint = release.paymentMint.toBase58()
-    release.price = release.price.toNumber()
-    release.releaseMint = release.releaseMint.toBase58()
-
-    if (release.authorityTokenAccount) {
-      release.authorityTokenAccount = release.authorityTokenAccount.toBase58()
+    if (programId === 'nina2DQvAA8Sa9rxG72swBcNNDYQxdWGojzwDk9yn2q') {
+      release.releaseMint = release.mint.toBase58()
+      delete release.mint
+      if (release.totalSupply.toString() === MAX_U64) {
+        release.editionType = 'open'
+        release.totalSupply = -1
+      } else {
+        release.editionType = 'limited'
+        release.totalSupply = release.totalSupply?.toNumber() || 0
+      }
     } else {
-      release.authorityTokenAccount = undefined
+      release.exchangeSaleCounter = release.exchangeSaleCounter?.toNumber()
+      release.exchangeSaleTotal = release.exchangeSaleTotal?.toNumber() || 0
+      release.payer = release.payer.toBase58()
+      release.releaseMint = release.releaseMint.toBase58()
+      if (release.authorityTokenAccount) {
+        release.authorityTokenAccount = release.authorityTokenAccount.toBase58()
+      } else {
+        release.authorityTokenAccount = undefined
+      }
+      release.resalePercentage = release.resalePercentage?.toNumber() || 0
+      release.releaseDatetime = release.releaseDatetime?.toNumber() * 1000 || 0
+      release.revenueShareRecipients = release.royaltyRecipients.map(
+        (recipient) => {
+          recipient.collected = recipient.collected?.toNumber() || 0
+          recipient.owed = recipient.owed?.toNumber() || 0
+          recipient.percentShare = recipient.percentShare?.toNumber() || 0
+          recipient.recipientAuthority = recipient.recipientAuthority.toBase58()
+          recipient.recipientTokenAccount =
+            recipient.recipientTokenAccount.toBase58()
+
+          return recipient
+        },
+      )
+      delete release.royaltyRecipients
+      release.saleCounter = release.saleCounter?.toNumber() || 0
+      release.saleTotal = release.saleTotal?.toNumber() || 0
+
+      release.totalCollected = release.totalCollected?.toNumber() || 0
+      release.head = release.head?.toNumber() || 0
+      release.tail = release.tail?.toNumber() || 0  
+
+      if (release.totalSupply.toString() === MAX_U64) {
+        release.editionType = 'open'
+        release.remainingSupply = -1
+        release.totalSupply = -1
+      } else {
+        release.editionType = 'limited'
+        release.remainingSupply = release.remainingSupply?.toNumber() || 0
+        release.totalSupply = release.totalSupply?.toNumber() || 0
+      }  
     }
 
     release.releaseSigner = release.releaseSigner.toBase58()
-    release.resalePercentage = release.resalePercentage.toNumber()
-    release.releaseDatetime = release.releaseDatetime.toNumber() * 1000
-    release.revenueShareRecipients = release.royaltyRecipients.map(
-      (recipient) => {
-        recipient.collected = recipient.collected.toNumber()
-        recipient.owed = recipient.owed.toNumber()
-        recipient.percentShare = recipient.percentShare.toNumber()
-        recipient.recipientAuthority = recipient.recipientAuthority.toBase58()
-        recipient.recipientTokenAccount =
-          recipient.recipientTokenAccount.toBase58()
-
-        return recipient
-      },
-    )
-    delete release.royaltyRecipients
+    release.paymentMint = release.paymentMint.toBase58()
+    release.price = release.price?.toNumber() || 0
     release.royaltyTokenAccount = release.royaltyTokenAccount.toBase58()
-    release.saleCounter = release.saleCounter.toNumber()
-    release.saleTotal = release.saleTotal.toNumber()
-
-    if (release.totalSupply.toString() === MAX_U64) {
-      release.editionType = 'open'
-      release.remainingSupply = -1
-      release.totalSupply = -1
-    } else {
-      release.editionType = 'limited'
-      release.remainingSupply = release.remainingSupply.toNumber()
-      release.totalSupply = release.totalSupply.toNumber()
-    }
-
-    release.totalCollected = release.totalCollected.toNumber()
-    release.head = release.head.toNumber()
-    release.tail = release.tail.toNumber()
 
     return release
   }

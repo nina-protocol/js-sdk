@@ -34,6 +34,7 @@ class NinaClient {
   constructor() {
     this.provider = null
     this.program = null
+    this.programV2 = null
     this.endpoint = null
     this.cluster = null
     this.programId = null
@@ -126,6 +127,7 @@ class NinaClient {
     const http = new Http({
       endpoint: this.endpoint,
       program: this.program,
+      programV2: this.programV2,
       apiKey: this.apiKey,
     })
 

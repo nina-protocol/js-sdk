@@ -483,9 +483,6 @@ export default class Release {
 
       const editionAmount = isOpen ? MAX_U64 : amount
 
-      console.log('uiToNative(retailPrice, paymentMint, this.cluster)', uiToNative(price, paymentMint, this.cluster))
-      console.log('retailPrice', price)
-
       const nameBuf = Buffer.from(title.replaceAll(/[^\w\s]/gi, '').substring(0, 32))
       const nameBufString = nameBuf.slice(0, 32).toString()
       const symbolBuf = Buffer.from(catalogNumber.replaceAll(/[^\w\s]/gi, '').substring(0, 10))
@@ -688,8 +685,7 @@ export default class Release {
 
       const now = new Date()
       const editionAmount = isOpen ? MAX_U64 : amount
-      console.log('uiToNative(retailPrice, paymentMint, this.cluster)', uiToNative(retailPrice, paymentMint, this.cluster))
-      console.log('retailPrice', retailPrice)
+
       const config = {
         amountTotalSupply: new anchor.BN(editionAmount),
         amountToArtistTokenAccount: new anchor.BN(0),
@@ -850,7 +846,6 @@ export default class Release {
     totalSupply,
   ) {
     try {
-      console.log('releaseUpdateV2', releasePublicKey, authority, title, description, catalogNumber, artworkFile, audioFiles, trackMap, tags, price, totalSupply)
       const { release } = await this.fetch(releasePublicKey)
       const metadataBefore = await getTokenMetadata(this.provider.connection, new anchor.web3.PublicKey(release.mint))
       let ninaUploader
@@ -963,9 +958,7 @@ export default class Release {
         new anchor.web3.PublicKey(releasePublicKey),
         'confirmed'
       )
-      console.log('release', release)
-      console.log('releaseAccount', releaseAccount)
-      console.log('release.mint', release.mint)
+
       const [releasePubKey, releaseBump] =
         await anchor.web3.PublicKey.findProgramAddress(
           [

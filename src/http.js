@@ -4,9 +4,10 @@ import _ from 'lodash'
 import Formatter from './formatter'
 
 export default class Http {
-  constructor({ endpoint, program, apiKey = undefined }) {
+  constructor({ endpoint, program, programV2, apiKey = undefined }) {
     this.endpoint = endpoint
     this.program = program
+    this.programV2 = programV2
     this.apiKey = apiKey
   }
 
@@ -43,8 +44,10 @@ export default class Http {
     return response
   }
 
-  async fetchAccountData(publicKey, accountType) {
-    const account = await this.program.account[accountType].fetch(
+  async fetchAccountData(publicKey, accountType, programId = this.program.programId) {
+    const program = programId === this.programV2.programId.toBase58() ? this.programV2 : this.program
+    accountType = accountType === 'release' && programId === this.programV2.programId.toBase58() ? 'releaseV2' : accountType
+    const account = await program.account[accountType].fetch(
       new anchor.web3.PublicKey(publicKey),
       'processed',
     )
@@ -52,13 +55,43 @@ export default class Http {
     return account
   }
 
-  async fetchAccountDataMultiple(publicKeys, accountType) {
-    const accounts = await this.program.account[accountType].fetchMultiple(
-      publicKeys.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
+  async fetchAccountDataMultiple(publicKeys, accountType, programIds = []) {
+    if (publicKeys.length === 0) {
+      return []
+    }
+
+    for (const publicKey of publicKeys) {
+      if (typeof publicKey === 'object') {
+        publicKey = publicKey.toBase58()
+      }
+      if (programIds.length === 0) {
+        programIds.push(this.program.programId.toBase58())
+      }
+    }
+    
+    let publicKeysV1 = []
+    let publicKeysV2 = []
+
+    for await (const programId of programIds) {
+      const i = programIds.indexOf(programId)
+      if (programId === this.programV2.programId.toBase58()) {
+        publicKeysV2.push(publicKeys[i])
+      } else {
+        publicKeysV1.push(publicKeys[i])
+      }
+    }
+
+    const accountsV1 = await this.program.account[accountType].fetchMultiple(
+      publicKeysV1.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
       'processed',
     )
 
-    return accounts
+    const accountsV2 = await this.programV2.account['releaseV2'].fetchMultiple(
+      publicKeysV2.map((publicKey) => new anchor.web3.PublicKey(publicKey)),
+      'processed',
+    )
+
+    return [...accountsV1, ...accountsV2]
   }
 
   async fetchHubContentAndChildAccountData(
@@ -144,8 +177,12 @@ export default class Http {
       await this.processMulitpleHubAccountData(response.data.hubs)
     } else if (/releases\/(.*?)\/revenueShareRecipients/.test(url)) {
       const releasePublicKey = url.split('/')[2]
-      let release = await this.fetchAccountData(releasePublicKey, 'release')
-      release = Formatter.parseReleaseAccountData(release)
+      let release = await this.fetchAccountData(
+        releasePublicKey,
+        'release',
+        response.data.release.programId,
+      )
+      release = Formatter.parseReleaseAccountData(release, response.data.release.programId)
       response.data.revenueShareRecipients.forEach((recipient) => {
         recipient.accountData = {
           revenueShareRecipient: release.revenueShareRecipients.filter(
@@ -178,10 +215,11 @@ export default class Http {
       const release = await this.fetchAccountData(
         response.data.release.publicKey,
         'release',
+        response.data.release.programId,
       )
 
       response.data.release.accountData = {
-        release: Formatter.parseReleaseAccountData(release),
+        release: Formatter.parseReleaseAccountData(release, response.data.release.programId),
       }
     } else if (/\/releases\/(.*?)\/exchanges/.test(url)) {
       await this.processMultipleExchangeAccountData(response.data.exchanges)
@@ -274,10 +312,11 @@ export default class Http {
 
   async processMultipleReleaseAccountData(data) {
     const publicKeys = data.map((release) => release.publicKey)
-    const releases = await this.fetchAccountDataMultiple(publicKeys, 'release')
+    const programIds = data.map((release) => release.programId)
+    const releases = await this.fetchAccountDataMultiple(publicKeys, 'release', programIds)
     releases.forEach((release, i) => {
       const publicKey = publicKeys[i]
-      const parsedRelease = Formatter.parseReleaseAccountData(release)
+      const parsedRelease = Formatter.parseReleaseAccountData(release, data[i].programId)
       data.filter(
         (releaseData) => releaseData.publicKey === publicKey,
       )[0].accountData = { release: parsedRelease }
@@ -290,7 +329,7 @@ export default class Http {
     let i = 0
     for await (const release of releases) {
       const publicKey = publicKeys[i]
-      const parsedRelease = Formatter.parseReleaseAccountData(release)
+      const parsedRelease = Formatter.parseReleaseAccountData(release, data[i].programId)
 
       const [parsedHubReleaseAccount, parsedHubContentAccount] =
         await this.fetchHubContentAndChildAccountData(
@@ -519,7 +558,7 @@ export default class Http {
       hubContentPublicKey,
     )
 
-    const parsedRelease = Formatter.parseReleaseAccountData(release)
+    const parsedRelease = Formatter.parseReleaseAccountData(release, this.program.programId)
 
     return {
       release: parsedRelease,
@@ -588,7 +627,7 @@ export default class Http {
       let parsedChild
 
       if (accountType === 'release') {
-        parsedAccount = Formatter.parseReleaseAccountData(account)
+        parsedAccount = Formatter.parseReleaseAccountData(account, this.program.programId)
         parsedChild = Formatter.parseHubReleaseAccountData(
           hubChildren[i],
           hubChildrenPublicKeys[i],
