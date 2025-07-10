@@ -131,6 +131,7 @@ class NinaClient {
       program: this.program,
       programV2: this.programV2,
       apiKey: this.apiKey,
+      connection: this.connection
     })
 
     const config = {

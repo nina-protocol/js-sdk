@@ -4,11 +4,12 @@ import _ from 'lodash'
 import Formatter from './formatter'
 
 export default class Http {
-  constructor({ endpoint, program, programV2, apiKey = undefined }) {
+  constructor({ endpoint, program, programV2, apiKey = undefined, connection }) {
     this.endpoint = endpoint
     this.program = program
     this.programV2 = programV2
     this.apiKey = apiKey
+    this.connection = connection
   }
 
   async get(url, query = undefined, withAccountData = false) {
@@ -182,7 +183,7 @@ export default class Http {
         'release',
         response.data.release.programId,
       )
-      release = Formatter.parseReleaseAccountData(release, response.data.release.programId)
+      release = await Formatter.parseReleaseAccountData(release, response.data.release.programId, this.connection)
       response.data.revenueShareRecipients.forEach((recipient) => {
         recipient.accountData = {
           revenueShareRecipient: release.revenueShareRecipients.filter(
@@ -217,9 +218,9 @@ export default class Http {
         'release',
         response.data.release.programId,
       )
-
+      const formattedRelease = await Formatter.parseReleaseAccountData(release, response.data.release.programId, this.connection)
       response.data.release.accountData = {
-        release: Formatter.parseReleaseAccountData(release, response.data.release.programId),
+        release: formattedRelease,
       }
     } else if (/\/releases\/(.*?)\/exchanges/.test(url)) {
       await this.processMultipleExchangeAccountData(response.data.exchanges)
@@ -314,13 +315,17 @@ export default class Http {
     const publicKeys = data.map((release) => release.publicKey)
     const programIds = data.map((release) => release.programId)
     const releases = await this.fetchAccountDataMultiple(publicKeys, 'release', programIds)
-    releases.forEach((release, i) => {
+    
+    let i = 0
+    for await (let release of releases) {
       const publicKey = publicKeys[i]
-      const parsedRelease = Formatter.parseReleaseAccountData(release, data[i].programId)
+      const formattedRelease = await Formatter.parseReleaseAccountData(release, data[i].programId, this.connection)
+      const parsedRelease = formattedRelease
       data.filter(
         (releaseData) => releaseData.publicKey === publicKey,
       )[0].accountData = { release: parsedRelease }
-    })
+      i++
+    }
   }
 
   async processMultipleReleaseAccountDataWithHub(data, hubPublicKey) {
@@ -329,7 +334,7 @@ export default class Http {
     let i = 0
     for await (const release of releases) {
       const publicKey = publicKeys[i]
-      const parsedRelease = Formatter.parseReleaseAccountData(release, data[i].programId)
+      const parsedRelease = await Formatter.parseReleaseAccountData(release, data[i].programId, this.connection)
 
       const [parsedHubReleaseAccount, parsedHubContentAccount] =
         await this.fetchHubContentAndChildAccountData(
@@ -558,7 +563,7 @@ export default class Http {
       hubContentPublicKey,
     )
 
-    const parsedRelease = Formatter.parseReleaseAccountData(release, this.program.programId)
+    const parsedRelease = await Formatter.parseReleaseAccountData(release, this.program.programId, this.connection)
 
     return {
       release: parsedRelease,
@@ -627,7 +632,7 @@ export default class Http {
       let parsedChild
 
       if (accountType === 'release') {
-        parsedAccount = Formatter.parseReleaseAccountData(account, this.program.programId)
+        parsedAccount = await Formatter.parseReleaseAccountData(account, this.program.programId.toBase58(), this.connection)
         parsedChild = Formatter.parseHubReleaseAccountData(
           hubChildren[i],
           hubChildrenPublicKeys[i],

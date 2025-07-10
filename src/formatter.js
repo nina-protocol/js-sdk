@@ -1,4 +1,5 @@
 import { MAX_U64, decodeNonEncryptedByteArray } from './utils'
+import { getMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
 export default class Formatter {
   static parseHubPostAccountData(hubPost, publicKey) {
@@ -97,18 +98,26 @@ export default class Formatter {
     return hub
   }
 
-  static parseReleaseAccountData(release, programId) {
-    release.authority = release.authority.toBase58()
-    if (programId === 'nina2DQvAA8Sa9rxG72swBcNNDYQxdWGojzwDk9yn2q') {
+  static async parseReleaseAccountData(release, programId = this.program.programId.toBase58(), connection = undefined) {
+    if (programId === 'nina2DQvAA8Sa9rxG72swBcNNDYQxdWGojzwDk9yn2q') {  
       release.releaseMint = release.mint.toBase58()
-      delete release.mint
       if (release.totalSupply.toString() === MAX_U64) {
         release.editionType = 'open'
         release.totalSupply = -1
+        release.remainingSupply = -1
       } else {
         release.editionType = 'limited'
         release.totalSupply = release.totalSupply?.toNumber() || 0
+
+        const mint = await getMint(
+          connection,
+          release.mint,
+          undefined,
+          TOKEN_2022_PROGRAM_ID
+        )
+        release.remainingSupply = release.totalSupply - Number(mint.supply.toString())
       }
+      delete release.mint
     } else {
       release.exchangeSaleCounter = release.exchangeSaleCounter?.toNumber()
       release.exchangeSaleTotal = release.exchangeSaleTotal?.toNumber() || 0

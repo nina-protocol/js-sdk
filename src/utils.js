@@ -117,6 +117,7 @@ export const findOrCreateAssociatedTokenAccount = async (
   systemProgramId,
   splTokenMintAddress,
   skipLookup = false,
+  TOKEN_PROGRAM_ID = anchor.utils.token.TOKEN_PROGRAM_ID
 ) => {
   const associatedTokenAddress = await findAssociatedTokenAddress(
     owner,
@@ -159,7 +160,7 @@ export const findOrCreateAssociatedTokenAccount = async (
         isWritable: false,
       },
       {
-        pubkey: anchor.utils.token.TOKEN_PROGRAM_ID,
+        pubkey: TOKEN_PROGRAM_ID,
         isSigner: false,
         isWritable: false,
       },
