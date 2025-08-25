@@ -4,12 +4,13 @@ import _ from 'lodash'
 import Formatter from './formatter'
 
 export default class Http {
-  constructor({ endpoint, program, programV2, apiKey = undefined, connection }) {
+  constructor({ endpoint, program, programV2, apiKey = undefined, connection, cluster }) {
     this.endpoint = endpoint
     this.program = program
     this.programV2 = programV2
     this.apiKey = apiKey
     this.connection = connection
+    this.cluster = cluster
   }
 
   async get(url, query = undefined, withAccountData = false) {
@@ -213,14 +214,22 @@ export default class Http {
     } else if (/accounts\/(.*?)\/exchanges/.test(url)) {
       await this.processMultipleExchangeAccountData(response.data.exchanges)
     } else if (/^\/releases\/((?!(\/)).)*$/.test(url)) {
-      const release = await this.fetchAccountData(
-        response.data.release.publicKey,
-        'release',
-        response.data.release.programId,
-      )
-      const formattedRelease = await Formatter.parseReleaseAccountData(release, response.data.release.programId, this.connection)
-      response.data.release.accountData = {
-        release: formattedRelease,
+      // NEVER LOOK UP ACCOUNT DATA FOR RELEASES WITH UUIDS AS PUBLIC KEYS (AKA LIVE RELEASES NOT YET ON CHAIN)
+      if (!response.data.release.publicKey.includes('-')) {
+        const release = await this.fetchAccountData(
+          response.data.release.publicKey,
+          'release',
+          response.data.release.programId,
+        )
+        const formattedRelease = await Formatter.parseReleaseAccountData(release, response.data.release.programId, this.connection)
+        response.data.release.accountData = {
+          release: formattedRelease,
+        }
+      } else {
+        const accountData = await Formatter.parseLiveReleaseMetadataAsAccountData(response.data.release.metadata, this.cluster)
+        response.data.release.accountData = {
+          release: accountData,
+        }
       }
     } else if (/\/releases\/(.*?)\/exchanges/.test(url)) {
       await this.processMultipleExchangeAccountData(response.data.exchanges)

@@ -21,6 +21,7 @@ import {
   decodeNonEncryptedByteArray,
   findOrCreateAssociatedTokenAccount,
   getConfirmTransaction,
+  NINA_CLIENT_IDS,
   isSol,
   isUsdc,
   nativeToUi,
@@ -131,7 +132,8 @@ class NinaClient {
       program: this.program,
       programV2: this.programV2,
       apiKey: this.apiKey,
-      connection: this.connection
+      connection: this.connection,
+      cluster: this.cluster,
     })
 
     const config = {
@@ -163,6 +165,9 @@ class NinaClient {
 
   static isUsdc(mint, cluster) {
     return isUsdc(mint, cluster || this.cluster)
+  }
+  static usdc(cluster) {
+    return NINA_CLIENT_IDS[cluster || this.cluster].mints.usdc
   }
 
   static wrapSol(connection, publicKey, amount, mint) {

@@ -19,6 +19,7 @@ import {
   sleep,
   calculatePriorityFee,
   buildAndSendTxForInstructions,
+  findAssociatedTokenAddress
 } from '../utils'
 import { createInitializeMint2Instruction, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import UploaderNode from './uploaderNode';
@@ -842,8 +843,8 @@ export default class Release {
     audioFiles = [],
     trackMap,
     tags,
-    price,
-    totalSupply,
+    price = undefined,
+    totalSupply = undefined,
   ) {
     try {
       const { release } = await this.fetch(releasePublicKey)
@@ -986,14 +987,16 @@ export default class Release {
       const priorityFee = await calculatePriorityFee(this.provider.connection)
       const priorityFeeIx = addPriorityFeeIx(priorityFee)
 
+      console.log('sdk price', price)
+      console.log('sdk totalSupply', totalSupply)
       const ix = await this.programV2.methods
         .releaseUpdate(
           `https://arweave.net/${metadataTx}`,
           nameBufString,
           symbolBufString,
           releaseSignerBump,
-          new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) || releaseAccount.price,
-          new anchor.BN(totalSupply) ||  releaseAccount.totalSupply,
+          price ? new anchor.BN(uiToNative(price, release.paymentMint, this.cluster)) : releaseAccount.price,
+          totalSupply ? new anchor.BN(totalSupply) :  releaseAccount.totalSupply,
         )
         .accountsStrict(accounts)
         .instruction()

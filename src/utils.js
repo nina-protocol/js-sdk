@@ -73,7 +73,7 @@ export const NINA_CLIENT_IDS = {
       metaplex: 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
     },
     mints: {
-      usdc: 'J8Kvy9Kjot83DEgnnbK55BYbAK9pZuyYt4NBGkEJ9W1K',
+      usdc: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
       wsol: 'So11111111111111111111111111111111111111112',
     },
   },
@@ -333,7 +333,7 @@ export const decimalsForMint = (mint, cluster) => {
 export const nativeToUi = (amount, mint, cluster) =>
   amount / Math.pow(10, decimalsForMint(mint, cluster))
 
-export const uiToNative = (amount, mint, cluster) =>
+export const uiToNative = (amount, mint, cluster) => 
   Math.round(amount * Math.pow(10, decimalsForMint(mint, cluster)))
 
 export const decodeNonEncryptedByteArray = (byteArray) =>

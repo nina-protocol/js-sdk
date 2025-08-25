@@ -1,5 +1,6 @@
 import { MAX_U64, decodeNonEncryptedByteArray } from './utils'
 import { getMint, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { NINA_CLIENT_IDS, uiToNative } from './utils'
 
 export default class Formatter {
   static parseHubPostAccountData(hubPost, publicKey) {
@@ -98,9 +99,28 @@ export default class Formatter {
     return hub
   }
 
+  static async parseLiveReleaseMetadataAsAccountData(metadata, cluster) {
+    console.log('metadata', metadata)
+    const accountData = {}
+    if (metadata.editionSize === -1) {
+      accountData.editionType = 'open'
+      accountData.totalSupply = -1
+      accountData.remainingSupply = -1
+    } else {
+      accountData.editionType = 'limited'
+      accountData.totalSupply = metadata.editionSize
+      accountData.remainingSupply = metadata.editionSize
+    }
+
+    accountData.paymentMint = NINA_CLIENT_IDS[cluster].mints.usdc
+    accountData.price = uiToNative(metadata.retailPrice, accountData.paymentMint, cluster)
+
+    return accountData
+  }
+
   static async parseReleaseAccountData(release, programId = this.program.programId.toBase58(), connection = undefined) {
     if (programId === 'nina2DQvAA8Sa9rxG72swBcNNDYQxdWGojzwDk9yn2q') {  
-      release.releaseMint = release.mint.toBase58()
+      release.releaseMint = release.mint.toString()
       if (release.totalSupply.toString() === MAX_U64) {
         release.editionType = 'open'
         release.totalSupply = -1
@@ -121,10 +141,11 @@ export default class Formatter {
     } else {
       release.exchangeSaleCounter = release.exchangeSaleCounter?.toNumber()
       release.exchangeSaleTotal = release.exchangeSaleTotal?.toNumber() || 0
-      release.payer = release.payer.toBase58()
-      release.releaseMint = release.releaseMint.toBase58()
+      release.payer = release.payer.toString()
+      release.releaseMint = release.releaseMint.toString()
+
       if (release.authorityTokenAccount) {
-        release.authorityTokenAccount = release.authorityTokenAccount.toBase58()
+        release.authorityTokenAccount = release.authorityTokenAccount.toString()
       } else {
         release.authorityTokenAccount = undefined
       }
@@ -135,9 +156,9 @@ export default class Formatter {
           recipient.collected = recipient.collected?.toNumber() || 0
           recipient.owed = recipient.owed?.toNumber() || 0
           recipient.percentShare = recipient.percentShare?.toNumber() || 0
-          recipient.recipientAuthority = recipient.recipientAuthority.toBase58()
+          recipient.recipientAuthority = recipient.recipientAuthority.toString()
           recipient.recipientTokenAccount =
-            recipient.recipientTokenAccount.toBase58()
+            recipient.recipientTokenAccount.toString()
 
           return recipient
         },
@@ -161,10 +182,11 @@ export default class Formatter {
       }  
     }
 
-    release.releaseSigner = release.releaseSigner.toBase58()
-    release.paymentMint = release.paymentMint.toBase58()
+    release.authority = release.authority.toString()
+    release.paymentMint = release.paymentMint.toString()
     release.price = release.price?.toNumber() || 0
-    release.royaltyTokenAccount = release.royaltyTokenAccount.toBase58()
+    release.royaltyTokenAccount = release.royaltyTokenAccount.toString()
+    release.releaseSigner = release.releaseSigner.toString()
 
     return release
   }
