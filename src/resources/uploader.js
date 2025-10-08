@@ -13,7 +13,7 @@ export const MAX_IMAGE_FILE_UPLOAD_SIZE_BYTES =
 
 export default class Uploader {
   constructor() {
-    this.bundlrEndpoint = 'https://node1.bundlr.network'
+    this.bundlrEndpoint = 'https://node1.irys.xyz'
     this.provider = null
     this.endpoint = null
     this.bundlr = null

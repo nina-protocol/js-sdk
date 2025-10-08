@@ -21,18 +21,19 @@ export default class Wallet {
   async getSolPrice(native = false) {
     try {
       const priceResult = await axios.get(`${this.endpoint}/solPrice`)
+      console.log('priceResult', priceResult)
       if (native) {
         return Math.trunc(
           uiToNative(
-            priceResult.data.data.So11111111111111111111111111111111111111112
-              .price,
+            priceResult.data.So11111111111111111111111111111111111111112
+              .usdPrice,
             priceResult.data.data.So11111111111111111111111111111111111111112
               .id,
           ),
         )
       }
-      return priceResult.data.data.So11111111111111111111111111111111111111112
-        .price
+      return priceResult.data.So11111111111111111111111111111111111111112
+        .usdPrice
     } catch (error) {
       return error
     }
