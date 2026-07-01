@@ -1,5 +1,3 @@
-import NinaClient from '../client';
-
 /**
  * @module Search
  * */
@@ -10,18 +8,15 @@ import NinaClient from '../client';
  * @param {String} query - The search query.
  * @param {Boolean} [withAccountData = false] Fetch full on-chain Hub, Post, and Release accounts.
  * @example const results = await NinaClient.Search.withQuery('nina');
+ * @returns {Object} an object containing the fetched search results.
  */
 
-const withQuery = async (query, withAccountData = false) => {
-  return await NinaClient.post(
-    '/search',
-    {
-      query,
-    },
-    withAccountData
-  );
-};
+export default class Search {
+  constructor({ http }) {
+    this.http = http
+  }
 
-export default {
-  withQuery,
-};
+  async withQuery(query, withAccountData = false) {
+    return this.http.post('/search', { query }, withAccountData)
+  }
+}

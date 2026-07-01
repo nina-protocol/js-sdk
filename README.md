@@ -4,7 +4,8 @@ A Javascript client for interacting with the [Nina Protocol](https://ninaprotoco
 
 Nina Protocol is a digitally-native ecosystem for music built on Solana and Arweave.
 
-`@nina-protocol/js-sdk` provides a convenient way to fetch and query both cached and on-chain data relevant to activity on the Nina Protocol.  This includes:
+`@nina-protocol/js-sdk` provides a convenient way to fetch and query both cached and on-chain data relevant to activity on the Nina Protocol. This includes:
+
 - Accounts (any Solana wallet that interacts with the Nina Program including Artists and Collectors)
 - Releases
 - Hubs
@@ -12,10 +13,13 @@ Nina Protocol is a digitally-native ecosystem for music built on Solana and Arwe
 - Posts
 
 ## Installation
+
 ```
 yarn add @nina-protocol/js-sdk
 ```
+
 or
+
 ```
 npm install @nina-protocol/js-sdk
 ```
@@ -42,6 +46,7 @@ const { hub, releases, collaborators, posts } = await Nina.Hub.fetch('ninas-pick
 const { artists, releases, hubs } = await Nina.Search.withQuery('techno')
 
 ```
+
 ## Demo
 
 Visit the [Api Explorer](https://dev.ninaprotocol.com) for an example of the `@nina-protocol/js-sdk` in use.
@@ -52,16 +57,20 @@ Full documentation is available [here](http://sdk.docs.ninaprotocol.com)
 
 ## Future
 
-Currently the SDK only provides interfaces for fetching data.  In the future we will add support for interacting with the Nina Program (purchase Releases, publish Releases, repost Releases to Hub, etc).
+Currently the SDK only provides interfaces for fetching data. In the future we will add support for interacting with the Nina Program (purchase Releases, publish Releases, repost Releases to Hub, etc).
 
 ---
+
 ## Developing
 
 ```
 git clone git@github.com:nina-protocol/js-sdk.git
-yarn 
+yarn
 yarn watch
 ```
+
 ---
-## Contributors welcome! 
-Need help?  Ask a question in our [Discord](https://discord.gg/ePkqJqSBgj) or open an issue.
+
+## Contributors welcome!
+
+Need help? Ask a question in our [Discord](https://discord.gg/ePkqJqSBgj) or open an issue.

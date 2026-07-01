@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Nina from '@nina-protocol/js-sdk';
 import Head from 'next/head';
 import EmbedPlayer from '../../../components/EmbedPlayer';
-import * as anchor from '@project-serum/anchor';
+import * as anchor from '@coral-xyz/anchor';
 
 const HubReleaseEmbed = (props) => {
   const { metadata, hub, hubReleasePubkey } = props;

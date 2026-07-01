@@ -1,5 +1,8 @@
 {
+  "semi": false,
   "singleQuote": true,
-  "bracketSpacing": true,
-  "printWidth": 120
+  "trailingComma": "all",
+  "importOrder": ["^@/(.*)/(.*)$", "^[./]"],
+  "importOrderSeparation": false,
+  "importOrderSortSpecifiers": true
 }
